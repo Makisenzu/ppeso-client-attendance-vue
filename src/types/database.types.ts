@@ -12,70 +12,80 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  public: {
+  core: {
     Tables: {
       attendances: {
         Row: {
-          id: string
-          user_id: string
-          date: string
-          time_in: string | null
-          time_out: string | null
+          check_in: string
+          check_out: string | null
           created_at: string
-          updated_at: string
+          id: string
+          profile_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          date: string
-          time_in?: string | null
-          time_out?: string | null
+          check_in?: string
+          check_out?: string | null
           created_at?: string
-          updated_at?: string
+          id?: string
+          profile_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          date?: string
-          time_in?: string | null
-          time_out?: string | null
+          check_in?: string
+          check_out?: string | null
           created_at?: string
-          updated_at?: string
+          id?: string
+          profile_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "attendances_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
-      users: {
+      walkin_attendances: {
         Row: {
-          id: string
-          email: string
-          name: string | null
-          role: string | null
+          barangay: string
+          check_in: string
+          check_out: string | null
+          contact_number: string | null
           created_at: string
-          updated_at: string
+          firstname: string
+          gender: Database["core"]["Enums"]["gender_type"]
+          geographic: string
+          id: string
+          lastname: string
+          middlename: string | null
+          province: string
+          purok: string
+          purpose: Database["core"]["Enums"]["service_required"]
         }
         Insert: {
-          id?: string
-          email: string
-          name?: string | null
-          role?: string | null
+          barangay: string
+          check_in?: string
+          check_out?: string | null
+          contact_number?: string | null
           created_at?: string
-          updated_at?: string
+          firstname: string
+          gender?: Database["core"]["Enums"]["gender_type"]
+          geographic: string
+          id?: string
+          lastname: string
+          middlename?: string | null
+          province: string
+          purok: string
+          purpose?: Database["core"]["Enums"]["service_required"]
         }
         Update: {
-          id?: string
-          email?: string
-          name?: string | null
-          role?: string | null
+          barangay?: string
+          check_in?: string
+          check_out?: string | null
+          contact_number?: string | null
           created_at?: string
-          updated_at?: string
+          firstname?: string
+          gender?: Database["core"]["Enums"]["gender_type"]
+          geographic?: string
+          id?: string
+          lastname?: string
+          middlename?: string | null
+          province?: string
+          purok?: string
+          purpose?: Database["core"]["Enums"]["service_required"]
         }
         Relationships: []
       }
@@ -87,7 +97,68 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      user_role: "admin" | "user" | "manager"
+      gender_type: "male" | "female" | "not specified"
+      service_required:
+        | "gip"
+        | "spes"
+        | "job_start"
+        | "ofw"
+        | "cea"
+        | "skills"
+        | "others"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          created_at: string
+          firstname: string
+          id: string
+          lastname: string
+          middlename: string | null
+          passcode: string
+          position: Database["public"]["Enums"]["profile_position"]
+          status: Database["public"]["Enums"]["profile_status"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          firstname: string
+          id: string
+          lastname: string
+          middlename?: string | null
+          passcode?: string
+          position: Database["public"]["Enums"]["profile_position"]
+          status?: Database["public"]["Enums"]["profile_status"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          firstname?: string
+          id?: string
+          lastname?: string
+          middlename?: string | null
+          passcode?: string
+          position?: Database["public"]["Enums"]["profile_position"]
+          status?: Database["public"]["Enums"]["profile_status"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      generate_6_digit_code: { Args: never; Returns: string }
+    }
+    Enums: {
+      profile_position: "employee" | "gip" | "tupad" | "client"
+      profile_status: "active" | "inactive" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -106,12 +177,14 @@ export type Tables<
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -211,7 +284,24 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  core: {
+    Enums: {
+      gender_type: ["male", "female", "not specified"],
+      service_required: [
+        "gip",
+        "spes",
+        "job_start",
+        "ofw",
+        "cea",
+        "skills",
+        "others",
+      ],
+    },
+  },
   public: {
-    Enums: {},
+    Enums: {
+      profile_position: ["employee", "gip", "tupad", "client"],
+      profile_status: ["active", "inactive", "pending"],
+    },
   },
 } as const

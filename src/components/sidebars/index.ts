@@ -1,0 +1,1 @@
+export { default as PesoSidebar } from './PesoSidebar.vue'
