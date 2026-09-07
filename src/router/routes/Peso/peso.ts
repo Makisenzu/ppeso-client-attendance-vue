@@ -21,17 +21,17 @@ export const pesoRoutes: RouteRecordRaw[] = [
       {
         path: 'attendance',
         name: 'attendance',
-        component: () => import('@/components/peso/PesoDashboard.vue'),
+        component: () => import('@/components/peso/attendance/Attendance.vue'),
       },
       {
-        path: 'services',
-        name: 'services',
-        component: () => import('@/components/peso/PesoDashboard.vue'),
+        path: 'management',
+        name: 'management',
+        component: () => import('@/components/peso/UserManagement/UserManagement.vue'),
       },
       {
-        path: 'reports',
-        name: 'reports',
-        component: () => import('@/components/peso/PesoDashboard.vue'),
+        path: 'records',
+        name: 'records',
+        component: () => import('@/components/peso/ClientRecords/ClientRecords.vue'),
       },
       {
         path: 'payroll',

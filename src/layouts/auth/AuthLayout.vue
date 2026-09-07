@@ -11,7 +11,7 @@ function toggleTheme() {
 </script>
 
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
+  <div class="relative min-h-screen overflow-hidden bg-linear-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
     <div class="absolute inset-0 bg-black/10" />
 
     <button

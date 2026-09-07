@@ -2,23 +2,17 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import {
-  Mail,
-  Search,
   Settings2,
   ChevronUp,
   ChevronRight,
-  Phone,
   LayoutDashboard,
   UserRound,
   Bell,
-  Star,
   Settings,
   UserRoundCog,
   Users,
-  BarChart3,
-  MapPin,
-  TrendingUp,
   FingerprintPattern,
+  Book,
 } from '@lucide/vue'
 
 import {
@@ -63,13 +57,14 @@ const isVerified = ref(false)
 const isLoading = ref(true)
 
 const operationsItems = [
-  { title: 'Attendance', to: { name: 'services' }, icon: FingerprintPattern },
-  { title: 'User Management', to: { name: 'employees' }, icon: Users },
+  { title: 'Attendance', to: { name: 'attendance' }, icon: FingerprintPattern },
+  { title: 'Client Records', to: { name: 'records' }, icon: Book },
+  { title: 'User Management', to: { name: 'management' }, icon: Users },
 ]
 
 const settingsSubItems = [
   { title: 'Profile Settings', to: { name: 'settings' }, icon: UserRoundCog },
-  { title: 'Account Security', to: { name: 'settings' }, icon: Settings },
+  { title: 'Daily Time Record', to: { name: 'settings' }, icon: Settings },
   { title: 'Notification Preferences', to: { name: 'settings' }, icon: Bell },
 ]
 
