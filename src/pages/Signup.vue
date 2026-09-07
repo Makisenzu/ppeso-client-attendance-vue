@@ -11,12 +11,14 @@ const router = useRouter()
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
-const fullName = ref('')
+const firstName = ref('')
+const middleName = ref('')
+const lastName = ref('')
 const { error, loading, runAuthAction, setError, validateRequiredFields } = useAuthForm()
 const defaultPosition: Database['public']['Enums']['profile_position'] = 'employee'
 
 const validateForm = (): boolean => {
-  if (!validateRequiredFields([email.value, password.value, confirmPassword.value, fullName.value])) {
+  if (!validateRequiredFields([email.value, password.value, confirmPassword.value, firstName.value, lastName.value])) {
     return false
   }
 
@@ -39,12 +41,15 @@ const handleSignup = async () => {
   }
 
   await runAuthAction(async () => {
-    const { error: signUpError } = await supabase.auth.signUp({
+    // Sign up without email confirmation required
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.value,
       password: password.value,
       options: {
         data: {
-          full_name: fullName.value,
+          firstname: firstName.value,
+          middlename: middleName.value || null,
+          lastname: lastName.value,
           position: defaultPosition,
         },
       },
@@ -69,7 +74,45 @@ const handleSignup = async () => {
       throw new Error(errorDetails)
     }
 
-    router.push({ name: 'login', query: { registered: 'true' } })
+    if (!data.user) {
+      throw new Error('Failed to create user account')
+    }
+
+    // Generate a 6-digit passcode
+    const passcode = Math.floor(100000 + Math.random() * 900000).toString()
+
+    // Create or update profile in the public.profiles table
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert(
+        {
+          id: data.user.id,
+          firstname: firstName.value,
+          middlename: middleName.value || null,
+          lastname: lastName.value,
+          position: defaultPosition,
+          passcode: passcode,
+          status: 'active',
+        },
+        { onConflict: 'id' },
+      )
+
+    if (profileError) {
+      throw new Error(`Database error saving new user • ${profileError.message}`)
+    }
+
+    // Auto-login after successful signup
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value,
+    })
+
+    if (signInError) {
+      throw new Error(`Sign-in after registration failed: ${signInError.message}`)
+    }
+
+    // Redirect to dashboard after successful signup and login
+    router.push({ name: 'dashboard' })
   })
 }
 </script>
@@ -82,14 +125,40 @@ const handleSignup = async () => {
 
       <form class="space-y-4" @submit.prevent="handleSignup">
         <div>
-          <label for="fullName" class="mb-2 block text-sm font-medium text-slate-700">
-            Full Name
+          <label for="firstName" class="mb-2 block text-sm font-medium text-slate-700">
+            First Name <span class="text-red-500">*</span>
           </label>
           <Input
-            id="fullName"
-            v-model="fullName"
+            id="firstName"
+            v-model="firstName"
             type="text"
-            placeholder="John Doe"
+            placeholder="John"
+            :disabled="loading"
+          />
+        </div>
+
+        <div>
+          <label for="middleName" class="mb-2 block text-sm font-medium text-slate-700">
+            Middle Name
+          </label>
+          <Input
+            id="middleName"
+            v-model="middleName"
+            type="text"
+            placeholder="M."
+            :disabled="loading"
+          />
+        </div>
+
+        <div>
+          <label for="lastName" class="mb-2 block text-sm font-medium text-slate-700">
+            Last Name <span class="text-red-500">*</span>
+          </label>
+          <Input
+            id="lastName"
+            v-model="lastName"
+            type="text"
+            placeholder="Doe"
             :disabled="loading"
           />
         </div>
@@ -146,7 +215,7 @@ const handleSignup = async () => {
           :disabled="loading"
           class="w-full bg-blue-600 text-white hover:bg-blue-700"
         >
-          {{ loading ? 'Creating account...' : 'Sign Up' }}
+          {{ loading ? 'Creating account and signing in...' : 'Sign Up' }}
         </Button>
 
         <div class="relative">

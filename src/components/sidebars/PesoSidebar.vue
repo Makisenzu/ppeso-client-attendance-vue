@@ -1,100 +1,326 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { BadgeDollarSign, Building2, ClipboardList, Clock3, FileText, LayoutDashboard, Settings2, Users } from '@lucide/vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRouter, useRoute, RouterLink } from 'vue-router'
+import {
+  Mail,
+  Search,
+  Settings2,
+  ChevronUp,
+  ChevronRight,
+  Phone,
+  LayoutDashboard,
+  UserRound,
+  Bell,
+  Star,
+  Settings,
+  UserRoundCog,
+  Users,
+  BarChart3,
+  MapPin,
+  TrendingUp,
+  FingerprintPattern,
+} from '@lucide/vue'
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+  useSidebar,
 } from '@/components/ui/sidebar'
 
-const route = useRoute()
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
-const navigationGroups = [
-  {
-    label: 'Overview',
-    items: [
-      { title: 'Dashboard', icon: LayoutDashboard, to: { name: 'dashboard' }, badge: 'Live' },
-      { title: 'Employees', icon: Users, to: { name: 'employees' }, badge: '124' },
-    ],
-  },
-  {
-    label: 'Operations',
-    items: [
-      { title: 'Attendance', icon: Clock3, to: { name: 'attendance' }, badge: 'Today' },
-      { title: 'PESO Services', icon: Building2, to: { name: 'services' }, badge: 'Core' },
-      { title: 'Reports', icon: FileText, to: { name: 'reports' }, badge: 'Monthly' },
-    ],
-  },
-  {
-    label: 'Administration',
-    items: [
-      { title: 'Payroll', icon: BadgeDollarSign, to: { name: 'payroll' }, badge: 'Beta' },
-      { title: 'Requests', icon: ClipboardList, to: { name: 'requests' }, badge: '8' },
-      { title: 'Settings', icon: Settings2, to: { name: 'settings' } },
-    ],
-  },
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { supabase } from '@/services/supabase'
+
+const route = useRoute()
+const router = useRouter()
+
+const { state, isMobile } = useSidebar()
+
+const displayName = ref('User')
+const userInitials = ref('U')
+const userEmail = ref('')
+const isVerified = ref(false)
+const isLoading = ref(true)
+
+const operationsItems = [
+  { title: 'Attendance', to: { name: 'services' }, icon: FingerprintPattern },
+  { title: 'User Management', to: { name: 'employees' }, icon: Users },
 ]
 
-const currentRouteName = computed(() => route.name)
+const settingsSubItems = [
+  { title: 'Profile Settings', to: { name: 'settings' }, icon: UserRoundCog },
+  { title: 'Account Security', to: { name: 'settings' }, icon: Settings },
+  { title: 'Notification Preferences', to: { name: 'settings' }, icon: Bell },
+]
+
+const authSubscription = ref<ReturnType<typeof supabase.auth.onAuthStateChange> | null>(null)
+
+const updateUserInfo = async () => {
+  const { data } = await supabase.auth.getUser()
+  const user = data.user
+
+  if (!user) {
+    displayName.value = 'User'
+    userInitials.value = 'U'
+    userEmail.value = ''
+    isVerified.value = false
+    isLoading.value = false
+    return
+  }
+
+  const fullName = (user.user_metadata?.full_name || user.user_metadata?.name || '') as string
+  const email = user.email || ''
+  const resolvedName = fullName.trim() || (email ? email.split('@')[0] : 'User')
+  const initials = resolvedName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'U'
+
+  displayName.value = resolvedName
+  userInitials.value = initials
+  userEmail.value = email
+  isVerified.value = !!user.email_confirmed_at
+  isLoading.value = false
+}
+
+const handleSignOut = async () => {
+  await supabase.auth.signOut()
+  await router.replace({ name: 'login' })
+}
+
+onMounted(async () => {
+  await updateUserInfo()
+  authSubscription.value = supabase.auth.onAuthStateChange(async () => {
+    await updateUserInfo()
+  })
+})
+
+onUnmounted(() => {
+  authSubscription.value?.data.subscription.unsubscribe()
+})
+
+const isDashboard = computed(() => route.name === 'dashboard')
 </script>
 
 <template>
   <Sidebar collapsible="icon" class="border-r border-sidebar-border/50">
-    <SidebarHeader class="p-3 flex items-center w-full transition-all duration-200">
-      <div class="w-full max-w-50 flex justify-start mr-auto p-2">
-        <div class="flex items-center gap-3">
-          <div class="bg-sidebar-primary text-sidebar-primary-foreground flex h-10 w-10 items-center justify-center rounded-xl">
-            <Building2 class="h-5 w-5" />
-          </div>
-          <div>
-            <p class="text-xs uppercase tracking-[0.24em] text-muted-foreground">Municipal PESO</p>
-            <h1 class="text-sm font-semibold text-foreground">Employee Attendance</h1>
+    <template v-if="isLoading">
+      <SidebarHeader class="p-4 flex items-center w-full">
+        <Skeleton v-if="state === 'expanded'" class="h-7 w-32 mr-auto" />
+        <Skeleton v-else class="size-8 rounded-md mx-auto" />
+      </SidebarHeader>
+
+      <SidebarContent class="px-2 space-y-6">
+        <div class="space-y-2 pt-2">
+          <Skeleton v-if="state === 'expanded'" class="h-3 w-16 mx-2 mb-3" />
+          <div v-for="i in 3" :key="`gen-${i}`" class="flex items-center gap-3 h-9 px-2">
+            <Skeleton class="size-4 shrink-0 rounded" />
+            <Skeleton v-if="state === 'expanded'" class="h-4 flex-1 max-w-27.5" />
           </div>
         </div>
-      </div>
-    </SidebarHeader>
 
-    <SidebarContent class="px-2 space-y-4">
-      <SidebarGroup v-for="group in navigationGroups" :key="group.label" class="px-0 py-0">
-        <SidebarGroupLabel class="px-4 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-          {{ group.label }}
-        </SidebarGroupLabel>
+        <div class="h-px bg-sidebar-border/50 my-1 mx-2" />
 
-        <SidebarGroupContent>
-          <SidebarMenu class="gap-1 px-2">
-            <SidebarMenuItem v-for="item in group.items" :key="item.title">
-              <SidebarMenuButton as-child :tooltip="item.title" :is-active="currentRouteName === item.to.name">
-                <RouterLink :to="item.to">
-                  <component :is="item.icon" />
-                  <span>{{ item.title }}</span>
-                  <SidebarMenuBadge v-if="item.badge" class="ml-auto">{{ item.badge }}</SidebarMenuBadge>
-                </RouterLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    </SidebarContent>
+        <div class="space-y-2">
+          <Skeleton v-if="state === 'expanded'" class="h-3 w-20 mx-2 mb-3" />
+          <div v-for="i in 3" :key="`job-${i}`" class="flex items-center gap-3 h-9 px-2">
+            <Skeleton class="size-4 shrink-0 rounded" />
+            <Skeleton v-if="state === 'expanded'" class="h-4 flex-1 max-w-22.5" />
+          </div>
+        </div>
 
-    <SidebarFooter class="p-2">
-      <div class="w-full rounded-xl border border-sidebar-border/60 bg-sidebar-accent/40 p-3">
-        <p class="text-xs uppercase tracking-[0.22em] text-muted-foreground">Workspace</p>
-        <p class="mt-1 font-medium text-foreground">Municipal PESO Admin</p>
-        <p class="text-sm text-muted-foreground">attendance@municipal.gov</p>
-      </div>
-    </SidebarFooter>
+        <div class="h-px bg-sidebar-border/50 my-1 mx-2" />
 
-    <SidebarRail />
+        <div class="space-y-2">
+          <Skeleton v-if="state === 'expanded'" class="h-3 w-14 mx-2 mb-3" />
+          <div v-for="i in 3" :key="`oth-${i}`" class="flex items-center gap-3 h-9 px-2">
+            <Skeleton class="size-4 shrink-0 rounded" />
+            <Skeleton v-if="state === 'expanded'" class="h-4 flex-1 max-w-30" />
+            <Skeleton v-if="state === 'expanded'" class="size-3 ml-auto rounded" />
+          </div>
+        </div>
+      </SidebarContent>
+
+      <SidebarFooter class="p-2">
+        <div class="w-full flex items-center gap-2 h-12" :class="state === 'collapsed' ? 'justify-center p-0' : 'justify-start px-2'">
+          <Skeleton class="size-8 rounded-lg shrink-0" />
+          <div v-if="state === 'expanded'" class="space-y-1.5 flex-1 min-w-0 pr-2">
+            <Skeleton class="h-4 w-[85%]" />
+            <Skeleton class="h-3 w-[60%]" />
+          </div>
+        </div>
+      </SidebarFooter>
+    </template>
+
+    <template v-else>
+      <SidebarHeader class="p-2 flex items-center w-full transition-all duration-200">
+        <div v-if="state === 'expanded'" class="w-full max-w-50 flex justify-start mr-auto p-2">
+          <img src="https://raw.githubusercontent.com/Makisenzu/vue-ppeso-agsurjob/main/src/assets/images/agsur-logo.png" alt="AGSURJOBS Logo" class="dark:hidden w-full h-auto object-contain">
+          <img src="https://raw.githubusercontent.com/Makisenzu/vue-ppeso-agsurjob/main/src/assets/images/agsur.png" alt="AGSURJOBS Seal" class="hidden dark:block size-8 object-contain">
+        </div>
+        <div v-else class="flex items-center justify-center size-8 mx-auto overflow-hidden">
+          <img src="https://raw.githubusercontent.com/Makisenzu/vue-ppeso-agsurjob/main/src/assets/images/agsur.png" alt="AGSURJOBS Seal" class="size-full object-contain">
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>General</SidebarGroupLabel>
+          <SidebarMenuItem>
+            <SidebarMenuButton as-child :tooltip="'Dashboard'" :is-active="isDashboard">
+              <RouterLink :to="{ name: 'dashboard' }">
+                <LayoutDashboard />
+                <span>Dashboard</span>
+              </RouterLink>
+            </SidebarMenuButton>
+            <SidebarMenuButton as-child :tooltip="'Notification'">
+              <RouterLink :to="{ name: 'requests' }">
+                <Bell />
+                <span>Notification</span>
+              </RouterLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <div class="my-1 h-px bg-sidebar-border" />
+
+          <SidebarGroupLabel>Operations</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem v-for="item in operationsItems" :key="item.title">
+                <SidebarMenuButton as-child :tooltip="item.title">
+                  <RouterLink :to="item.to">
+                    <component :is="item.icon" />
+                    <span>{{ item.title }}</span>
+                  </RouterLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <div class="my-1 h-px bg-sidebar-border" />
+
+              <SidebarGroupLabel>System</SidebarGroupLabel>
+
+              <SidebarMenuItem>
+                <Collapsible as-child :default-open="false" class="group/collapsible">
+                  <div>
+                    <CollapsibleTrigger as-child>
+                      <SidebarMenuButton :tooltip="'Settings'">
+                        <Settings2 />
+                        <span>Settings</span>
+                        <ChevronRight class="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem v-for="subItem in settingsSubItems" :key="subItem.title">
+                          <SidebarMenuSubButton as-child>
+                            <RouterLink :to="subItem.to">
+                              <span>{{ subItem.title }}</span>
+                            </RouterLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu :modal="false">
+              <DropdownMenuTrigger as-child>
+                <SidebarMenuButton
+                  class="w-full flex items-center gap-2 h-12 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  :class="state === 'collapsed' ? 'justify-center p-0' : 'justify-start px-2'"
+                >
+                  <Avatar class="size-8 rounded-lg shrink-0">
+                    <AvatarFallback class="rounded-lg">{{ userInitials }}</AvatarFallback>
+                  </Avatar>
+
+                  <div v-if="state === 'expanded'" class="min-w-0 flex-1 text-left text-sm leading-tight pr-2">
+                    <div class="flex items-center gap-1.5 w-full min-w-0">
+                      <span class="truncate font-semibold">{{ displayName }}</span>
+                      <Badge
+                        class="text-[9px] px-1 py-0 h-3.5 uppercase tracking-wider font-extrabold shrink-0 select-none"
+                        :class="isVerified ? 'bg-emerald-600 hover:bg-emerald-600 text-white' : 'bg-amber-500 hover:bg-amber-500 text-black'"
+                      >
+                        {{ isVerified ? 'Verified' : 'Pending' }}
+                      </Badge>
+                    </div>
+                    <span class="truncate text-xs text-muted-foreground block">{{ userEmail }}</span>
+                  </div>
+
+                  <ChevronUp v-if="state === 'expanded'" class="ml-auto size-4 shrink-0" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                :side="isMobile ? 'top' : 'right'"
+                align="end"
+                class="w-64 p-1 mb-2 data-[side=right]:ml-2"
+              >
+                <div class="flex items-center gap-2 px-2 py-1.5 text-sm font-normal">
+                  <Avatar class="size-8 rounded-lg shrink-0">
+                    <AvatarFallback class="rounded-lg">{{ userInitials }}</AvatarFallback>
+                  </Avatar>
+
+                  <div class="min-w-0 flex-1 text-left text-sm leading-tight">
+                    <div class="flex items-center gap-1.5 w-full min-w-0">
+                      <span class="truncate font-semibold text-foreground">{{ displayName }}</span>
+                      <Badge
+                        class="text-[9px] px-1 py-0 h-3.5 uppercase tracking-wider font-extrabold shrink-0 select-none"
+                        :class="isVerified ? 'bg-emerald-600 hover:bg-emerald-600 text-white' : 'bg-amber-500 hover:bg-amber-500 text-black'"
+                      >
+                        {{ isVerified ? 'Verified' : 'Pending' }}
+                      </Badge>
+                    </div>
+                    <span class="truncate text-xs text-muted-foreground block">{{ userEmail }}</span>
+                  </div>
+                </div>
+
+                <div class="my-1 h-px bg-sidebar-border" />
+
+                <DropdownMenuItem class="cursor-pointer gap-2">
+                  <UserRound class="size-4" />
+                  <span>Account</span>
+                </DropdownMenuItem>
+
+                <div class="my-1 h-px bg-sidebar-border" />
+
+                <DropdownMenuItem class="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 gap-2" @click="handleSignOut">
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </template>
   </Sidebar>
 </template>

@@ -1,10 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import PesoSidebar from '@/components/sidebars/PesoSidebar.vue'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { useColorMode } from '@vueuse/core'
 import { Moon, Sun } from '@lucide/vue'
 
 const mode = useColorMode()
+const route = useRoute()
+
+const currentLabel = computed(() => {
+  const name = String(route.name || 'dashboard')
+  return name
+    .split('-')
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ')
+})
 
 function toggleTheme() {
   mode.value = mode.value === 'dark' ? 'light' : 'dark'
@@ -24,9 +35,8 @@ function toggleTheme() {
         <header class="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/40 px-3 sm:px-4 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 transition-colors duration-200">
           <SidebarTrigger class="-ml-1 text-muted-foreground" />
 
-          <div>
-            <p class="text-xs uppercase tracking-[0.22em] text-muted-foreground">Municipal PESO</p>
-            <h1 class="text-sm font-semibold text-foreground">Employee attendance workspace</h1>
+          <div class="min-w-0">
+            <h1 class="text-sm font-semibold text-foreground truncate">{{ currentLabel }}</h1>
           </div>
 
           <button

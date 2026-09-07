@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthForm } from '../composables/useAuthForm'
 import { supabase } from '../services/supabase'
 import Button from '../components/ui/button/Button.vue'
 import Input from '../components/ui/input/Input.vue'
 
 const router = useRouter()
-const route = useRoute()
 const email = ref('')
 const password = ref('')
 const { error, loading, runAuthAction, validateRequiredFields } = useAuthForm()
-const signupSuccess = computed(() => route.query.registered === 'true')
 
 const handleLogin = async () => {
   if (!validateRequiredFields([email.value, password.value])) {
@@ -38,10 +36,6 @@ const handleLogin = async () => {
     <div class="rounded-lg bg-white p-8 shadow-lg">
       <h1 class="mb-2 text-center text-3xl font-bold text-slate-900">Welcome Back</h1>
       <p class="mb-8 text-center text-slate-600">Sign in to your account</p>
-
-      <div v-if="signupSuccess" class="mb-4 rounded-md border border-green-200 bg-green-50 p-3">
-        <p class="text-sm text-green-700">Account created successfully. Please sign in.</p>
-      </div>
 
       <form class="space-y-4" @submit.prevent="handleLogin">
         <div>
