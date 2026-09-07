@@ -11,17 +11,17 @@ export const pesoRoutes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'dashboard',
-        component: () => import('@/components/peso/PesoDashboard.vue'),
+        component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
       },
       {
         path: 'employees',
         name: 'employees',
-        component: () => import('@/components/peso/PesoDashboard.vue'),
+        component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
       },
       {
         path: 'attendance',
         name: 'attendance',
-        component: () => import('@/components/peso/attendance/Attendance.vue'),
+        component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
       },
       {
         path: 'management',
@@ -36,17 +36,17 @@ export const pesoRoutes: RouteRecordRaw[] = [
       {
         path: 'payroll',
         name: 'payroll',
-        component: () => import('@/components/peso/PesoDashboard.vue'),
+        component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
       },
       {
-        path: 'requests',
-        name: 'requests',
-        component: () => import('@/components/peso/PesoDashboard.vue'),
+        path: 'notification',
+        name: 'notification',
+        component: () => import('@/components/peso/Notification/Notification.vue'),
       },
       {
         path: 'settings',
         name: 'settings',
-        component: () => import('@/components/peso/PesoDashboard.vue'),
+        component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
       },
     ],
   },

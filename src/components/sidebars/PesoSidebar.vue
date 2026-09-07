@@ -190,7 +190,7 @@ const isDashboard = computed(() => route.name === 'dashboard')
               </RouterLink>
             </SidebarMenuButton>
             <SidebarMenuButton as-child :tooltip="'Notification'">
-              <RouterLink :to="{ name: 'requests' }">
+              <RouterLink :to="{ name: 'notification' }">
                 <Bell />
                 <span>Notification</span>
               </RouterLink>
