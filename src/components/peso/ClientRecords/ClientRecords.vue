@@ -6,7 +6,7 @@
       <div>
         <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Client Records</h1>
         <p class="text-sm text-muted-foreground">
-            Manage client records and their information in the system.
+            Manage records and information of clients in the system.
         </p>
       </div>
     </div>
