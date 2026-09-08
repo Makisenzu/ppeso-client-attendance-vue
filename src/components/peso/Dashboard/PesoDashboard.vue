@@ -421,7 +421,6 @@ function hasData(numbers: number[]): boolean {
               {{ clientsTodayCount }}
             </div>
             <p class="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-              <Sparkles class="h-3 w-3 text-blue-500" />
               <span>Walk-in visitors checked in today</span>
             </p>
           </div>
@@ -448,7 +447,6 @@ function hasData(numbers: number[]): boolean {
               {{ totalAttendanceLogs }}
             </div>
             <p class="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-              <Layers class="h-3 w-3 text-indigo-500" />
               <span>Total recorded punch logs</span>
             </p>
           </div>
@@ -475,7 +473,6 @@ function hasData(numbers: number[]): boolean {
               {{ activePersonnelCount }}
             </div>
             <p class="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-              <Users class="h-3 w-3 text-emerald-500" />
               <span>Active staff and registered trainees</span>
             </p>
           </div>
@@ -524,7 +521,6 @@ function hasData(numbers: number[]): boolean {
           <div class="flex items-center justify-between">
             <div class="space-y-0.5">
               <CardTitle class="text-base font-semibold flex items-center gap-2">
-                <PieChartIcon class="h-4 w-4 text-primary" />
                 Attendance Status Distribution
               </CardTitle>
               <CardDescription>
@@ -606,7 +602,6 @@ function hasData(numbers: number[]): boolean {
           <div class="flex items-center justify-between">
             <div class="space-y-0.5">
               <CardTitle class="text-base font-semibold flex items-center gap-2">
-                <Briefcase class="h-4 w-4 text-primary" />
                 Walk-In Client Purpose Breakdown
               </CardTitle>
               <CardDescription>
@@ -692,7 +687,6 @@ function hasData(numbers: number[]): boolean {
           <div class="flex items-center justify-between">
             <div class="space-y-0.5">
               <CardTitle class="text-base font-semibold flex items-center gap-2">
-                <TrendingUp class="h-4 w-4 text-blue-500" />
                 7-Day Attendance Punch Trend
               </CardTitle>
               <CardDescription>
@@ -726,7 +720,6 @@ function hasData(numbers: number[]): boolean {
           <div class="flex items-center justify-between">
             <div class="space-y-0.5">
               <CardTitle class="text-base font-semibold flex items-center gap-2">
-                <TrendingUp class="h-4 w-4 text-emerald-500" />
                 7-Day Walk-In Client Visits Trend
               </CardTitle>
               <CardDescription>
@@ -763,7 +756,6 @@ function hasData(numbers: number[]): boolean {
           <div class="flex items-center justify-between">
             <div class="space-y-0.5">
               <CardTitle class="text-base font-semibold flex items-center gap-2">
-                <BarChart3 class="h-4 w-4 text-primary" />
                 Personnel by Position Classification
               </CardTitle>
               <CardDescription>
@@ -793,7 +785,6 @@ function hasData(numbers: number[]): boolean {
           <div class="flex items-center justify-between">
             <div class="space-y-0.5">
               <CardTitle class="text-base font-semibold flex items-center gap-2">
-                <Users class="h-4 w-4 text-pink-500" />
                 Walk-In Client Gender Distribution
               </CardTitle>
               <CardDescription>
