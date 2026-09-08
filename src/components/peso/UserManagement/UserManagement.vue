@@ -481,7 +481,7 @@ const {
             Profile Details
           </DialogTitle>
           <DialogDescription class="text-xs">
-            Detailed view of user profile from public.profiles.
+            Detailed view of user profile.
           </DialogDescription>
         </DialogHeader>
 
@@ -580,11 +580,10 @@ const {
       <DialogContent class="max-w-[95vw] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2 text-base sm:text-lg">
-            <Plus class="h-4 w-4 text-primary" />
             Add New User
           </DialogTitle>
           <DialogDescription class="text-xs">
-            Create a new user account and profile. This will register the user in auth.users and public.profiles.
+            Create a new user account and profile.
           </DialogDescription>
         </DialogHeader>
 
