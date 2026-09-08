@@ -168,4 +168,34 @@ export const clientRecordService = {
       throw err
     }
   },
+
+  async deleteWalkinAttendance(id: string): Promise<boolean> {
+    try {
+      const { error: coreError } = await supabase
+        .schema('core')
+        .from('walkin_attendances')
+        .delete()
+        .eq('id', id)
+
+      if (coreError && (coreError.message?.includes('Invalid schema') || coreError.code === 'PGRST106')) {
+        const { error: pubError } = await (supabase as any)
+          .from('walkin_attendances')
+          .delete()
+          .eq('id', id)
+
+        if (pubError) {
+          console.error('Error deleting walkin attendance in public schema:', pubError)
+          throw pubError
+        }
+      } else if (coreError) {
+        console.error('Error deleting walkin attendance in core schema:', coreError)
+        throw coreError
+      }
+
+      return true
+    } catch (err) {
+      console.error('Error in deleteWalkinAttendance:', err)
+      throw err
+    }
+  },
 }

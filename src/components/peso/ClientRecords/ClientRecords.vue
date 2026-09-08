@@ -8,12 +8,14 @@ import {
   Clock,
   Download,
   Eye,
+  Loader2,
   LogOut,
   MapPin,
   Phone,
   Plus,
   RefreshCw,
   Search,
+  Trash2,
   User,
   UserCheck,
   Users,
@@ -75,8 +77,14 @@ const {
   isSheetOpen,
   selectedRecord,
   isDetailsOpen,
+  recordToDelete,
+  isDeleteDialogOpen,
+  isDeleting,
   feedbackMessage,
   dismissFeedback,
+  openDeleteDialog,
+  closeDeleteDialog,
+  confirmDelete,
   refreshRecords,
   resetFilters,
   clearSearch,
@@ -368,7 +376,7 @@ const {
               <TableHead class="text-xs font-semibold text-foreground min-w-[200px]">Residential Address</TableHead>
               <TableHead class="text-xs font-semibold text-foreground w-[160px]">Service Required</TableHead>
               <TableHead class="text-xs font-semibold text-foreground w-[150px]">Check-in</TableHead>
-              <TableHead class="text-xs font-semibold text-foreground text-right w-[80px]">Action</TableHead>
+              <TableHead class="text-xs font-semibold text-foreground text-right w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -461,17 +469,28 @@ const {
 
               
 
-                <!-- Action Button -->
+                <!-- Action Buttons -->
                 <TableCell class="text-right" @click.stop>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="h-7 w-7 text-muted-foreground hover:text-foreground"
-                    title="View details"
-                    @click="openDetails(client)"
-                  >
-                    <Eye class="h-3.5 w-3.5" />
-                  </Button>
+                  <div class="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      class="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                      title="View details"
+                      @click="openDetails(client)"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      class="h-7 w-7 text-destructive/80 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                      title="Delete client record"
+                      @click="openDeleteDialog(client)"
+                    >
+                      <Trash2 class="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             </template>
@@ -661,6 +680,69 @@ const {
             @click="closeDetails"
           >
             Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- ─── Delete Confirmation Dialog ─── -->
+    <Dialog :open="isDeleteDialogOpen" @update:open="(val) => (!val ? closeDeleteDialog() : null)">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <Trash2 class="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle class="text-base font-semibold text-foreground">
+                Delete Client Record
+              </DialogTitle>
+              <DialogDescription class="text-xs text-muted-foreground mt-0.5">
+                This action cannot be undone. Are you sure you want to permanently delete this client record?
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div v-if="recordToDelete" class="rounded-lg border bg-muted/30 p-3.5 text-xs space-y-2">
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Client Name:</span>
+            <span class="font-semibold text-foreground">{{ recordToDelete.fullName }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Service Required:</span>
+            <span class="font-medium text-foreground">{{ formatPurposeShortLabel(recordToDelete.purpose) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Address:</span>
+            <span class="text-foreground truncate max-w-56">{{ recordToDelete.formattedAddress || 'N/A' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Check-in:</span>
+            <span class="font-mono text-foreground">{{ recordToDelete.formattedCheckIn || 'N/A' }}</span>
+          </div>
+        </div>
+
+        <DialogFooter class="gap-2 sm:gap-0 mt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            class="text-xs cursor-pointer"
+            :disabled="isDeleting"
+            @click="closeDeleteDialog"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            class="text-xs cursor-pointer gap-1.5"
+            :disabled="isDeleting"
+            @click="confirmDelete"
+          >
+            <Loader2 v-if="isDeleting" class="h-3.5 w-3.5 animate-spin" />
+            <Trash2 v-else class="h-3.5 w-3.5" />
+            <span>{{ isDeleting ? 'Deleting...' : 'Delete Record' }}</span>
           </Button>
         </DialogFooter>
       </DialogContent>

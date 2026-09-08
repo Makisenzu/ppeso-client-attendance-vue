@@ -277,6 +277,58 @@ export function useAttendance() {
     }
   })
 
+  // ─── Delete State & Actions ───
+  const recordToDelete = ref<AttendanceRecord | null>(null)
+  const isDeleteDialogOpen = ref<boolean>(false)
+  const isDeleting = ref<boolean>(false)
+  const feedbackMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
+    feedbackMessage.value = { type, text }
+    setTimeout(() => {
+      feedbackMessage.value = null
+    }, 4000)
+  }
+
+  const dismissFeedback = () => {
+    feedbackMessage.value = null
+  }
+
+  const openDeleteDialog = (record: AttendanceRecord) => {
+    recordToDelete.value = record
+    isDeleteDialogOpen.value = true
+  }
+
+  const closeDeleteDialog = () => {
+    if (isDeleting.value) return
+    isDeleteDialogOpen.value = false
+    recordToDelete.value = null
+  }
+
+  const confirmDelete = async (): Promise<boolean> => {
+    if (!recordToDelete.value) return false
+    const id = recordToDelete.value.id
+    const empName = recordToDelete.value.fullName || 'Employee'
+    isDeleting.value = true
+    try {
+      await attendanceService.deleteAttendance(id)
+      attendances.value = attendances.value.filter((r) => r.id !== id)
+      if (selectedRecord.value?.id === id) {
+        closeDetails()
+      }
+      isDeleteDialogOpen.value = false
+      recordToDelete.value = null
+      showFeedback(`Attendance record for ${empName} was deleted successfully.`, 'success')
+      return true
+    } catch (err: any) {
+      console.error('Failed to delete attendance record:', err)
+      showFeedback(err?.message || 'Failed to delete attendance record. Please try again.', 'error')
+      return false
+    } finally {
+      isDeleting.value = false
+    }
+  }
+
   return {
     attendances,
     filteredAttendances,
@@ -296,6 +348,14 @@ export function useAttendance() {
     pageSize,
     selectedRecord,
     isDetailsOpen,
+    recordToDelete,
+    isDeleteDialogOpen,
+    isDeleting,
+    feedbackMessage,
+    dismissFeedback,
+    openDeleteDialog,
+    closeDeleteDialog,
+    confirmDelete,
     fetchAttendances,
     refreshAttendances,
     resetFilters,

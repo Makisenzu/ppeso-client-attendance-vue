@@ -108,4 +108,25 @@ export const userManagementService = {
       }
     }
   },
+
+  async deleteUser(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true }
+    } catch (err) {
+      console.error('Failed to delete user:', err)
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'An unexpected error occurred',
+      }
+    }
+  },
 }

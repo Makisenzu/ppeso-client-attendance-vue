@@ -186,5 +186,40 @@ export const attendanceService = {
       })
     } catch {}
   },
+
+  /**
+   * Delete an attendance record from core.attendances with fallback to public.attendances
+   */
+  async deleteAttendance(id: string): Promise<boolean> {
+    try {
+      const { error: coreError } = await supabase
+        .schema('core')
+        .from('attendances')
+        .delete()
+        .eq('id', id)
+
+      if (coreError && (coreError.message?.includes('Invalid schema') || coreError.code === 'PGRST106')) {
+        const { error: pubError } = await (supabase as any)
+          .from('attendances')
+          .delete()
+          .eq('id', id)
+
+        if (pubError) {
+          console.error('Failed to delete from public.attendances:', pubError)
+          throw pubError
+        }
+      } else if (coreError) {
+        console.error('Failed to delete from core.attendances:', coreError)
+        throw coreError
+      }
+
+      // Notify realtime subscribers so all tabs sync
+      this.notifyAttendanceChange()
+      return true
+    } catch (err) {
+      console.error('Error in deleteAttendance:', err)
+      throw err
+    }
+  },
 }
 

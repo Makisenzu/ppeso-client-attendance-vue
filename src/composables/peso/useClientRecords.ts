@@ -259,6 +259,46 @@ export function useClientRecords() {
     }
   }
 
+  // ─── Delete State & Actions ───
+  const recordToDelete = ref<ClientRecordItem | null>(null)
+  const isDeleteDialogOpen = ref<boolean>(false)
+  const isDeleting = ref<boolean>(false)
+
+  const openDeleteDialog = (record: ClientRecordItem) => {
+    recordToDelete.value = record
+    isDeleteDialogOpen.value = true
+  }
+
+  const closeDeleteDialog = () => {
+    if (isDeleting.value) return
+    isDeleteDialogOpen.value = false
+    recordToDelete.value = null
+  }
+
+  const confirmDelete = async (): Promise<boolean> => {
+    if (!recordToDelete.value) return false
+    const id = recordToDelete.value.id
+    const clientName = recordToDelete.value.fullName || 'Client'
+    isDeleting.value = true
+    try {
+      await clientRecordService.deleteWalkinAttendance(id)
+      records.value = records.value.filter((r) => r.id !== id)
+      if (selectedRecord.value?.id === id) {
+        closeDetails()
+      }
+      isDeleteDialogOpen.value = false
+      recordToDelete.value = null
+      showFeedback(`Client record for ${clientName} was deleted successfully.`, 'success')
+      return true
+    } catch (err: any) {
+      console.error('Failed to delete client record:', err)
+      showFeedback(err?.message || 'Failed to delete client record. Please try again.', 'error')
+      return false
+    } finally {
+      isDeleting.value = false
+    }
+  }
+
   // CSV Export
   const exportCsv = () => {
     const listToExport = filteredRecords.value.length > 0 ? filteredRecords.value : records.value
@@ -286,8 +326,14 @@ export function useClientRecords() {
     isSheetOpen,
     selectedRecord,
     isDetailsOpen,
+    recordToDelete,
+    isDeleteDialogOpen,
+    isDeleting,
     feedbackMessage,
     dismissFeedback,
+    openDeleteDialog,
+    closeDeleteDialog,
+    confirmDelete,
     fetchRecords,
     refreshRecords,
     resetFilters,

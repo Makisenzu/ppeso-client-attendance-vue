@@ -254,6 +254,62 @@ export function useUserManagement() {
     }
   }
 
+  // ─── Delete State & Actions ───
+  const profileToDelete = ref<ProfileRecord | null>(null)
+  const isDeleteDialogOpen = ref<boolean>(false)
+  const isDeleting = ref<boolean>(false)
+  const feedbackMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
+    feedbackMessage.value = { type, text }
+    setTimeout(() => {
+      feedbackMessage.value = null
+    }, 4000)
+  }
+
+  const dismissFeedback = () => {
+    feedbackMessage.value = null
+  }
+
+  const openDeleteDialog = (profile: ProfileRecord) => {
+    profileToDelete.value = profile
+    isDeleteDialogOpen.value = true
+  }
+
+  const closeDeleteDialog = () => {
+    if (isDeleting.value) return
+    isDeleteDialogOpen.value = false
+    profileToDelete.value = null
+  }
+
+  const confirmDelete = async (): Promise<boolean> => {
+    if (!profileToDelete.value) return false
+    const id = profileToDelete.value.id
+    const userName = profileToDelete.value.fullName || 'User'
+    isDeleting.value = true
+    try {
+      const result = await userManagementService.deleteUser(id)
+      if (!result.success) {
+        showFeedback(result.error || 'Failed to delete user profile', 'error')
+        return false
+      }
+      profiles.value = profiles.value.filter((p) => p.id !== id)
+      if (selectedProfile.value?.id === id) {
+        closeDetails()
+      }
+      isDeleteDialogOpen.value = false
+      profileToDelete.value = null
+      showFeedback(`User ${userName} was deleted successfully.`, 'success')
+      return true
+    } catch (err: any) {
+      console.error('Failed to delete profile:', err)
+      showFeedback(err?.message || 'Failed to delete user profile', 'error')
+      return false
+    } finally {
+      isDeleting.value = false
+    }
+  }
+
   // ─── CSV Export ───
   const exportCsv = () => {
     exportProfilesToCsv(filteredProfiles.value)
@@ -283,6 +339,14 @@ export function useUserManagement() {
     submitError,
     submitSuccess,
     formData,
+    profileToDelete,
+    isDeleteDialogOpen,
+    isDeleting,
+    feedbackMessage,
+    dismissFeedback,
+    openDeleteDialog,
+    closeDeleteDialog,
+    confirmDelete,
     fetchProfiles,
     refreshProfiles,
     resetFilters,

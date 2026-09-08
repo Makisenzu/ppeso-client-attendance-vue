@@ -12,6 +12,7 @@ import {
   LogOut,
   RefreshCw,
   Search,
+  Trash2,
   Users,
   X,
 } from '@lucide/vue'
@@ -75,6 +76,14 @@ const {
   pageSize,
   selectedRecord,
   isDetailsOpen,
+  recordToDelete,
+  isDeleteDialogOpen,
+  isDeleting,
+  feedbackMessage,
+  dismissFeedback,
+  openDeleteDialog,
+  closeDeleteDialog,
+  confirmDelete,
   refreshAttendances,
   resetFilters,
   clearSearch,
@@ -122,6 +131,22 @@ const {
           <span>Refresh</span>
         </Button>
       </div>
+    </div>
+
+    <!-- ─── Toast / Notification Alert Banner ─── -->
+    <div
+      v-if="feedbackMessage"
+      class="flex items-center justify-between gap-3 p-3.5 rounded-lg text-xs border transition-all animate-in fade-in"
+      :class="feedbackMessage.type === 'success' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : 'bg-destructive/10 text-destructive border-destructive/20'"
+    >
+      <div class="flex items-center gap-2">
+        <CheckCircle2 v-if="feedbackMessage.type === 'success'" class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+        <AlertTriangle v-else class="h-4 w-4 shrink-0" />
+        <span class="font-medium">{{ feedbackMessage.text }}</span>
+      </div>
+      <button @click="dismissFeedback" class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer">
+        <X class="h-3.5 w-3.5" />
+      </button>
     </div>
 
     <!-- ─── Metric Cards Grid ─── -->
@@ -414,7 +439,7 @@ const {
                 <TableHead class="min-w-28 text-xs font-semibold">AM Check Out</TableHead>
                 <TableHead class="min-w-28 text-xs font-semibold">PM Check In</TableHead>
                 <TableHead class="min-w-28 text-xs font-semibold">PM Check Out</TableHead>
-                <TableHead class="text-right min-w-20 text-xs font-semibold">Action</TableHead>
+                <TableHead class="text-right min-w-28 text-xs font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -537,17 +562,28 @@ const {
                     <span v-else class="text-muted-foreground/60 text-xs font-mono">—</span>
                   </TableCell>
 
-                  <!-- 7. Actions / Details -->
+                  <!-- 7. Actions / Details & Delete -->
                   <TableCell class="py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      class="h-8 gap-1.5 text-xs cursor-pointer"
-                      @click="openDetails(record)"
-                    >
-                      <Eye class="h-3.5 w-3.5" />
-                      <span>Details</span>
-                    </Button>
+                    <div class="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        class="h-8 gap-1.5 text-xs cursor-pointer"
+                        @click="openDetails(record)"
+                      >
+                        <Eye class="h-3.5 w-3.5" />
+                        <span class="hidden sm:inline">Details</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="h-8 w-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                        title="Delete record"
+                        @click="openDeleteDialog(record)"
+                      >
+                        <Trash2 class="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               </template>
@@ -809,6 +845,72 @@ const {
         <DialogFooter>
           <Button variant="outline" size="sm" class="text-xs cursor-pointer" @click="closeDetails">
             Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- ─── Delete Confirmation Dialog ─── -->
+    <Dialog :open="isDeleteDialogOpen" @update:open="(val) => (!val ? closeDeleteDialog() : null)">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <Trash2 class="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle class="text-base font-semibold text-foreground">
+                Delete Attendance Record
+              </DialogTitle>
+              <DialogDescription class="text-xs text-muted-foreground mt-0.5">
+                This action cannot be undone. Are you sure you want to permanently delete this DTR log?
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div v-if="recordToDelete" class="rounded-lg border bg-muted/30 p-3.5 text-xs space-y-2">
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Employee:</span>
+            <span class="font-semibold text-foreground">{{ recordToDelete.fullName }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Date:</span>
+            <span class="font-mono font-medium text-foreground">{{ formatDateDisplay(recordToDelete.attendanceDate) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Position:</span>
+            <span class="capitalize font-medium text-foreground">{{ recordToDelete.position || 'Employee' }}</span>
+          </div>
+          <div class="flex justify-between" v-if="recordToDelete.amCheckIn || recordToDelete.pmCheckIn">
+            <span class="text-muted-foreground">Logged Punches:</span>
+            <span class="font-mono text-foreground">
+              {{ recordToDelete.amCheckIn ? 'AM: ' + formatTimeDisplay(recordToDelete.amCheckIn) : '' }}
+              {{ recordToDelete.pmCheckIn ? ' PM: ' + formatTimeDisplay(recordToDelete.pmCheckIn) : '' }}
+            </span>
+          </div>
+        </div>
+
+        <DialogFooter class="gap-2 sm:gap-0 mt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            class="text-xs cursor-pointer"
+            :disabled="isDeleting"
+            @click="closeDeleteDialog"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            class="text-xs cursor-pointer gap-1.5"
+            :disabled="isDeleting"
+            @click="confirmDelete"
+          >
+            <Loader2 v-if="isDeleting" class="h-3.5 w-3.5 animate-spin" />
+            <Trash2 v-else class="h-3.5 w-3.5" />
+            <span>{{ isDeleting ? 'Deleting...' : 'Delete Record' }}</span>
           </Button>
         </DialogFooter>
       </DialogContent>

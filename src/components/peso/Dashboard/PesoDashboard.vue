@@ -1,19 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import {
+  CalendarDays,
   CheckCircle2,
   Clock,
+  PieChart as PieChartIcon,
   RefreshCw,
-  TrendingUp,
   UserCheck,
   UserRound,
   Users,
-  Briefcase,
-  Layers,
-  Sparkles,
-  PieChart as PieChartIcon,
-  BarChart3,
-  CalendarDays,
 } from '@lucide/vue'
 import {
   Chart as ChartJS,
