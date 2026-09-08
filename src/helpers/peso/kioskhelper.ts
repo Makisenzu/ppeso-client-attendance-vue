@@ -137,31 +137,31 @@ export const validatePunch = (
     case 'am_in':
       if (todayRecord.am_check_in) {
         const time = formatShortTime(todayRecord.am_check_in)
-        return { valid: false, reason: `AM Check-In was already recorded today at ${time}.` }
+        return { valid: false, reason: `Morning Check-In was already recorded today at ${time}.` }
       }
       break
     case 'am_out':
       if (todayRecord.am_check_out) {
         const time = formatShortTime(todayRecord.am_check_out)
-        return { valid: false, reason: `AM Check-Out was already recorded today at ${time}.` }
+        return { valid: false, reason: `Morning Check-Out was already recorded today at ${time}.` }
       }
       if (!todayRecord.am_check_in) {
-        return { valid: false, reason: 'Cannot record AM Check-Out without an AM Check-In.' }
+        return { valid: false, reason: 'Cannot record Morning Check-Out without an Morning Check-In.' }
       }
       break
     case 'pm_in':
       if (todayRecord.pm_check_in) {
         const time = formatShortTime(todayRecord.pm_check_in)
-        return { valid: false, reason: `PM Check-In was already recorded today at ${time}.` }
+        return { valid: false, reason: `Afternoon Check-In was already recorded today at ${time}.` }
       }
       break
     case 'pm_out':
       if (todayRecord.pm_check_out) {
         const time = formatShortTime(todayRecord.pm_check_out)
-        return { valid: false, reason: `PM Check-Out was already recorded today at ${time}.` }
+        return { valid: false, reason: `Afternoon Check-Out was already recorded today at ${time}.` }
       }
       if (!todayRecord.pm_check_in && !todayRecord.am_check_in) {
-        return { valid: false, reason: 'Cannot record PM Check-Out without any prior check-in.' }
+        return { valid: false, reason: 'Cannot record Afternoon Check-Out without any prior check-in.' }
       }
       break
   }
@@ -169,13 +169,6 @@ export const validatePunch = (
   return { valid: true }
 }
 
-/**
- * Calculates punch status (ontime, late, early_out) based on standard office schedule:
- * AM In: <= 08:00 (ontime), > 08:00 (late)
- * AM Out: < 12:00 (early_out), >= 12:00 (ontime)
- * PM In: <= 13:00 (ontime), > 13:00 (late)
- * PM Out: < 17:00 (early_out), >= 17:00 (ontime)
- */
 export const calculatePunchStatus = (
   punchType: PunchType,
   punchDate: Date = new Date()

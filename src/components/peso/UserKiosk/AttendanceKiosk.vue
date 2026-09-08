@@ -56,8 +56,6 @@ const resultTimeDisplay = computed(() => {
       </CardContent>
     </Card>
 
-    <!-- ─── Alert Banners (Success / Already Recorded / Error) ─── -->
-
     <!-- Already Recorded Banner -->
     <div
       v-if="store.lastResult && store.lastResult.alreadyRecorded"

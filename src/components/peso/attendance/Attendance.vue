@@ -9,6 +9,7 @@ import {
   Eye,
   Filter,
   Loader2,
+  LogOut,
   RefreshCw,
   Search,
   Users,
@@ -121,7 +122,7 @@ const {
     </div>
 
     <!-- ─── Metric Cards Grid ─── -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
       <!-- 1. Total Logs -->
       <Card
         class="border shadow-xs bg-card/60 backdrop-blur-xs hover:border-primary/40 transition-all cursor-pointer"
@@ -188,20 +189,42 @@ const {
         </CardContent>
       </Card>
 
-      <!-- 4. Early Out / Absent -->
+      <!-- 4. Early Out -->
+      <Card
+        class="border shadow-xs bg-card/60 backdrop-blur-xs hover:border-orange-500/40 transition-all cursor-pointer"
+        :class="selectedStatusFilter === 'early_out' ? 'border-orange-500 ring-2 ring-orange-500/20 shadow-sm' : ''"
+        @click="selectedStatusFilter = selectedStatusFilter === 'early_out' ? 'ALL' : 'early_out'"
+      >
+        <CardContent class="p-4 flex items-center justify-between">
+          <div class="space-y-0.5 min-w-0">
+            <p class="text-xs font-medium text-muted-foreground truncate">Early Out</p>
+            <p class="text-2xl font-bold tracking-tight font-mono text-orange-600 dark:text-orange-400">
+              {{ statsSummary.earlyOutCount.toLocaleString() }}
+            </p>
+            <p class="text-[11px] text-muted-foreground truncate">
+              Early departures
+            </p>
+          </div>
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
+            <LogOut class="h-5 w-5" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- 5. Absent -->
       <Card
         class="border shadow-xs bg-card/60 backdrop-blur-xs hover:border-rose-500/40 transition-all cursor-pointer"
-        :class="selectedStatusFilter === 'early_out' || selectedStatusFilter === 'absent' ? 'border-rose-500 ring-2 ring-rose-500/20 shadow-sm' : ''"
+        :class="selectedStatusFilter === 'absent' ? 'border-rose-500 ring-2 ring-rose-500/20 shadow-sm' : ''"
         @click="selectedStatusFilter = selectedStatusFilter === 'absent' ? 'ALL' : 'absent'"
       >
         <CardContent class="p-4 flex items-center justify-between">
           <div class="space-y-0.5 min-w-0">
-            <p class="text-xs font-medium text-muted-foreground truncate">Early Out / Absent</p>
+            <p class="text-xs font-medium text-muted-foreground truncate">Absent</p>
             <p class="text-2xl font-bold tracking-tight font-mono text-rose-600 dark:text-rose-400">
-              {{ (statsSummary.earlyOutCount + statsSummary.absentCount).toLocaleString() }}
+              {{ statsSummary.absentCount.toLocaleString() }}
             </p>
             <p class="text-[11px] text-muted-foreground truncate">
-              Early departure or absent
+              No attendance logged
             </p>
           </div>
           <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
