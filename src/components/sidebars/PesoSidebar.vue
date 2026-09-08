@@ -13,6 +13,7 @@ import {
   Users,
   FingerprintPattern,
   Book,
+  Clock,
 } from '@lucide/vue'
 
 import {
@@ -58,6 +59,7 @@ const isLoading = ref(true)
 
 const operationsItems = [
   { title: 'Attendance', to: { name: 'attendance' }, icon: FingerprintPattern },
+  { title: 'Attendance Kiosk', to: { name: 'kiosk' }, icon: Clock },
   { title: 'Client Records', to: { name: 'records' }, icon: Book },
   { title: 'User Management', to: { name: 'management' }, icon: Users },
 ]

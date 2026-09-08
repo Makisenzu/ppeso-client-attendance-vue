@@ -4,15 +4,30 @@ import type { AttendanceRecord } from '@/types/peso/attendance'
 export const attendanceService = {
   async getAttendances(): Promise<AttendanceRecord[]> {
     try {
-      // 1. Fetch attendance records from core.attendances
-      const { data: attendancesData, error: attendancesError } = await supabase
+      // 1. Fetch attendance records from core.attendances with fallback to public.attendances
+      let attendancesData: any[] | null = null
+      const { data: coreData, error: coreError } = await supabase
         .schema('core')
         .from('attendances')
         .select('*')
 
-      if (attendancesError) {
-        console.warn('Query to core.attendances returned notice:', attendancesError.message)
+      if (coreError && (coreError.message?.includes('Invalid schema') || coreError.code === 'PGRST106')) {
+        const { data: pubData, error: pubError } = await (supabase as any)
+          .from('attendances')
+          .select('*')
+
+        if (pubError) {
+          console.warn(
+            "Notice: Schema 'core' is not exposed. Add 'core' to Exposed Schemas in Supabase Dashboard (Settings > API > Data API > Exposed schemas)."
+          )
+          return []
+        }
+        attendancesData = pubData
+      } else if (coreError) {
+        console.warn('Query to core.attendances returned notice:', coreError.message)
         return []
+      } else {
+        attendancesData = coreData
       }
 
       if (!attendancesData || attendancesData.length === 0) {

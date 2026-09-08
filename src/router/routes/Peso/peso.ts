@@ -48,6 +48,15 @@ export const pesoRoutes: RouteRecordRaw[] = [
         name: 'settings',
         component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
       },
+      {
+        path: 'kiosk',
+        name: 'kiosk',
+        component: () => import('@/components/peso/UserKiosk/AttendanceKiosk.vue'),
+      },
     ],
+  },
+  {
+    path: '/kiosk',
+    redirect: '/dashboard/kiosk',
   },
 ]
