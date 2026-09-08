@@ -1,6 +1,5 @@
 import { onMounted, ref, watch, type Ref } from 'vue'
 import { usePsgc } from '@/composables/common/usePsgc'
-import { getNowDateTimeLocal } from '@/helpers/peso/clientRecordHelper'
 import type {
   GenderType,
   ServiceRequired,
@@ -40,7 +39,6 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
   const contactNumber = ref('')
   const purok = ref('')
   const purpose = ref<ServiceRequired>('gip')
-  const checkInDateTime = ref('')
 
   // Form validation / error
   const errorMessage = ref('')
@@ -53,7 +51,6 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
     contactNumber.value = ''
     purok.value = ''
     purpose.value = 'gip'
-    checkInDateTime.value = getNowDateTimeLocal()
     errorMessage.value = ''
     initPsgc('Region XIII (Caraga)', 'Agusan del Sur')
   }
@@ -69,7 +66,6 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
   )
 
   onMounted(() => {
-    checkInDateTime.value = getNowDateTimeLocal()
     initPsgc('Region XIII (Caraga)', 'Agusan del Sur')
   })
 
@@ -120,14 +116,6 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
       return
     }
 
-    let checkInIso = new Date().toISOString()
-    if (checkInDateTime.value) {
-      const parsed = new Date(checkInDateTime.value)
-      if (!isNaN(parsed.getTime())) {
-        checkInIso = parsed.toISOString()
-      }
-    }
-
     const payload: WalkinAttendanceInsert = {
       firstname: firstname.value.trim(),
       middlename: middlename.value.trim() || null,
@@ -139,7 +127,6 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
       barangay: selectedBarangay.value.name.trim(),
       purok: purok.value.trim(),
       purpose: purpose.value,
-      check_in: checkInIso,
     }
 
     emit('submit', payload)
@@ -165,7 +152,6 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
     contactNumber,
     purok,
     purpose,
-    checkInDateTime,
     errorMessage,
 
     // Handlers

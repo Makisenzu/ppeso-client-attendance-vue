@@ -368,7 +368,6 @@ const {
               <TableHead class="text-xs font-semibold text-foreground min-w-[200px]">Residential Address</TableHead>
               <TableHead class="text-xs font-semibold text-foreground w-[160px]">Service Required</TableHead>
               <TableHead class="text-xs font-semibold text-foreground w-[150px]">Check-in</TableHead>
-              <TableHead class="text-xs font-semibold text-foreground w-[120px]">Status</TableHead>
               <TableHead class="text-xs font-semibold text-foreground text-right w-[80px]">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -460,22 +459,7 @@ const {
                   </div>
                 </TableCell>
 
-                <!-- Status / Check-out -->
-                <TableCell>
-                  <span
-                    v-if="!client.check_out"
-                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                  >
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>In Office</span>
-                  </span>
-                  <span
-                    v-else
-                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border"
-                  >
-                    Completed
-                  </span>
-                </TableCell>
+              
 
                 <!-- Action Button -->
                 <TableCell class="text-right" @click.stop>

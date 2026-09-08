@@ -2,12 +2,7 @@
 import { toRef } from 'vue'
 import {
   AlertCircle,
-  Briefcase,
-  Clock,
   Loader2,
-  MapPin,
-  Phone,
-  User,
 } from '@lucide/vue'
 import {
   Sheet,
@@ -52,7 +47,6 @@ const {
   contactNumber,
   purok,
   purpose,
-  checkInDateTime,
   errorMessage,
   onProvinceChange,
   onCityChange,
@@ -90,7 +84,6 @@ const {
         <!-- ─── Section 1: Personal Information ─── -->
         <div class="space-y-4">
           <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/60">
-            <User class="h-3.5 w-3.5 text-primary" />
             <span>Personal Information</span>
           </div>
 
@@ -151,7 +144,6 @@ const {
 
           <div class="space-y-1.5">
             <Label for="contactNumber" class="text-xs font-medium flex items-center gap-1.5">
-              <Phone class="h-3 w-3 text-muted-foreground" />
               <span>Contact Number</span>
               <span class="text-muted-foreground font-normal">(Optional)</span>
             </Label>
@@ -168,8 +160,7 @@ const {
         <!-- ─── Section 2: Residential Address (PSGC) ─── -->
         <div class="space-y-4">
           <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/60">
-            <MapPin class="h-3.5 w-3.5 text-primary" />
-            <span>Address Details (PSGC API)</span>
+            <span>Address Details</span>
           </div>
 
           <!-- Province & Municipality -->
@@ -253,11 +244,10 @@ const {
           </div>
         </div>
 
-        <!-- ─── Section 3: Service Requested & Timing ─── -->
+        <!-- ─── Section 3: Service Requested ─── -->
         <div class="space-y-4">
           <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/60">
-            <Briefcase class="h-3.5 w-3.5 text-primary" />
-            <span>Service & Attendance</span>
+            <span>Service Requested</span>
           </div>
 
           <div class="space-y-1.5">
@@ -273,19 +263,6 @@ const {
                 {{ opt.label }}
               </option>
             </NativeSelect>
-          </div>
-
-          <div class="space-y-1.5">
-            <Label for="checkInDateTime" class="text-xs font-medium flex items-center gap-1.5">
-              <Clock class="h-3 w-3 text-muted-foreground" />
-              <span>Check-in Timestamp</span>
-            </Label>
-            <Input
-              id="checkInDateTime"
-              v-model="checkInDateTime"
-              type="datetime-local"
-              class="h-9 text-xs font-mono"
-            />
           </div>
         </div>
       </form>
