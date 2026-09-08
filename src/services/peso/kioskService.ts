@@ -1,13 +1,21 @@
 import { supabase } from '@/services/supabase'
-import type { Profile, AttendanceRow, AttendanceResult, AttendanceUpdate, PunchMode, PunchType } from '@/types/peso/kiosk'
+import { attendanceService as attendanceDataService } from '@/services/peso/attendanceService'
+import type { Profile, AttendanceRow, AttendanceResult, AttendanceUpdate, PunchMode, PunchType, KioskRecentPunch } from '@/types/peso/kiosk'
 import {
   calculatePunchStatus,
+  checkPunchCooldown,
   determinePunchType,
   formatFullName,
   formatPunchTypeLabel,
+  formatShortTime,
   getLocalDateString,
   validatePunch,
 } from '@/helpers/peso/kioskhelper'
+
+const recentPunchesCache = new Map<
+  string,
+  { timestamp: number; punchType: PunchType; profile: Profile; resultTime: string }
+>()
 
 export const attendanceService = {
   /**
@@ -41,7 +49,21 @@ export const attendanceService = {
     const todayStr = getLocalDateString(now)
     const nowIso = now.toISOString()
 
-    // 2. Fetch existing daily record for today (trying core schema first, then fallback to public)
+    // 2. Check recent in-memory punch cache (within 5 minutes)
+    const cachedPunch = recentPunchesCache.get(profile.id)
+    if (cachedPunch && (now.getTime() - cachedPunch.timestamp) < 5 * 60 * 1000) {
+      const punchLabel = formatPunchTypeLabel(cachedPunch.punchType)
+      return {
+        success: false,
+        alreadyRecorded: true,
+        message: `Already Recorded: ${punchLabel} was recorded at ${cachedPunch.resultTime}.`,
+        profile: cachedPunch.profile,
+        punchType: cachedPunch.punchType,
+        timestamp: new Date(cachedPunch.timestamp).toISOString(),
+      }
+    }
+
+    // 3. Fetch existing daily record for today (trying core schema first, then fallback to public)
     let existingRecord: AttendanceRow | null = null
     let useCore = true
 
@@ -74,7 +96,31 @@ export const attendanceService = {
       existingRecord = coreRecord
     }
 
-    // 3. Resolve target punch type
+    // 4. Check database punch cooldown (within 5 minutes from last punch today)
+    const cooldown = checkPunchCooldown(existingRecord, now, 5)
+    if (cooldown.isWithinCooldown && cooldown.recentPunch) {
+      const punchLabel = formatPunchTypeLabel(cooldown.recentPunch.punchType)
+      const punchTime = formatShortTime(cooldown.recentPunch.timestamp)
+
+      recentPunchesCache.set(profile.id, {
+        timestamp: cooldown.recentPunch.date.getTime(),
+        punchType: cooldown.recentPunch.punchType,
+        profile,
+        resultTime: punchTime,
+      })
+
+      return {
+        success: false,
+        alreadyRecorded: true,
+        message: `Already Recorded: ${punchLabel} was recorded at ${punchTime}.`,
+        profile,
+        punchType: cooldown.recentPunch.punchType,
+        timestamp: cooldown.recentPunch.timestamp,
+        existingRecord,
+      }
+    }
+
+    // 5. Resolve target punch type
     const targetPunch: PunchType =
       preferredPunch !== 'auto'
         ? preferredPunch
@@ -140,6 +186,20 @@ export const attendanceService = {
 
     const punchLabel = formatPunchTypeLabel(targetPunch)
 
+    recentPunchesCache.set(profile.id, {
+      timestamp: now.getTime(),
+      punchType: targetPunch,
+      profile,
+      resultTime: formatShortTime(nowIso),
+    })
+
+    // Broadcast attendance update to all open tabs and real-time listeners
+    try {
+      attendanceDataService.notifyAttendanceChange()
+    } catch (e) {
+      console.warn('Failed to broadcast attendance change:', e)
+    }
+
     return {
       success: true,
       message: `${punchLabel} recorded successfully for ${formatFullName(profile)}!`,
@@ -149,5 +209,157 @@ export const attendanceService = {
       timestamp: nowIso,
       existingRecord,
     }
+  },
+
+  /**
+   * Fetch today's punches in reverse chronological order
+   */
+  async getTodayRecentPunches(): Promise<KioskRecentPunch[]> {
+    try {
+      const todayStr = getLocalDateString(new Date())
+
+      let attendancesData: any[] | null = null
+      const { data: coreData, error: coreError } = await supabase
+        .schema('core')
+        .from('attendances')
+        .select('*')
+        .eq('attendance_date', todayStr)
+
+      if (coreError && (coreError.message?.includes('Invalid schema: core') || coreError.code === 'PGRST106')) {
+        const { data: pubData } = await (supabase as any)
+          .from('attendances')
+          .select('*')
+          .eq('attendance_date', todayStr)
+        attendancesData = pubData
+      } else if (coreError) {
+        console.warn('Error fetching today attendances:', coreError.message)
+        return []
+      } else {
+        attendancesData = coreData
+      }
+
+      if (!attendancesData || attendancesData.length === 0) {
+        return []
+      }
+
+      const profileIds = Array.from(
+        new Set(attendancesData.map((item) => item.profile_id).filter(Boolean))
+      )
+
+      const profileMap = new Map<string, Profile>()
+      if (profileIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', profileIds)
+
+        if (profilesData) {
+          profilesData.forEach((p) => profileMap.set(p.id, p as Profile))
+        }
+      }
+
+      const punches: KioskRecentPunch[] = []
+
+      for (const record of attendancesData) {
+        const profile = profileMap.get(record.profile_id)
+        const fullName = profile ? formatFullName(profile) : 'Unknown Employee'
+        const position = profile?.position || 'Employee'
+
+        if (record.am_check_in) {
+          punches.push({
+            id: `${record.id}-am_in`,
+            profileId: record.profile_id,
+            fullName,
+            firstName: profile?.firstname,
+            lastName: profile?.lastname,
+            position,
+            punchType: 'am_in',
+            status: record.am_in_status,
+            timestamp: record.am_check_in,
+          })
+        }
+        if (record.am_check_out) {
+          punches.push({
+            id: `${record.id}-am_out`,
+            profileId: record.profile_id,
+            fullName,
+            firstName: profile?.firstname,
+            lastName: profile?.lastname,
+            position,
+            punchType: 'am_out',
+            status: record.am_out_status,
+            timestamp: record.am_check_out,
+          })
+        }
+        if (record.pm_check_in) {
+          punches.push({
+            id: `${record.id}-pm_in`,
+            profileId: record.profile_id,
+            fullName,
+            firstName: profile?.firstname,
+            lastName: profile?.lastname,
+            position,
+            punchType: 'pm_in',
+            status: record.pm_in_status,
+            timestamp: record.pm_check_in,
+          })
+        }
+        if (record.pm_check_out) {
+          punches.push({
+            id: `${record.id}-pm_out`,
+            profileId: record.profile_id,
+            fullName,
+            firstName: profile?.firstname,
+            lastName: profile?.lastname,
+            position,
+            punchType: 'pm_out',
+            status: record.pm_out_status,
+            timestamp: record.pm_check_out,
+          })
+        }
+      }
+
+      return punches.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    } catch (err) {
+      console.error('Failed to get today recent punches:', err)
+      return []
+    }
+  },
+
+  /**
+   * Subscribe to today's punches in real-time
+   */
+  subscribeToTodayPunches(callback: () => void) {
+    const todayStr = getLocalDateString(new Date())
+
+    const channel = supabase
+      .channel(`kiosk-realtime-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'core',
+          table: 'attendances',
+          filter: `attendance_date=eq.${todayStr}`,
+        },
+        () => {
+          callback()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendances',
+          filter: `attendance_date=eq.${todayStr}`,
+        },
+        () => {
+          callback()
+        }
+      )
+      .subscribe()
+
+    return channel
   },
 }

@@ -58,15 +58,15 @@ const isVerified = ref(false)
 const isLoading = ref(true)
 
 const operationsItems = [
-  { title: 'Attendance', to: { name: 'attendance' }, icon: FingerprintPattern },
-  { title: 'Attendance Kiosk', to: { name: 'kiosk' }, icon: Clock },
+  { title: 'Attendance', to: { name: 'kiosk' }, icon: FingerprintPattern },
+  { title: 'Daily Time Record', to: { name: 'attendance' }, icon: Clock },
   { title: 'Client Records', to: { name: 'records' }, icon: Book },
   { title: 'User Management', to: { name: 'management' }, icon: Users },
 ]
 
 const settingsSubItems = [
-  { title: 'Profile Settings', to: { name: 'settings' }, icon: UserRoundCog },
-  { title: 'Daily Time Record', to: { name: 'settings' }, icon: Settings },
+  { title: 'Profile', to: { name: 'settings' }, icon: UserRoundCog },
+  { title: 'DTR', to: { name: 'settings' }, icon: Settings },
   { title: 'Notification Preferences', to: { name: 'settings' }, icon: Bell },
 ]
 

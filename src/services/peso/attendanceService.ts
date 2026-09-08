@@ -92,4 +92,99 @@ export const attendanceService = {
       return []
     }
   },
+
+  /**
+   * Subscribe to real-time attendance changes from Supabase (postgres_changes + broadcast)
+   * and browser BroadcastChannel for multi-tab instantaneous synchronization.
+   */
+  subscribeToAttendances(callback: () => void) {
+    // 1. Supabase Channel listening for DB change events
+    const dbChannel = supabase
+      .channel(`attendance-db-live-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'core',
+          table: 'attendances',
+        },
+        () => {
+          callback()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendances',
+        },
+        () => {
+          callback()
+        }
+      )
+      .subscribe()
+
+    // 2. Supabase Broadcast channel (must match the channel name used in notifyAttendanceChange)
+    const broadcastChannel = supabase
+      .channel('peso-global-attendance-events')
+      .on('broadcast', { event: 'attendance_punch_occurred' }, () => {
+        callback()
+      })
+      .subscribe()
+
+    // 2. Browser BroadcastChannel for immediate zero-latency cross-tab sync
+    let localBc: BroadcastChannel | null = null
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        localBc = new BroadcastChannel('peso_attendance_realtime')
+        localBc.onmessage = () => {
+          callback()
+        }
+      }
+    } catch (e) {
+      console.warn('BroadcastChannel not supported in current environment', e)
+    }
+
+    return {
+      unsubscribe: () => {
+        supabase.removeChannel(dbChannel)
+        supabase.removeChannel(broadcastChannel)
+        if (localBc) {
+          localBc.close()
+        }
+      },
+    }
+  },
+
+  /**
+   * Broadcast an attendance punch event across all tabs and Supabase subscribers
+   */
+  notifyAttendanceChange() {
+    // 1. Local browser BroadcastChannel for instant same-browser update
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('peso_attendance_realtime')
+        bc.postMessage({ event: 'punch_recorded', timestamp: Date.now() })
+        setTimeout(() => bc.close(), 100)
+      }
+    } catch {}
+
+    // 2. Supabase broadcast channel for multi-device/remote subscribers
+    try {
+      const channel = supabase.channel('peso-global-attendance-events')
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channel.send({
+            type: 'broadcast',
+            event: 'attendance_punch_occurred',
+            payload: { timestamp: Date.now() },
+          })
+          // Clean up the sending channel after a short delay
+          setTimeout(() => supabase.removeChannel(channel), 500)
+        }
+      })
+    } catch {}
+  },
 }
+

@@ -17,4 +17,17 @@ export interface AttendanceResult {
   status?: PunchStatus
   timestamp?: string
   existingRecord?: AttendanceRow | null
+  alreadyRecorded?: boolean
+}
+
+export interface KioskRecentPunch {
+  id: string
+  profileId: string
+  fullName: string
+  firstName?: string
+  lastName?: string
+  position?: string | null
+  punchType: PunchType
+  status?: PunchStatus | null
+  timestamp: string
 }

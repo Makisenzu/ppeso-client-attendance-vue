@@ -53,6 +53,8 @@ export const useAttendanceKiosk = () => {
     updateClock()
     clockTimer = setInterval(updateClock, 1000)
     window.addEventListener('keydown', handleKeyDown)
+    store.fetchTodayPunches()
+    store.initRealtime()
   })
 
   onUnmounted(() => {
@@ -61,6 +63,7 @@ export const useAttendanceKiosk = () => {
       clockTimer = null
     }
     window.removeEventListener('keydown', handleKeyDown)
+    store.cleanupRealtime()
   })
 
   return {

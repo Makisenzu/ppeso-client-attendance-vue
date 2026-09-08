@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { attendanceService } from '@/services/peso/kioskService'
-import type { AttendanceResult, PunchMode } from '@/types/peso/kiosk'
+import { supabase } from '@/services/supabase'
+import type { AttendanceResult, PunchMode, KioskRecentPunch } from '@/types/peso/kiosk'
 
 export const useAttendanceStore = defineStore('attendance', () => {
   const passcode = ref('')
@@ -10,6 +11,11 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const error = ref<string | null>(null)
   const punchMode = ref<PunchMode>('auto')
   const countdown = ref(0)
+
+  // Real-time recent punches today
+  const recentPunches = ref<KioskRecentPunch[]>([])
+  const loadingPunches = ref(false)
+  let realtimeChannel: any = null
 
   let autoClearTimer: ReturnType<typeof setInterval> | null = null
 
@@ -35,9 +41,12 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
   const appendDigit = (digit: string) => {
     if (loading.value) return
-    // If there's an error displayed, clear it when user starts typing again
+    // If there's an error or previous result displayed, clear it when user starts typing again
     if (error.value) {
       error.value = null
+    }
+    if (lastResult.value) {
+      dismissResult()
     }
 
     if (passcode.value.length < 6) {
@@ -76,6 +85,31 @@ export const useAttendanceStore = defineStore('attendance', () => {
     lastResult.value = null
   }
 
+  const fetchTodayPunches = async () => {
+    loadingPunches.value = true
+    try {
+      recentPunches.value = await attendanceService.getTodayRecentPunches()
+    } catch (err) {
+      console.error('Failed to load today punches:', err)
+    } finally {
+      loadingPunches.value = false
+    }
+  }
+
+  const initRealtime = () => {
+    if (realtimeChannel) return
+    realtimeChannel = attendanceService.subscribeToTodayPunches(() => {
+      fetchTodayPunches()
+    })
+  }
+
+  const cleanupRealtime = () => {
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel)
+      realtimeChannel = null
+    }
+  }
+
   const submitAttendance = async () => {
     if (loading.value) return
 
@@ -96,6 +130,34 @@ export const useAttendanceStore = defineStore('attendance', () => {
       lastResult.value = result
       clearPasscode()
       startAutoDismiss()
+
+      // If successful, immediately prepend to recent punches for zero-latency feedback
+      if (result.success && result.profile && result.punchType) {
+        const middle = result.profile.middlename ? ` ${result.profile.middlename[0]}.` : ''
+        const fullName = `${result.profile.firstname}${middle} ${result.profile.lastname}`.trim()
+
+        const newPunch: KioskRecentPunch = {
+          id: `local-${Date.now()}`,
+          profileId: result.profile.id,
+          fullName,
+          firstName: result.profile.firstname,
+          lastName: result.profile.lastname,
+          position: result.profile.position || 'Employee',
+          punchType: result.punchType,
+          status: result.status,
+          timestamp: result.timestamp || new Date().toISOString(),
+        }
+
+        recentPunches.value = [
+          newPunch,
+          ...recentPunches.value.filter(
+            (p) => !(p.profileId === newPunch.profileId && p.punchType === newPunch.punchType)
+          ),
+        ]
+      }
+
+      // Re-fetch in background to sync fully with database state
+      fetchTodayPunches()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'An unexpected error occurred.'
       // Clear passcode so user can retry easily
@@ -112,11 +174,16 @@ export const useAttendanceStore = defineStore('attendance', () => {
     error,
     punchMode,
     countdown,
+    recentPunches,
+    loadingPunches,
     appendDigit,
     clearPasscode,
     deleteDigit,
     setPunchMode,
     dismissResult,
     submitAttendance,
+    fetchTodayPunches,
+    initRealtime,
+    cleanupRealtime,
   }
 })

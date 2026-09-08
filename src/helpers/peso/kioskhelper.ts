@@ -61,6 +61,68 @@ export const determinePunchType = (
 }
 
 /**
+ * Returns the most recent punch timestamp, punch type, and date object from today's attendance record.
+ */
+export const getMostRecentPunch = (
+  record: AttendanceRow | null
+): { punchType: PunchType; timestamp: string; date: Date } | null => {
+  if (!record) return null
+
+  const punches: { punchType: PunchType; timestamp: string; date: Date }[] = []
+
+  if (record.am_check_in) {
+    const d = new Date(record.am_check_in)
+    if (!isNaN(d.getTime())) punches.push({ punchType: 'am_in', timestamp: record.am_check_in, date: d })
+  }
+  if (record.am_check_out) {
+    const d = new Date(record.am_check_out)
+    if (!isNaN(d.getTime())) punches.push({ punchType: 'am_out', timestamp: record.am_check_out, date: d })
+  }
+  if (record.pm_check_in) {
+    const d = new Date(record.pm_check_in)
+    if (!isNaN(d.getTime())) punches.push({ punchType: 'pm_in', timestamp: record.pm_check_in, date: d })
+  }
+  if (record.pm_check_out) {
+    const d = new Date(record.pm_check_out)
+    if (!isNaN(d.getTime())) punches.push({ punchType: 'pm_out', timestamp: record.pm_check_out, date: d })
+  }
+
+  if (punches.length === 0) return null
+
+  punches.sort((a, b) => b.date.getTime() - a.date.getTime())
+  return punches[0]
+}
+
+/**
+ * Checks if the user already logged a punch within the cooldown duration (default 5 minutes).
+ */
+export const checkPunchCooldown = (
+  record: AttendanceRow | null,
+  now: Date = new Date(),
+  cooldownMinutes: number = 5
+): {
+  isWithinCooldown: boolean
+  recentPunch: { punchType: PunchType; timestamp: string; date: Date } | null
+  minutesRemaining: number
+} => {
+  const recent = getMostRecentPunch(record)
+  if (!recent) {
+    return { isWithinCooldown: false, recentPunch: null, minutesRemaining: 0 }
+  }
+
+  const elapsedMs = now.getTime() - recent.date.getTime()
+  const cooldownMs = cooldownMinutes * 60 * 1000
+
+  if (elapsedMs >= 0 && elapsedMs < cooldownMs) {
+    const remainingMs = cooldownMs - elapsedMs
+    const minutesRemaining = Math.max(1, Math.ceil(remainingMs / (60 * 1000)))
+    return { isWithinCooldown: true, recentPunch: recent, minutesRemaining }
+  }
+
+  return { isWithinCooldown: false, recentPunch: recent, minutesRemaining: 0 }
+}
+
+/**
  * Validates whether the target punch type is valid given the user's current day record.
  */
 export const validatePunch = (

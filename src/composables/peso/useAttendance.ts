@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { AttendanceRecord, AttendanceStatsSummary } from '@/types/peso/attendance'
 import { attendanceService } from '@/services/peso/attendanceService'
 import { computeAttendanceStats, exportAttendanceToCsv } from '@/helpers/peso/attendanceHelper'
@@ -186,8 +186,37 @@ export function useAttendance() {
     exportAttendanceToCsv(filteredAttendances.value, filterSummary)
   }
 
+  // ─── Real-time Subscription ───
+  let realtimeSub: { unsubscribe: () => void } | null = null
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+  // Debounced fetch to prevent rapid-fire re-fetches when multiple realtime
+  // events arrive simultaneously (postgres_changes + BroadcastChannel + broadcast)
+  const debouncedFetch = () => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      fetchAttendances()
+    }, 300)
+  }
+
   onMounted(() => {
     fetchAttendances()
+
+    // Subscribe to real-time attendance changes (Supabase postgres_changes + broadcast + BroadcastChannel)
+    realtimeSub = attendanceService.subscribeToAttendances(() => {
+      debouncedFetch()
+    })
+  })
+
+  onUnmounted(() => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+      debounceTimer = null
+    }
+    if (realtimeSub) {
+      realtimeSub.unsubscribe()
+      realtimeSub = null
+    }
   })
 
   return {
