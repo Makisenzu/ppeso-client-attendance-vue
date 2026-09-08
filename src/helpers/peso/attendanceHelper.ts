@@ -1,4 +1,4 @@
-import type { AttendanceRecord, AttendanceStatsSummary } from '@/types/peso/attendance'
+import type { AttendanceRecord, AttendanceStatsSummary, PunchStatus } from '@/types/peso/attendance'
 
 export function getInitials(name?: string | null): string {
   if (!name) return 'U'
@@ -9,171 +9,184 @@ export function getInitials(name?: string | null): string {
 }
 
 export function formatDateDisplay(dateStr?: string | null): string {
-  if (!dateStr) return 'N/A'
-  try {
-    const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return 'N/A'
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  } catch {
-    return 'N/A'
-  }
-}
-
-export function formatTimeDisplay(dateStr?: string | null): string {
   if (!dateStr) return '—'
   try {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim())) {
+      const [y, m, d] = dateStr.trim().split('-').map(Number)
+      const date = new Date(y, m - 1, d)
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    }
     const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return '—'
-    return d.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    })
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    }
   } catch {
-    return '—'
+    return dateStr
   }
+  return dateStr
+}
+
+export function formatTimeDisplay(timeStr?: string | null): string {
+  if (!timeStr) return '—'
+  const trimmed = timeStr.trim()
+  if (/^\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+    const [h, m] = trimmed.split(':').map(Number)
+    const period = h >= 12 ? 'PM' : 'AM'
+    const hour12 = h % 12 || 12
+    return `${hour12}:${String(m).padStart(2, '0')} ${period}`
+  }
+  try {
+    const d = new Date(trimmed)
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    }
+  } catch {
+    return trimmed
+  }
+  return trimmed
 }
 
 export function formatDateTimeDisplay(dateStr?: string | null): string {
-  if (!dateStr) return 'N/A'
+  if (!dateStr) return '—'
   try {
     const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return 'N/A'
-    return `${formatDateDisplay(dateStr)} at ${formatTimeDisplay(dateStr)}`
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    }
   } catch {
-    return 'N/A'
+    return dateStr
   }
+  return dateStr
 }
 
-export function calculateDurationDisplay(checkInStr?: string | null, checkOutStr?: string | null): string {
-  if (!checkInStr) return '—'
-  const checkIn = new Date(checkInStr).getTime()
-  if (isNaN(checkIn)) return '—'
-
-  const checkOut = checkOutStr ? new Date(checkOutStr).getTime() : Date.now()
-  const diffMs = Math.max(0, checkOut - checkIn)
-  const diffMinutes = Math.floor(diffMs / (1000 * 60))
-  const hours = Math.floor(diffMinutes / 60)
-  const minutes = diffMinutes % 60
-
-  if (hours === 0 && minutes === 0) return '< 1m'
-  if (hours === 0) return `${minutes}m`
-  return `${hours}h ${minutes}m`
-}
-
-export function getStatusBadgeVariant(status: string): 'default' | 'outline' | 'secondary' | 'destructive' {
-  switch (status.toLowerCase()) {
-    case 'active':
-    case 'checked in':
-      return 'outline'
-    case 'completed':
-    case 'checked out':
-      return 'outline'
-    default:
-      return 'secondary'
-  }
-}
-
-export function getStatusBadgeClass(status: string): string {
-  switch (status.toLowerCase()) {
-    case 'active':
-    case 'checked in':
+export function getPunchStatusBadgeClass(status?: PunchStatus | string | null): string {
+  switch (status?.toLowerCase()) {
+    case 'ontime':
       return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-    case 'completed':
-    case 'checked out':
-      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+    case 'late':
+      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+    case 'early_out':
+      return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30'
+    case 'absent':
+      return 'bg-destructive/10 text-destructive border-destructive/30'
     default:
-      return 'bg-muted text-muted-foreground'
+      return 'bg-muted text-muted-foreground border-transparent'
   }
 }
 
-export function getTypeBadgeClass(type: string): string {
-  switch (type.toLowerCase()) {
-    case 'registered':
+export function formatPunchStatusLabel(status?: PunchStatus | string | null): string {
+  switch (status?.toLowerCase()) {
+    case 'ontime':
+      return 'On Time'
+    case 'late':
+      return 'Late'
+    case 'early_out':
+      return 'Early Out'
+    case 'absent':
+      return 'Absent'
+    default:
+      return status ? status.replace(/_/g, ' ') : '—'
+  }
+}
+
+export function getPositionBadgeClass(pos?: string | null): string {
+  switch (pos?.toLowerCase()) {
+    case 'employee':
       return 'bg-primary/10 text-primary border-primary/20'
-    case 'walkin':
-    case 'walk-in':
+    case 'gip':
+      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+    case 'tupad':
+      return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30'
+    case 'client':
       return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
     default:
-      return 'bg-muted text-muted-foreground'
+      return 'bg-muted text-muted-foreground border-border'
   }
-}
-
-export function formatClassificationLabel(record: AttendanceRecord): string {
-  if (record.attendanceType === 'registered') {
-    return record.position ? record.position.toUpperCase() : 'EMPLOYEE'
-  }
-  return record.purpose ? record.purpose.toUpperCase() : 'CLIENT'
 }
 
 export function computeAttendanceStats(records: AttendanceRecord[]): AttendanceStatsSummary {
-  const today = new Date().toISOString().slice(0, 10)
-
-  let active = 0
-  let completed = 0
-  let walkinCount = 0
-  let registeredCount = 0
-  let todayCount = 0
+  let onTimeCount = 0
+  let lateCount = 0
+  let earlyOutCount = 0
+  let absentCount = 0
 
   for (const r of records) {
-    if (r.status === 'active' || !r.checkOut) {
-      active++
-    } else {
-      completed++
+    const statuses = [r.amInStatus, r.amOutStatus, r.pmInStatus, r.pmOutStatus].filter(Boolean)
+    if (statuses.includes('late')) {
+      lateCount++
     }
-
-    if (r.attendanceType === 'walkin') {
-      walkinCount++
-    } else {
-      registeredCount++
+    if (statuses.includes('early_out')) {
+      earlyOutCount++
     }
-
-    if (r.checkIn && r.checkIn.slice(0, 10) === today) {
-      todayCount++
+    if (statuses.includes('absent')) {
+      absentCount++
+    }
+    if (statuses.includes('ontime') && !statuses.includes('late') && !statuses.includes('absent')) {
+      onTimeCount++
     }
   }
 
   return {
     total: records.length,
-    active,
-    completed,
-    walkinCount,
-    registeredCount,
-    todayCount,
+    onTimeCount,
+    lateCount,
+    earlyOutCount,
+    absentCount,
   }
 }
 
 export function exportAttendanceToCsv(records: AttendanceRecord[], filterSummary: string = 'All'): void {
   const headers = [
-    'Attendance ID',
-    'Type',
+    'Record ID',
+    'Profile ID',
     'Full Name',
-    'Classification / Purpose',
-    'Contact Number',
-    'Address',
-    'Date',
-    'Check In',
-    'Check Out',
-    'Duration',
-    'Status',
+    'Position',
+    'Attendance Date',
+    'AM Check In',
+    'AM In Status',
+    'AM Check Out',
+    'AM Out Status',
+    'PM Check In',
+    'PM In Status',
+    'PM Check Out',
+    'PM Out Status',
+    'Created At',
   ]
 
   const rows = records.map((r) => [
     `"${r.id}"`,
-    `"${r.attendanceType}"`,
+    `"${r.profileId}"`,
     `"${r.fullName}"`,
-    `"${formatClassificationLabel(r)}"`,
-    `"${r.contactNumber || 'N/A'}"`,
-    `"${r.address?.fullAddress || r.address?.barangay || 'N/A'}"`,
-    `"${formatDateDisplay(r.checkIn)}"`,
-    `"${formatTimeDisplay(r.checkIn)}"`,
-    `"${r.checkOut ? formatTimeDisplay(r.checkOut) : 'Active'}"`,
-    `"${calculateDurationDisplay(r.checkIn, r.checkOut)}"`,
-    `"${r.status.toUpperCase()}"`,
+    `"${r.position ? r.position.toUpperCase() : 'N/A'}"`,
+    `"${formatDateDisplay(r.attendanceDate)}"`,
+    `"${formatTimeDisplay(r.amCheckIn)}"`,
+    `"${formatPunchStatusLabel(r.amInStatus)}"`,
+    `"${formatTimeDisplay(r.amCheckOut)}"`,
+    `"${formatPunchStatusLabel(r.amOutStatus)}"`,
+    `"${formatTimeDisplay(r.pmCheckIn)}"`,
+    `"${formatPunchStatusLabel(r.pmInStatus)}"`,
+    `"${formatTimeDisplay(r.pmCheckOut)}"`,
+    `"${formatPunchStatusLabel(r.pmOutStatus)}"`,
+    `"${r.createdAt}"`,
   ])
 
   const csvContent =

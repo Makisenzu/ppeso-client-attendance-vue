@@ -1,60 +1,45 @@
 import type { Database } from '../database.types'
 
-export type AttendanceType = 'registered' | 'walkin'
-
-export type AttendanceStatus = 'active' | 'completed'
-
+export type PunchStatus = Database['core']['Enums']['punch_status']
 export type ProfilePosition = Database['public']['Enums']['profile_position']
-export type WalkinPurpose = Database['core']['Enums']['service_required']
+export type ProfileStatus = Database['public']['Enums']['profile_status']
 
 export interface AttendanceRecord {
   id: string
-  attendanceType: AttendanceType
-  profileId?: string | null
-  
-  // Personal Info
+  profileId: string
+  attendanceDate: string
+
+  // Personnel Info (from public.profiles)
   fullName: string
   firstName: string
   lastName: string
   middleName?: string | null
-  gender?: string | null
-  contactNumber?: string | null
-  email?: string | null
-  
-  // Classification
   position?: ProfilePosition | string | null
-  purpose?: WalkinPurpose | string | null
-  
-  // Address info (especially for walk-in clients)
-  address?: {
-    province?: string
-    geographic?: string
-    barangay?: string
-    purok?: string
-    fullAddress?: string
-  }
 
-  // Attendance timestamps
-  checkIn: string
-  checkOut?: string | null
-  status: AttendanceStatus
-  durationMinutes?: number | null
+  // Columns from core.attendances
+  amCheckIn: string | null
+  amInStatus: PunchStatus | null
+  amCheckOut: string | null
+  amOutStatus: PunchStatus | null
+  pmCheckIn: string | null
+  pmInStatus: PunchStatus | null
+  pmCheckOut: string | null
+  pmOutStatus: PunchStatus | null
+
   createdAt: string
 }
 
 export interface AttendanceStatsSummary {
   total: number
-  active: number
-  completed: number
-  walkinCount: number
-  registeredCount: number
-  todayCount: number
+  onTimeCount: number
+  lateCount: number
+  earlyOutCount: number
+  absentCount: number
 }
 
 export interface AttendanceFilterState {
   searchQuery: string
-  typeFilter: 'ALL' | 'registered' | 'walkin'
-  statusFilter: 'ALL' | 'active' | 'completed'
+  positionFilter: string
+  statusFilter: string
   dateFilter: 'ALL' | 'today' | 'this_week' | 'this_month'
-  categoryFilter: string
 }

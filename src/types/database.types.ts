@@ -16,24 +16,45 @@ export type Database = {
     Tables: {
       attendances: {
         Row: {
-          check_in: string
-          check_out: string | null
+          am_check_in: string | null
+          am_check_out: string | null
+          am_in_status: Database["core"]["Enums"]["punch_status"] | null
+          am_out_status: Database["core"]["Enums"]["punch_status"] | null
+          attendance_date: string
           created_at: string
           id: string
+          pm_check_in: string | null
+          pm_check_out: string | null
+          pm_in_status: Database["core"]["Enums"]["punch_status"] | null
+          pm_out_status: Database["core"]["Enums"]["punch_status"] | null
           profile_id: string
         }
         Insert: {
-          check_in?: string
-          check_out?: string | null
+          am_check_in?: string | null
+          am_check_out?: string | null
+          am_in_status?: Database["core"]["Enums"]["punch_status"] | null
+          am_out_status?: Database["core"]["Enums"]["punch_status"] | null
+          attendance_date?: string
           created_at?: string
           id?: string
+          pm_check_in?: string | null
+          pm_check_out?: string | null
+          pm_in_status?: Database["core"]["Enums"]["punch_status"] | null
+          pm_out_status?: Database["core"]["Enums"]["punch_status"] | null
           profile_id: string
         }
         Update: {
-          check_in?: string
-          check_out?: string | null
+          am_check_in?: string | null
+          am_check_out?: string | null
+          am_in_status?: Database["core"]["Enums"]["punch_status"] | null
+          am_out_status?: Database["core"]["Enums"]["punch_status"] | null
+          attendance_date?: string
           created_at?: string
           id?: string
+          pm_check_in?: string | null
+          pm_check_out?: string | null
+          pm_in_status?: Database["core"]["Enums"]["punch_status"] | null
+          pm_out_status?: Database["core"]["Enums"]["punch_status"] | null
           profile_id?: string
         }
         Relationships: []
@@ -98,6 +119,7 @@ export type Database = {
     }
     Enums: {
       gender_type: "male" | "female" | "not specified"
+      punch_status: "ontime" | "late" | "early_out" | "absent"
       service_required:
         | "gip"
         | "spes"
@@ -131,7 +153,7 @@ export type Database = {
           id: string
           lastname: string
           middlename?: string | null
-          passcode?: string
+          passcode: string
           position: Database["public"]["Enums"]["profile_position"]
           status?: Database["public"]["Enums"]["profile_status"]
           updated_at?: string | null
@@ -154,7 +176,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_6_digit_code: { Args: never; Returns: string }
+      [_ in never]: never
     }
     Enums: {
       profile_position: "employee" | "gip" | "tupad" | "client"
@@ -287,6 +309,7 @@ export const Constants = {
   core: {
     Enums: {
       gender_type: ["male", "female", "not specified"],
+      punch_status: ["ontime", "late", "early_out", "absent"],
       service_required: [
         "gip",
         "spes",
