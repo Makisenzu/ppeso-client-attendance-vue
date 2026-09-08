@@ -1,7 +1,16 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { AttendanceRecord, AttendanceStatsSummary } from '@/types/peso/attendance'
 import { attendanceService } from '@/services/peso/attendanceService'
-import { computeAttendanceStats, exportAttendanceToCsv } from '@/helpers/peso/attendanceHelper'
+import {
+  computeAttendanceStats,
+  exportAttendanceToCsv,
+  formatDateDisplay,
+  formatPunchStatusLabel,
+  formatTimeDisplay,
+  getRecordStatuses,
+  recordMatchesDate,
+  recordMatchesStatus,
+} from '@/helpers/peso/attendanceHelper'
 
 export function useAttendance() {
   const attendances = ref<AttendanceRecord[]>([])
@@ -9,7 +18,8 @@ export function useAttendance() {
   const searchQuery = ref<string>('')
   const selectedPositionFilter = ref<string>('ALL')
   const selectedStatusFilter = ref<string>('ALL')
-  const selectedDateFilter = ref<'ALL' | 'today' | 'this_week' | 'this_month'>('ALL')
+  const selectedDateFilter = ref<'ALL' | 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom'>('ALL')
+  const customDateFilter = ref<string>('')
 
   const currentPage = ref<number>(1)
   const pageSize = ref<number>(10)
@@ -34,7 +44,8 @@ export function useAttendance() {
 
   // ─── Available Positions for Filter ───
   const availablePositions = computed<string[]>(() => {
-    const set = new Set<string>()
+    const defaultPositions = ['EMPLOYEE', 'GIP', 'TUPAD', 'CLIENT']
+    const set = new Set<string>(defaultPositions)
     for (const r of attendances.value) {
       if (r.position) set.add(r.position.toUpperCase())
     }
@@ -47,69 +58,65 @@ export function useAttendance() {
     const pos = selectedPositionFilter.value
     const status = selectedStatusFilter.value
     const dateFilter = selectedDateFilter.value
-
-    const now = new Date()
-    const todayStr = now.toISOString().slice(0, 10)
+    const customDate = customDateFilter.value
 
     return attendances.value.filter((record) => {
-      // 1. Text Search Filter (name, position, date, id)
+      // 1. Text Search Filter (name, position, date, id, punch times, statuses)
       if (q) {
         const nameMatch = record.fullName.toLowerCase().includes(q)
-        const posMatch = record.position ? record.position.toLowerCase().includes(q) : false
-        const dateMatch = record.attendanceDate ? record.attendanceDate.toLowerCase().includes(q) : false
-        const idMatch = record.profileId.toLowerCase().includes(q) || record.id.toLowerCase().includes(q)
+        const posMatch = (record.position || 'employee').toLowerCase().includes(q)
+        const rawDate = (record.attendanceDate || '').toLowerCase()
+        const formattedDate = formatDateDisplay(record.attendanceDate).toLowerCase()
+        const idMatch =
+          record.profileId.toLowerCase().includes(q) || record.id.toLowerCase().includes(q)
 
-        if (!nameMatch && !posMatch && !dateMatch && !idMatch) {
+        // Match punch statuses (e.g. "late", "on time", "early out", "absent")
+        const statusMatch = getRecordStatuses(record).some((s) => {
+          return s.includes(q) || formatPunchStatusLabel(s).toLowerCase().includes(q)
+        })
+
+        // Match formatted punch times (e.g. "8:00 AM", "5:00 PM")
+        const timesMatch = [
+          formatTimeDisplay(record.amCheckIn),
+          formatTimeDisplay(record.amCheckOut),
+          formatTimeDisplay(record.pmCheckIn),
+          formatTimeDisplay(record.pmCheckOut),
+        ]
+          .filter((t) => t !== '—')
+          .some((t) => t.toLowerCase().includes(q))
+
+        if (
+          !nameMatch &&
+          !posMatch &&
+          !rawDate.includes(q) &&
+          !formattedDate.includes(q) &&
+          !idMatch &&
+          !statusMatch &&
+          !timesMatch
+        ) {
           return false
         }
       }
 
       // 2. Position Filter
       if (pos !== 'ALL') {
-        if ((record.position || '').toUpperCase() !== pos.toUpperCase()) {
+        const recordPos = (record.position || 'employee').toUpperCase()
+        if (recordPos !== pos.toUpperCase()) {
           return false
         }
       }
 
       // 3. Status Filter (ontime, late, early_out, absent)
       if (status !== 'ALL') {
-        const statuses = [
-          record.amInStatus,
-          record.amOutStatus,
-          record.pmInStatus,
-          record.pmOutStatus,
-        ]
-          .filter(Boolean)
-          .map((s) => s?.toLowerCase())
-
-        if (!statuses.includes(status.toLowerCase())) {
+        if (!recordMatchesStatus(record, status)) {
           return false
         }
       }
 
-      // 4. Date Filter
-      if (dateFilter !== 'ALL' && record.attendanceDate) {
-        const checkInDateStr = record.attendanceDate.slice(0, 10)
-
-        if (dateFilter === 'today' && checkInDateStr !== todayStr) {
+      // 4. Date Filter (today, yesterday, this_week, this_month, custom)
+      if (dateFilter !== 'ALL') {
+        if (!recordMatchesDate(record.attendanceDate, dateFilter, customDate)) {
           return false
-        }
-
-        const recDate = new Date(record.attendanceDate)
-        if (dateFilter === 'this_week') {
-          const startOfWeek = new Date(now)
-          startOfWeek.setDate(now.getDate() - now.getDay())
-          startOfWeek.setHours(0, 0, 0, 0)
-          if (recDate < startOfWeek) return false
-        }
-
-        if (dateFilter === 'this_month') {
-          if (
-            recDate.getFullYear() !== now.getFullYear() ||
-            recDate.getMonth() !== now.getMonth()
-          ) {
-            return false
-          }
         }
       }
 
@@ -120,6 +127,17 @@ export function useAttendance() {
   // ─── Stats Summary ───
   const statsSummary = computed<AttendanceStatsSummary>(() => {
     return computeAttendanceStats(attendances.value)
+  })
+
+  // ─── Active Filters Helper ───
+  const hasActiveFilters = computed<boolean>(() => {
+    return (
+      searchQuery.value.trim() !== '' ||
+      selectedPositionFilter.value !== 'ALL' ||
+      selectedStatusFilter.value !== 'ALL' ||
+      selectedDateFilter.value !== 'ALL' ||
+      customDateFilter.value.trim() !== ''
+    )
   })
 
   // ─── Pagination ───
@@ -133,10 +151,48 @@ export function useAttendance() {
     return filteredAttendances.value.slice(start, start + pageSize.value)
   })
 
+  // Auto reset page to 1 whenever any filter changes
+  watch(
+    [
+      searchQuery,
+      selectedPositionFilter,
+      selectedStatusFilter,
+      selectedDateFilter,
+      customDateFilter,
+      pageSize,
+    ],
+    () => {
+      currentPage.value = 1
+    }
+  )
+
   watch([filteredAttendances, totalPages], () => {
     if (currentPage.value > totalPages.value) {
       currentPage.value = 1
     }
+  })
+
+  // Sliding window visible page numbers for pagination
+  const visiblePages = computed<number[]>(() => {
+    const total = totalPages.value
+    const current = currentPage.value
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1)
+    }
+    let start = Math.max(1, current - 2)
+    let end = Math.min(total, current + 2)
+    if (current <= 3) {
+      start = 1
+      end = 5
+    } else if (current >= total - 2) {
+      start = total - 4
+      end = total
+    }
+    const pages: number[] = []
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+    return pages
   })
 
   const setPage = (page: number) => {
@@ -162,6 +218,7 @@ export function useAttendance() {
     selectedPositionFilter.value = 'ALL'
     selectedStatusFilter.value = 'ALL'
     selectedDateFilter.value = 'ALL'
+    customDateFilter.value = ''
     currentPage.value = 1
   }
 
@@ -183,6 +240,7 @@ export function useAttendance() {
     let filterSummary = 'All'
     if (selectedPositionFilter.value !== 'ALL') filterSummary = selectedPositionFilter.value
     if (selectedStatusFilter.value !== 'ALL') filterSummary += `_${selectedStatusFilter.value}`
+    if (selectedDateFilter.value !== 'ALL') filterSummary += `_${selectedDateFilter.value}`
     exportAttendanceToCsv(filteredAttendances.value, filterSummary)
   }
 
@@ -231,6 +289,9 @@ export function useAttendance() {
     selectedPositionFilter,
     selectedStatusFilter,
     selectedDateFilter,
+    customDateFilter,
+    hasActiveFilters,
+    visiblePages,
     currentPage,
     pageSize,
     selectedRecord,

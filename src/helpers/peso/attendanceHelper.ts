@@ -123,6 +123,155 @@ export function getPositionBadgeClass(pos?: string | null): string {
   }
 }
 
+/**
+ * Format local date as YYYY-MM-DD
+ */
+export function formatLocalDate(date: Date = new Date()): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Parses any date string (YYYY-MM-DD or ISO timestamp) into local year, month, day components,
+ * safely avoiding UTC midnight date-shift issues.
+ */
+export function parseRecordDate(
+  dateStr?: string | null
+): { year: number; month: number; day: number; dateStr: string } | null {
+  if (!dateStr) return null
+  const trimmed = dateStr.trim()
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    const [y, m, d] = trimmed.slice(0, 10).split('-').map(Number)
+    if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+      return {
+        year: y,
+        month: m - 1, // 0-indexed month
+        day: d,
+        dateStr: `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      }
+    }
+  }
+  const d = new Date(trimmed)
+  if (!isNaN(d.getTime())) {
+    return {
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      day: d.getDate(),
+      dateStr: formatLocalDate(d),
+    }
+  }
+  return null
+}
+
+/**
+ * Returns all lowercase punch statuses present in an attendance record
+ */
+export function getRecordStatuses(record: AttendanceRecord): string[] {
+  return [
+    record.amInStatus,
+    record.amOutStatus,
+    record.pmInStatus,
+    record.pmOutStatus,
+  ]
+    .filter((s): s is PunchStatus => Boolean(s))
+    .map((s) => String(s).toLowerCase())
+}
+
+/**
+ * Check if a record matches a punch status filter
+ */
+export function recordMatchesStatus(
+  record: AttendanceRecord,
+  status?: string | null
+): boolean {
+  if (!status || status === 'ALL') return true
+  const statuses = getRecordStatuses(record)
+  const target = status.toLowerCase()
+
+  if (target === 'late') {
+    return statuses.includes('late')
+  }
+
+  if (target === 'early_out') {
+    return statuses.includes('early_out')
+  }
+
+  if (target === 'absent') {
+    return (
+      statuses.includes('absent') ||
+      (statuses.length === 0 && !record.amCheckIn && !record.pmCheckIn)
+    )
+  }
+
+  if (target === 'ontime') {
+    return (
+      statuses.includes('ontime') &&
+      !statuses.includes('late') &&
+      !statuses.includes('absent')
+    )
+  }
+
+  return statuses.includes(target)
+}
+
+/**
+ * Checks if a record matches a given date filter option
+ */
+export function recordMatchesDate(
+  recordDateStr: string | null | undefined,
+  dateFilter: string,
+  customDate?: string | null,
+  referenceNow: Date = new Date()
+): boolean {
+  if (!dateFilter || dateFilter === 'ALL') return true
+  if (!recordDateStr) return false
+
+  const parsed = parseRecordDate(recordDateStr)
+  if (!parsed) return false
+
+  const todayStr = formatLocalDate(referenceNow)
+
+  if (dateFilter === 'today') {
+    return parsed.dateStr === todayStr
+  }
+
+  if (dateFilter === 'yesterday') {
+    const yesterday = new Date(referenceNow)
+    yesterday.setDate(yesterday.getDate() - 1)
+    return parsed.dateStr === formatLocalDate(yesterday)
+  }
+
+  if (dateFilter === 'this_week') {
+    const startOfWeek = new Date(
+      referenceNow.getFullYear(),
+      referenceNow.getMonth(),
+      referenceNow.getDate() - referenceNow.getDay()
+    )
+    startOfWeek.setHours(0, 0, 0, 0)
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(startOfWeek.getDate() + 6)
+    endOfWeek.setHours(23, 59, 59, 999)
+
+    const recDate = new Date(parsed.year, parsed.month, parsed.day)
+    return recDate >= startOfWeek && recDate <= endOfWeek
+  }
+
+  if (dateFilter === 'this_month') {
+    return (
+      parsed.year === referenceNow.getFullYear() &&
+      parsed.month === referenceNow.getMonth()
+    )
+  }
+
+  if (dateFilter === 'custom' && customDate) {
+    return parsed.dateStr === customDate.trim()
+  }
+
+  return true
+}
+
 export function computeAttendanceStats(records: AttendanceRecord[]): AttendanceStatsSummary {
   let onTimeCount = 0
   let lateCount = 0
@@ -130,17 +279,16 @@ export function computeAttendanceStats(records: AttendanceRecord[]): AttendanceS
   let absentCount = 0
 
   for (const r of records) {
-    const statuses = [r.amInStatus, r.amOutStatus, r.pmInStatus, r.pmOutStatus].filter(Boolean)
-    if (statuses.includes('late')) {
+    if (recordMatchesStatus(r, 'late')) {
       lateCount++
     }
-    if (statuses.includes('early_out')) {
+    if (recordMatchesStatus(r, 'early_out')) {
       earlyOutCount++
     }
-    if (statuses.includes('absent')) {
+    if (recordMatchesStatus(r, 'absent')) {
       absentCount++
     }
-    if (statuses.includes('ontime') && !statuses.includes('late') && !statuses.includes('absent')) {
+    if (recordMatchesStatus(r, 'ontime')) {
       onTimeCount++
     }
   }

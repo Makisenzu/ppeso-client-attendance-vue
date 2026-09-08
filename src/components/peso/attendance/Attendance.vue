@@ -68,6 +68,9 @@ const {
   selectedPositionFilter,
   selectedStatusFilter,
   selectedDateFilter,
+  customDateFilter,
+  hasActiveFilters,
+  visiblePages,
   currentPage,
   pageSize,
   selectedRecord,
@@ -126,7 +129,7 @@ const {
       <!-- 1. Total Logs -->
       <Card
         class="border shadow-xs bg-card/60 backdrop-blur-xs hover:border-primary/40 transition-all cursor-pointer"
-        :class="selectedPositionFilter === 'ALL' && selectedStatusFilter === 'ALL' ? 'border-primary ring-2 ring-primary/20 shadow-sm' : ''"
+        :class="!hasActiveFilters ? 'border-primary ring-2 ring-primary/20 shadow-sm' : ''"
         @click="resetFilters"
       >
         <CardContent class="p-4 flex items-center justify-between">
@@ -246,6 +249,17 @@ const {
               Showing {{ filteredAttendances.length }} of {{ attendances.length }} total records
             </CardDescription>
           </div>
+
+          <Button
+            v-if="hasActiveFilters"
+            variant="ghost"
+            size="sm"
+            class="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8 self-start sm:self-auto cursor-pointer"
+            @click="resetFilters"
+          >
+            <X class="h-3.5 w-3.5" />
+            <span>Clear all filters</span>
+          </Button>
         </div>
 
         <!-- ─── Search & Multi-Filter Bar ─── -->
@@ -256,7 +270,7 @@ const {
             <Input
               v-model="searchQuery"
               placeholder="Search by employee name, position, or date..."
-              class="pl-9 text-xs h-9"
+              class="pl-9 pr-8 text-xs h-9"
             />
             <button
               v-if="searchQuery"
@@ -271,7 +285,7 @@ const {
           <div>
             <select
               v-model="selectedPositionFilter"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
             >
               <option value="ALL">All Positions</option>
               <option v-for="pos in availablePositions" :key="pos" :value="pos">
@@ -284,7 +298,7 @@ const {
           <div>
             <select
               v-model="selectedStatusFilter"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
             >
               <option value="ALL">All Punch Statuses</option>
               <option value="ontime">On Time</option>
@@ -298,14 +312,93 @@ const {
           <div>
             <select
               v-model="selectedDateFilter"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
             >
               <option value="ALL">All Dates</option>
               <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
               <option value="this_week">This Week</option>
               <option value="this_month">This Month</option>
+              <option value="custom">Custom Date...</option>
             </select>
           </div>
+        </div>
+
+        <!-- Custom Date Picker row when 'custom' is selected -->
+        <div v-if="selectedDateFilter === 'custom'" class="mt-3 flex items-center gap-2">
+          <span class="text-xs text-muted-foreground font-medium">Select Date:</span>
+          <Input
+            v-model="customDateFilter"
+            type="date"
+            class="h-8 max-w-xs text-xs"
+          />
+          <Button
+            v-if="customDateFilter"
+            variant="ghost"
+            size="sm"
+            class="h-8 px-2 text-xs"
+            @click="customDateFilter = ''"
+          >
+            Clear Date
+          </Button>
+        </div>
+
+        <!-- Active Filter Badges -->
+        <div v-if="hasActiveFilters" class="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t text-xs">
+          <span class="text-[11px] text-muted-foreground font-medium mr-1">Active filters:</span>
+
+          <Badge
+            v-if="searchQuery.trim()"
+            variant="secondary"
+            class="gap-1 text-[11px] font-normal py-0.5"
+          >
+            <span>Search: "{{ searchQuery }}"</span>
+            <button class="hover:text-foreground cursor-pointer" @click="clearSearch">
+              <X class="h-3 w-3" />
+            </button>
+          </Badge>
+
+          <Badge
+            v-if="selectedPositionFilter !== 'ALL'"
+            variant="secondary"
+            class="gap-1 text-[11px] font-normal py-0.5"
+          >
+            <span>Position: {{ selectedPositionFilter }}</span>
+            <button class="hover:text-foreground cursor-pointer" @click="selectedPositionFilter = 'ALL'">
+              <X class="h-3 w-3" />
+            </button>
+          </Badge>
+
+          <Badge
+            v-if="selectedStatusFilter !== 'ALL'"
+            variant="secondary"
+            class="gap-1 text-[11px] font-normal py-0.5 capitalize"
+          >
+            <span>Status: {{ formatPunchStatusLabel(selectedStatusFilter) }}</span>
+            <button class="hover:text-foreground cursor-pointer" @click="selectedStatusFilter = 'ALL'">
+              <X class="h-3 w-3" />
+            </button>
+          </Badge>
+
+          <Badge
+            v-if="selectedDateFilter !== 'ALL'"
+            variant="secondary"
+            class="gap-1 text-[11px] font-normal py-0.5 capitalize"
+          >
+            <span>Date: {{ selectedDateFilter === 'custom' ? (customDateFilter || 'Custom Date') : selectedDateFilter.replace('_', ' ') }}</span>
+            <button class="hover:text-foreground cursor-pointer" @click="selectedDateFilter = 'ALL'; customDateFilter = ''">
+              <X class="h-3 w-3" />
+            </button>
+          </Badge>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-6 text-[11px] px-2 text-muted-foreground hover:text-foreground cursor-pointer"
+            @click="resetFilters"
+          >
+            Reset All
+          </Button>
         </div>
       </CardHeader>
 
@@ -506,18 +599,32 @@ const {
         </div>
 
         <!-- ─── Table Pagination Footer ─── -->
-        <div v-if="filteredAttendances.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t text-xs text-muted-foreground">
+        <div v-if="filteredAttendances.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 border-t text-xs text-muted-foreground bg-muted/10">
           <div>
             Showing <span class="font-medium text-foreground">{{ filteredAttendances.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }}</span>
             to <span class="font-medium text-foreground">{{ Math.min(currentPage * pageSize, filteredAttendances.length) }}</span>
             of <span class="font-medium text-foreground">{{ filteredAttendances.length }}</span> records
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Rows per page selector -->
+            <div class="flex items-center gap-1.5 mr-2">
+              <span class="text-[11px]">Rows:</span>
+              <select
+                v-model.number="pageSize"
+                class="h-7 rounded border border-input bg-background px-1.5 text-xs text-foreground cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
+              >
+                <option :value="10">10</option>
+                <option :value="25">25</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
+              </select>
+            </div>
+
             <Button
               variant="outline"
               size="sm"
-              class="h-8 text-xs px-2.5 cursor-pointer"
+              class="h-7 text-xs px-2 cursor-pointer"
               :disabled="currentPage <= 1"
               @click="prevPage"
             >
@@ -525,21 +632,42 @@ const {
             </Button>
             <div class="flex items-center gap-1">
               <Button
-                v-for="p in Math.min(totalPages, 5)"
+                v-if="visiblePages.length > 0 && visiblePages[0] > 1"
+                size="sm"
+                variant="outline"
+                class="h-7 w-7 p-0 text-xs cursor-pointer"
+                @click="setPage(1)"
+              >
+                1
+              </Button>
+              <span v-if="visiblePages.length > 0 && visiblePages[0] > 2" class="text-xs px-0.5">...</span>
+
+              <Button
+                v-for="p in visiblePages"
                 :key="p"
                 size="sm"
                 :variant="currentPage === p ? 'default' : 'outline'"
-                class="h-8 w-8 p-0 text-xs cursor-pointer"
+                class="h-7 w-7 p-0 text-xs cursor-pointer"
                 @click="setPage(p)"
               >
                 {{ p }}
               </Button>
-              <span v-if="totalPages > 5" class="text-xs px-1">...</span>
+
+              <span v-if="visiblePages.length > 0 && visiblePages[visiblePages.length - 1] < totalPages - 1" class="text-xs px-0.5">...</span>
+              <Button
+                v-if="visiblePages.length > 0 && visiblePages[visiblePages.length - 1] < totalPages"
+                size="sm"
+                variant="outline"
+                class="h-7 w-7 p-0 text-xs cursor-pointer"
+                @click="setPage(totalPages)"
+              >
+                {{ totalPages }}
+              </Button>
             </div>
             <Button
               variant="outline"
               size="sm"
-              class="h-8 text-xs px-2.5 cursor-pointer"
+              class="h-7 text-xs px-2 cursor-pointer"
               :disabled="currentPage >= totalPages"
               @click="nextPage"
             >

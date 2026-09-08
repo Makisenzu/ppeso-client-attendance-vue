@@ -41,5 +41,6 @@ export interface AttendanceFilterState {
   searchQuery: string
   positionFilter: string
   statusFilter: string
-  dateFilter: 'ALL' | 'today' | 'this_week' | 'this_month'
+  dateFilter: 'ALL' | 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom'
+  customDateFilter?: string
 }
