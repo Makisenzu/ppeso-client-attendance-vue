@@ -77,6 +77,7 @@ export const attendanceService = {
           pmInStatus: item.pm_in_status,
           pmCheckOut: item.pm_check_out,
           pmOutStatus: item.pm_out_status,
+          status: item.status || null,
           createdAt: item.created_at,
         }
       })

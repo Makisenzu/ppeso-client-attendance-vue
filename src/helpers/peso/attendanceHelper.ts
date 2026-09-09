@@ -170,6 +170,7 @@ export function parseRecordDate(
  */
 export function getRecordStatuses(record: AttendanceRecord): string[] {
   return [
+    record.status,
     record.amInStatus,
     record.amOutStatus,
     record.pmInStatus,
@@ -177,6 +178,19 @@ export function getRecordStatuses(record: AttendanceRecord): string[] {
   ]
     .filter((s): s is PunchStatus => Boolean(s))
     .map((s) => String(s).toLowerCase())
+}
+
+/**
+ * Check if a record or punch represents an absent attendance
+ */
+export function isRecordAbsent(record: AttendanceRecord): boolean {
+  return (
+    record.status === 'absent' ||
+    record.amInStatus === 'absent' ||
+    record.amOutStatus === 'absent' ||
+    record.pmInStatus === 'absent' ||
+    record.pmOutStatus === 'absent'
+  )
 }
 
 /**

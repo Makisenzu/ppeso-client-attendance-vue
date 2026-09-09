@@ -55,6 +55,7 @@ import {
   getInitials,
   getPositionBadgeClass,
   getPunchStatusBadgeClass,
+  isRecordAbsent,
 } from '@/helpers/peso/attendanceHelper'
 
 const {
@@ -460,7 +461,8 @@ const {
                 <TableRow
                   v-for="record in paginatedAttendances"
                   :key="record.id"
-                  class="transition-colors hover:bg-muted/30"
+                  class="transition-colors"
+                  :class="[isRecordAbsent(record) ? 'bg-destructive/[0.03] hover:bg-destructive/[0.08]' : 'hover:bg-muted/30']"
                 >
                   <!-- 1. Employee (profile_id) -->
                   <TableCell class="py-3">
@@ -480,6 +482,13 @@ const {
                             :class="[getPositionBadgeClass(record.position), 'text-[10px] uppercase font-mono px-1.5 py-0 h-4']"
                           >
                             {{ record.position || 'Employee' }}
+                          </Badge>
+                          <Badge
+                            v-if="isRecordAbsent(record)"
+                            variant="outline"
+                            :class="[getPunchStatusBadgeClass('absent'), 'text-[10px] uppercase font-mono px-1.5 py-0 h-4']"
+                          >
+                            Absent
                           </Badge>
                         </div>
                       </div>
@@ -508,6 +517,22 @@ const {
                         {{ formatPunchStatusLabel(record.amInStatus) }}
                       </Badge>
                     </div>
+                    <div v-else-if="record.amInStatus === 'absent' || (isRecordAbsent(record) && !record.amCheckIn)" class="flex flex-col gap-1 items-start">
+                      <Badge
+                        variant="outline"
+                        :class="[getPunchStatusBadgeClass('absent'), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
+                      >
+                        Absent
+                      </Badge>
+                    </div>
+                    <div v-else-if="record.amInStatus" class="flex flex-col gap-1 items-start">
+                      <Badge
+                        variant="outline"
+                        :class="[getPunchStatusBadgeClass(record.amInStatus), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
+                      >
+                        {{ formatPunchStatusLabel(record.amInStatus) }}
+                      </Badge>
+                    </div>
                     <span v-else class="text-muted-foreground/60 text-xs font-mono">—</span>
                   </TableCell>
 
@@ -519,6 +544,22 @@ const {
                       </span>
                       <Badge
                         v-if="record.amOutStatus"
+                        variant="outline"
+                        :class="[getPunchStatusBadgeClass(record.amOutStatus), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
+                      >
+                        {{ formatPunchStatusLabel(record.amOutStatus) }}
+                      </Badge>
+                    </div>
+                    <div v-else-if="record.amOutStatus === 'absent' || (isRecordAbsent(record) && !record.amCheckOut)" class="flex flex-col gap-1 items-start">
+                      <Badge
+                        variant="outline"
+                        :class="[getPunchStatusBadgeClass('absent'), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
+                      >
+                        Absent
+                      </Badge>
+                    </div>
+                    <div v-else-if="record.amOutStatus" class="flex flex-col gap-1 items-start">
+                      <Badge
                         variant="outline"
                         :class="[getPunchStatusBadgeClass(record.amOutStatus), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
                       >
@@ -542,6 +583,22 @@ const {
                         {{ formatPunchStatusLabel(record.pmInStatus) }}
                       </Badge>
                     </div>
+                    <div v-else-if="record.pmInStatus === 'absent' || (isRecordAbsent(record) && !record.pmCheckIn)" class="flex flex-col gap-1 items-start">
+                      <Badge
+                        variant="outline"
+                        :class="[getPunchStatusBadgeClass('absent'), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
+                      >
+                        Absent
+                      </Badge>
+                    </div>
+                    <div v-else-if="record.pmInStatus" class="flex flex-col gap-1 items-start">
+                      <Badge
+                        variant="outline"
+                        :class="[getPunchStatusBadgeClass(record.pmInStatus), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
+                      >
+                        {{ formatPunchStatusLabel(record.pmInStatus) }}
+                      </Badge>
+                    </div>
                     <span v-else class="text-muted-foreground/60 text-xs font-mono">—</span>
                   </TableCell>
 
@@ -553,6 +610,22 @@ const {
                       </span>
                       <Badge
                         v-if="record.pmOutStatus"
+                        variant="outline"
+                        :class="[getPunchStatusBadgeClass(record.pmOutStatus), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
+                      >
+                        {{ formatPunchStatusLabel(record.pmOutStatus) }}
+                      </Badge>
+                    </div>
+                    <div v-else-if="record.pmOutStatus === 'absent' || (isRecordAbsent(record) && !record.pmCheckOut)" class="flex flex-col gap-1 items-start">
+                      <Badge
+                        variant="outline"
+                        :class="[getPunchStatusBadgeClass('absent'), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
+                      >
+                        Absent
+                      </Badge>
+                    </div>
+                    <div v-else-if="record.pmOutStatus" class="flex flex-col gap-1 items-start">
+                      <Badge
                         variant="outline"
                         :class="[getPunchStatusBadgeClass(record.pmOutStatus), 'text-[10px] font-mono capitalize px-1.5 py-0 h-4']"
                       >
@@ -746,6 +819,14 @@ const {
                 >
                   {{ selectedRecord.position || 'Employee' }}
                 </Badge>
+                <Badge
+                  v-if="isRecordAbsent(selectedRecord)"
+                  variant="outline"
+                  :class="getPunchStatusBadgeClass('absent')"
+                  class="text-[10px] uppercase font-mono"
+                >
+                  Absent
+                </Badge>
               </div>
               <p class="text-muted-foreground text-[11px] font-mono">
                 Date: <span class="font-semibold text-foreground">{{ formatDateDisplay(selectedRecord.attendanceDate) }}</span>
@@ -888,6 +969,12 @@ const {
               {{ recordToDelete.amCheckIn ? 'AM: ' + formatTimeDisplay(recordToDelete.amCheckIn) : '' }}
               {{ recordToDelete.pmCheckIn ? ' PM: ' + formatTimeDisplay(recordToDelete.pmCheckIn) : '' }}
             </span>
+          </div>
+          <div class="flex justify-between" v-else-if="isRecordAbsent(recordToDelete)">
+            <span class="text-muted-foreground">Status:</span>
+            <Badge variant="outline" :class="[getPunchStatusBadgeClass('absent'), 'text-[10px] font-mono capitalize']">
+              Absent
+            </Badge>
           </div>
         </div>
 

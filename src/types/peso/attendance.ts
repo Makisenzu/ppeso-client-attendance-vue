@@ -26,6 +26,7 @@ export interface AttendanceRecord {
   pmCheckOut: string | null
   pmOutStatus: PunchStatus | null
 
+  status?: PunchStatus | string | null
   createdAt: string
 }
 
