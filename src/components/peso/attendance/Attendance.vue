@@ -332,7 +332,7 @@ const openDtrModal = (profileId?: string | null) => {
           <div>
             <select
               v-model="selectedPositionFilter"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
+              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer dark:scheme [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
             >
               <option value="ALL">All Positions</option>
               <option v-for="pos in availablePositions" :key="pos" :value="pos">
@@ -345,7 +345,7 @@ const openDtrModal = (profileId?: string | null) => {
           <div>
             <select
               v-model="selectedStatusFilter"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
+              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer dark:scheme [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
             >
               <option value="ALL">All Punch Statuses</option>
               <option value="ontime">On Time</option>
@@ -359,7 +359,7 @@ const openDtrModal = (profileId?: string | null) => {
           <div>
             <select
               v-model="selectedDateFilter"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
+              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer dark:scheme [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
             >
               <option value="ALL">All Dates</option>
               <option value="today">Today</option>
@@ -483,7 +483,7 @@ const openDtrModal = (profileId?: string | null) => {
                   v-for="record in paginatedAttendances"
                   :key="record.id"
                   class="transition-colors"
-                  :class="[isRecordAbsent(record) ? 'bg-destructive/[0.03] hover:bg-destructive/[0.08]' : 'hover:bg-muted/30']"
+                  :class="[isRecordAbsent(record) ? 'bg-destructive/3 hover:bg-destructive/8' : 'hover:bg-muted/30']"
                 >
                   <!-- 1. Employee (profile_id) -->
                   <TableCell class="py-3">
@@ -662,16 +662,6 @@ const openDtrModal = (profileId?: string | null) => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        class="h-8 gap-1.5 text-xs cursor-pointer text-primary hover:text-primary hover:bg-primary/10"
-                        title="Generate Civil Service Form 48 DTR"
-                        @click="openDtrModal(record.profileId)"
-                      >
-                        <FileText class="h-3.5 w-3.5" />
-                        <span class="hidden md:inline">DTR</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
                         class="h-8 gap-1.5 text-xs cursor-pointer"
                         @click="openDetails(record)"
                       >
@@ -752,7 +742,7 @@ const openDtrModal = (profileId?: string | null) => {
               <span class="text-[11px]">Rows:</span>
               <select
                 v-model.number="pageSize"
-                class="h-7 rounded border border-input bg-background px-1.5 text-xs text-foreground cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
+                class="h-7 rounded border border-input bg-background px-1.5 text-xs text-foreground cursor-pointer dark:scheme [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
               >
                 <option :value="10">10</option>
                 <option :value="25">25</option>
