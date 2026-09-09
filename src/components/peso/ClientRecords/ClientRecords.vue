@@ -275,7 +275,7 @@ const {
     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-card p-3 rounded-xl border shadow-2xs">
       <div class="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
         <!-- Search Input -->
-        <div class="relative flex-1 min-w-[200px] max-w-md">
+        <div class="relative flex-1 min-w-50 max-w-md">
           <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             v-model="searchQuery"
@@ -292,10 +292,10 @@ const {
         </div>
 
         <!-- Purpose Filter -->
-        <div class="w-full sm:w-[190px]">
+        <div class="w-full sm:w-47.5">
           <select
             v-model="selectedPurposeFilter"
-            class="w-full h-9 rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
+            class="w-full h-9 rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground cursor-pointer dark:scheme [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
           >
             <option value="ALL">All Services / Programs</option>
             <option v-for="opt in PURPOSE_OPTIONS" :key="opt.value" :value="opt.value">
@@ -305,10 +305,10 @@ const {
         </div>
 
         <!-- Gender Filter -->
-        <div class="w-full sm:w-[130px]">
+        <div class="w-full sm:w-32.5">
           <select
             v-model="selectedGenderFilter"
-            class="w-full h-9 rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
+            class="w-full h-9 rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground cursor-pointer dark:scheme [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
           >
             <option value="ALL">All Genders</option>
             <option v-for="g in GENDER_OPTIONS" :key="g.value" :value="g.value">
@@ -370,13 +370,13 @@ const {
         <Table>
           <TableHeader class="bg-muted/40">
             <TableRow class="hover:bg-transparent">
-              <TableHead class="text-xs font-semibold text-foreground w-[220px]">Client Name</TableHead>
-              <TableHead class="text-xs font-semibold text-foreground w-[90px]">Gender</TableHead>
-              <TableHead class="text-xs font-semibold text-foreground w-[140px]">Contact</TableHead>
-              <TableHead class="text-xs font-semibold text-foreground min-w-[200px]">Residential Address</TableHead>
-              <TableHead class="text-xs font-semibold text-foreground w-[160px]">Service Required</TableHead>
-              <TableHead class="text-xs font-semibold text-foreground w-[150px]">Check-in</TableHead>
-              <TableHead class="text-xs font-semibold text-foreground text-right w-[100px]">Actions</TableHead>
+              <TableHead class="text-xs font-semibold text-foreground w-55">Client Name</TableHead>
+              <TableHead class="text-xs font-semibold text-foreground w-22.5">Gender</TableHead>
+              <TableHead class="text-xs font-semibold text-foreground w-35">Contact</TableHead>
+              <TableHead class="text-xs font-semibold text-foreground min-w-50">Residential Address</TableHead>
+              <TableHead class="text-xs font-semibold text-foreground w-40">Service Required</TableHead>
+              <TableHead class="text-xs font-semibold text-foreground w-37.5">Check-in</TableHead>
+              <TableHead class="text-xs font-semibold text-foreground text-right w-25">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -442,7 +442,7 @@ const {
 
                 <!-- Address -->
                 <TableCell>
-                  <div class="flex items-center gap-1.5 text-xs text-foreground truncate max-w-[280px]">
+                  <div class="flex items-center gap-1.5 text-xs text-foreground truncate max-w-70">
                     <MapPin class="h-3 w-3 shrink-0 text-primary/70" />
                     <span class="truncate" :title="client.formattedAddress">
                       {{ client.formattedAddress || 'No address specified' }}
@@ -551,7 +551,7 @@ const {
             <span class="text-[11px]">Rows:</span>
             <select
               v-model.number="pageSize"
-              class="h-7 rounded border border-input bg-background px-1.5 text-xs text-foreground cursor-pointer dark:[color-scheme:dark] [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
+              class="h-7 rounded border border-input bg-background px-1.5 text-xs text-foreground cursor-pointer dark:scheme [&_option]:bg-white [&_option]:text-neutral-900 dark:[&_option]:bg-neutral-900 dark:[&_option]:text-neutral-100"
             >
               <option :value="5">5</option>
               <option :value="10">10</option>
