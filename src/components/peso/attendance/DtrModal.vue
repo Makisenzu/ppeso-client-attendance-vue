@@ -1,19 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   ArrowLeft,
   Calendar,
   Check,
-  Clock,
-  Copy,
-  Download,
   FileText,
-  HelpCircle,
   Loader2,
   Printer,
   Search,
   Settings,
-  Sparkles,
   User,
   X,
 } from '@lucide/vue'
@@ -78,8 +73,8 @@ const endDate = ref<string>(defaultEnd)
 // Official Hours & Signatories
 const regularHours = ref<string>('')
 const saturdayHours = ref<string>('')
-const supervisorName = ref<string>('PGDH')
-const supervisorTitle = ref<string>('(PESO Manager)')
+const supervisorName = ref<string>('PAULINE J. ANG')
+const supervisorTitle = ref<string>('PGDH(PESO Manager)')
 const dualCopy = ref<boolean>(true)
 const rightCopyHasName = ref<boolean>(false)
 
@@ -233,25 +228,6 @@ const handleGenerate = async () => {
 // ─── Actions in Preview Mode ───
 const handlePrint = () => {
   window.print()
-}
-
-const handleDownloadHtml = () => {
-  if (!generatedData.value) return
-  const htmlContent = generateStandaloneDtrHtml(generatedData.value, {
-    dualCopy: dualCopy.value,
-    rightCopyHasName: rightCopyHasName.value,
-  })
-
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  const cleanName = generatedData.value.employeeName.replace(/\s+/g, '_')
-  link.download = `DTR_Form48_${cleanName}_${startDate.value}_to_${endDate.value}.html`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
 }
 
 const handleClose = () => {
@@ -587,7 +563,7 @@ const handleClose = () => {
             </span>
           </div>
 
-          <div class="flex items-center gap-2">
+          <!-- <div class="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -606,7 +582,7 @@ const handleClose = () => {
               <Printer class="h-3.5 w-3.5" />
               <span>Print DTR</span>
             </Button>
-          </div>
+          </div> -->
         </div>
 
         <!-- ─── THE 100% FAITHFUL DTR PRINT AREA ─── -->
