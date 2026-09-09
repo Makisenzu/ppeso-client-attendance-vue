@@ -222,5 +222,85 @@ export const attendanceService = {
       throw err
     }
   },
+
+  /**
+   * Fetch attendances for a specific profile within a date range (YYYY-MM-DD)
+   */
+  async getAttendancesByProfileAndDateRange(
+    profileId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<AttendanceRecord[]> {
+    try {
+      let attendancesData: any[] | null = null
+
+      const { data: coreData, error: coreError } = await supabase
+        .schema('core')
+        .from('attendances')
+        .select('*')
+        .eq('profile_id', profileId)
+        .gte('attendance_date', startDate)
+        .lte('attendance_date', endDate)
+
+      if (coreError && (coreError.message?.includes('Invalid schema') || coreError.code === 'PGRST106')) {
+        const { data: pubData, error: pubError } = await (supabase as any)
+          .from('attendances')
+          .select('*')
+          .eq('profile_id', profileId)
+          .gte('attendance_date', startDate)
+          .lte('attendance_date', endDate)
+
+        if (pubError) {
+          console.warn('Error fetching attendances from public schema:', pubError.message)
+          return []
+        }
+        attendancesData = pubData
+      } else if (coreError) {
+        console.warn('Query to core.attendances returned notice:', coreError.message)
+        return []
+      } else {
+        attendancesData = coreData
+      }
+
+      if (!attendancesData || attendancesData.length === 0) {
+        return []
+      }
+
+      // Fetch profile data for this employee
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profileId)
+        .single()
+
+      const fullName = profile
+        ? `${profile.firstname || ''} ${profile.middlename ? profile.middlename + ' ' : ''}${profile.lastname || ''}`.trim()
+        : 'Employee'
+
+      return attendancesData.map((item) => ({
+        id: item.id,
+        profileId: item.profile_id,
+        attendanceDate: item.attendance_date,
+        fullName: fullName,
+        firstName: profile?.firstname || '',
+        lastName: profile?.lastname || '',
+        middleName: profile?.middlename || null,
+        position: profile?.position || 'employee',
+        amCheckIn: item.am_check_in,
+        amInStatus: item.am_in_status,
+        amCheckOut: item.am_check_out,
+        amOutStatus: item.am_out_status,
+        pmCheckIn: item.pm_check_in,
+        pmInStatus: item.pm_in_status,
+        pmCheckOut: item.pm_check_out,
+        pmOutStatus: item.pm_out_status,
+        status: item.status || null,
+        createdAt: item.created_at,
+      }))
+    } catch (err) {
+      console.error('Error fetching attendances for date range:', err)
+      return []
+    }
+  },
 }
 

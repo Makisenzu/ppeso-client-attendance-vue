@@ -191,12 +191,6 @@ const isDashboard = computed(() => route.name === 'dashboard')
                 <span>Dashboard</span>
               </RouterLink>
             </SidebarMenuButton>
-            <SidebarMenuButton as-child :tooltip="'Notification'">
-              <RouterLink :to="{ name: 'notification' }">
-                <Bell />
-                <span>Notification</span>
-              </RouterLink>
-            </SidebarMenuButton>
           </SidebarMenuItem>
 
           <div class="my-1 h-px bg-sidebar-border" />

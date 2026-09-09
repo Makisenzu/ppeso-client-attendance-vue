@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import {
   AlertTriangle,
   Calendar,
@@ -7,6 +8,7 @@ import {
   Clock,
   Download,
   Eye,
+  FileText,
   Filter,
   Loader2,
   LogOut,
@@ -16,6 +18,7 @@ import {
   Users,
   X,
 } from '@lucide/vue'
+import DtrModal from './DtrModal.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -95,6 +98,15 @@ const {
   closeDetails,
   exportCsv,
 } = useAttendance()
+
+// ─── Civil Service Form 48 DTR Modal ───
+const isDtrModalOpen = ref(false)
+const dtrProfileId = ref<string | null>(null)
+
+const openDtrModal = (profileId?: string | null) => {
+  dtrProfileId.value = profileId || null
+  isDtrModalOpen.value = true
+}
 </script>
 
 <template>
@@ -112,6 +124,15 @@ const {
 
       <!-- Quick Action Buttons -->
       <div class="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+        <Button
+          variant="default"
+          size="sm"
+          class="gap-1.5 text-xs cursor-pointer shadow-xs font-semibold"
+          @click="openDtrModal()"
+        >
+          <FileText class="h-3.5 w-3.5" />
+          <span>Generate DTR</span>
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -635,9 +656,19 @@ const {
                     <span v-else class="text-muted-foreground/60 text-xs font-mono">—</span>
                   </TableCell>
 
-                  <!-- 7. Actions / Details & Delete -->
+                  <!-- 7. Actions / Details, DTR & Delete -->
                   <TableCell class="py-3 text-right">
                     <div class="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        class="h-8 gap-1.5 text-xs cursor-pointer text-primary hover:text-primary hover:bg-primary/10"
+                        title="Generate Civil Service Form 48 DTR"
+                        @click="openDtrModal(record.profileId)"
+                      >
+                        <FileText class="h-3.5 w-3.5" />
+                        <span class="hidden md:inline">DTR</span>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -923,8 +954,17 @@ const {
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" size="sm" class="text-xs cursor-pointer" @click="closeDetails">
+        <DialogFooter class="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            class="text-xs cursor-pointer gap-1.5 w-full sm:w-auto"
+            @click="(() => { const pid = selectedRecord?.profileId; closeDetails(); openDtrModal(pid); })()"
+          >
+            <FileText class="h-3.5 w-3.5 text-primary" />
+            <span>Generate DTR Form 48</span>
+          </Button>
+          <Button variant="outline" size="sm" class="text-xs cursor-pointer w-full sm:w-auto" @click="closeDetails">
             Close
           </Button>
         </DialogFooter>
@@ -1002,5 +1042,12 @@ const {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <!-- ─── Civil Service Form 48 DTR Generation Modal ─── -->
+    <DtrModal
+      v-model:open="isDtrModalOpen"
+      :initial-profile-id="dtrProfileId"
+      :existing-attendances="attendances"
+    />
   </div>
 </template>
