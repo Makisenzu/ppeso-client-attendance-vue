@@ -2,18 +2,13 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import {
-  Settings2,
   ChevronUp,
-  ChevronRight,
   LayoutDashboard,
-  UserRound,
-  Bell,
-  Settings,
-  UserRoundCog,
   Users,
   FingerprintPattern,
   Book,
   Clock,
+  UserRound,
   Building2,
 } from '@lucide/vue'
 
@@ -28,9 +23,6 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   useSidebar,
 } from '@/components/ui/sidebar'
 
@@ -42,10 +34,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/services/supabase'
+import { buildFullName } from '@/helpers/peso/userManagementHelper'
+import { getInitials } from '@/helpers/peso/attendanceHelper'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,42 +59,51 @@ const operationsItems = [
   { title: 'User Management', to: { name: 'management' }, icon: Users },
 ]
 
-const settingsSubItems = [
-  { title: 'Profile', to: { name: 'settings' }, icon: UserRoundCog },
-  { title: 'DTR', to: { name: 'settings' }, icon: Settings },
-  { title: 'Notification Preferences', to: { name: 'settings' }, icon: Bell },
-]
-
 const authSubscription = ref<ReturnType<typeof supabase.auth.onAuthStateChange> | null>(null)
 
 const updateUserInfo = async () => {
-  const { data } = await supabase.auth.getUser()
-  const user = data.user
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    const user = data?.user
 
-  if (!user) {
-    displayName.value = 'User'
-    userInitials.value = 'U'
-    userEmail.value = ''
-    isVerified.value = false
+    if (error || !user) {
+      displayName.value = 'User'
+      userInitials.value = 'U'
+      userEmail.value = ''
+      isVerified.value = false
+      isLoading.value = false
+      return
+    }
+
+    userEmail.value = user.email || ''
+    isVerified.value = !!user.email_confirmed_at
+
+    // Fetch user profile from public.profiles table
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('firstname, middlename, lastname, position, role, status')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileError) {
+      console.warn('Error fetching profile in sidebar:', profileError.message)
+    }
+
+    if (profile && (profile.firstname || profile.lastname)) {
+      const completeName = buildFullName(profile.firstname, profile.middlename, profile.lastname)
+      displayName.value = completeName
+      userInitials.value = getInitials(completeName)
+    } else {
+      const fallbackFullName = (user.user_metadata?.full_name || user.user_metadata?.name || '') as string
+      const resolvedName = fallbackFullName.trim() || user.email?.split('@')[0] || 'User'
+      displayName.value = resolvedName
+      userInitials.value = getInitials(resolvedName)
+    }
+  } catch (err) {
+    console.error('Failed to update user info in sidebar:', err)
+  } finally {
     isLoading.value = false
-    return
   }
-
-  const fullName = (user.user_metadata?.full_name || user.user_metadata?.name || '') as string
-  const email = user.email || ''
-  const resolvedName = fullName.trim() || (email ? email.split('@')[0] : 'User')
-  const initials = resolvedName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('') || 'U'
-
-  displayName.value = resolvedName
-  userInitials.value = initials
-  userEmail.value = email
-  isVerified.value = !!user.email_confirmed_at
-  isLoading.value = false
 }
 
 const handleSignOut = async () => {
@@ -207,35 +209,6 @@ const isDashboard = computed(() => route.name === 'dashboard')
                     <span>{{ item.title }}</span>
                   </RouterLink>
                 </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <div class="my-1 h-px bg-sidebar-border" />
-
-              <SidebarGroupLabel>System</SidebarGroupLabel>
-
-              <SidebarMenuItem>
-                <Collapsible as-child :default-open="false" class="group/collapsible">
-                  <div>
-                    <CollapsibleTrigger as-child>
-                      <SidebarMenuButton :tooltip="'Settings'">
-                        <Settings2 />
-                        <span>Settings</span>
-                        <ChevronRight class="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem v-for="subItem in settingsSubItems" :key="subItem.title">
-                          <SidebarMenuSubButton as-child>
-                            <RouterLink :to="subItem.to">
-                              <span>{{ subItem.title }}</span>
-                            </RouterLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </div>
-                </Collapsible>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
