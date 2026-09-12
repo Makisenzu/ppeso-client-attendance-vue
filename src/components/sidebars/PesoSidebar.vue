@@ -14,7 +14,7 @@ import {
   FingerprintPattern,
   Book,
   Clock,
-  Newspaper,
+  Building2,
 } from '@lucide/vue'
 
 import {
@@ -62,7 +62,7 @@ const operationsItems = [
   { title: 'Attendance', to: { name: 'kiosk' }, icon: FingerprintPattern },
   { title: 'Daily Time Record', to: { name: 'attendance' }, icon: Clock },
   { title: 'Client Records', to: { name: 'records' }, icon: Book },
-  { title: 'Offices', to: { name: '' }, icon: Newspaper },
+  { title: 'Offices', to: { name: 'offices' }, icon: Building2 },
   { title: 'User Management', to: { name: 'management' }, icon: Users },
 ]
 

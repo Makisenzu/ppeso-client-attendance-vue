@@ -34,6 +34,11 @@ export const pesoRoutes: RouteRecordRaw[] = [
         component: () => import('@/components/peso/ClientRecords/ClientRecords.vue'),
       },
       {
+        path: 'offices',
+        name: 'offices',
+        component: () => import('@/components/peso/Offices/Office.vue'),
+      },
+      {
         path: 'payroll',
         name: 'payroll',
         component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
