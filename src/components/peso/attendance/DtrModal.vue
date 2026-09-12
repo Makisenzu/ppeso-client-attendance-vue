@@ -85,9 +85,6 @@ const {
         <div class="flex items-center justify-between">
           <div class="space-y-1">
             <div class="flex items-center gap-2">
-              <span class="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <FileText class="h-4 w-4" />
-              </span>
               <DialogTitle class="text-lg font-bold text-foreground">
                 {{ currentStep === 'preview' ? 'Civil Service Form No. 48 - Preview' : 'Generate Daily Time Record (DTR)' }}
               </DialogTitle>

@@ -178,9 +178,6 @@ const {
               All registered profiles
             </p>
           </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Users class="h-5 w-5" />
-          </div>
         </CardContent>
       </Card>
 
@@ -199,9 +196,6 @@ const {
             <p class="text-[11px] text-muted-foreground truncate">
               Currently active
             </p>
-          </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 class="h-5 w-5" />
           </div>
         </CardContent>
       </Card>
@@ -222,9 +216,6 @@ const {
               Awaiting activation
             </p>
           </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <Clock class="h-5 w-5" />
-          </div>
         </CardContent>
       </Card>
 
@@ -243,9 +234,6 @@ const {
             <p class="text-[11px] text-muted-foreground truncate">
               Deactivated accounts
             </p>
-          </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
-            <UserX class="h-5 w-5" />
           </div>
         </CardContent>
       </Card>

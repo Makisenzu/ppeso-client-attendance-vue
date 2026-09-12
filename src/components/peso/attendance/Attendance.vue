@@ -11,11 +11,9 @@ import {
   FileText,
   Filter,
   Loader2,
-  LogOut,
   RefreshCw,
   Search,
   Trash2,
-  Users,
   X,
 } from '@lucide/vue'
 import DtrModal from './DtrModal.vue'
@@ -189,9 +187,6 @@ const openDtrModal = (profileId?: string | null) => {
               All time entries
             </p>
           </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Users class="h-5 w-5" />
-          </div>
         </CardContent>
       </Card>
 
@@ -210,9 +205,6 @@ const openDtrModal = (profileId?: string | null) => {
             <p class="text-[11px] text-muted-foreground truncate">
               Punctual punches
             </p>
-          </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 class="h-5 w-5" />
           </div>
         </CardContent>
       </Card>
@@ -233,9 +225,6 @@ const openDtrModal = (profileId?: string | null) => {
               AM/PM late logs
             </p>
           </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <Clock class="h-5 w-5" />
-          </div>
         </CardContent>
       </Card>
 
@@ -255,9 +244,6 @@ const openDtrModal = (profileId?: string | null) => {
               Early departures
             </p>
           </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
-            <LogOut class="h-5 w-5" />
-          </div>
         </CardContent>
       </Card>
 
@@ -276,9 +262,6 @@ const openDtrModal = (profileId?: string | null) => {
             <p class="text-[11px] text-muted-foreground truncate">
               No attendance logged
             </p>
-          </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
-            <AlertTriangle class="h-5 w-5" />
           </div>
         </CardContent>
       </Card>
@@ -951,7 +934,6 @@ const openDtrModal = (profileId?: string | null) => {
             class="text-xs cursor-pointer gap-1.5 w-full sm:w-auto"
             @click="(() => { const pid = selectedRecord?.profileId; closeDetails(); openDtrModal(pid); })()"
           >
-            <FileText class="h-3.5 w-3.5 text-primary" />
             <span>Generate DTR Form 48</span>
           </Button>
           <Button variant="outline" size="sm" class="text-xs cursor-pointer w-full sm:w-auto" @click="closeDetails">

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   AlertCircle,
-  Briefcase,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -16,8 +15,6 @@ import {
   RefreshCw,
   Search,
   Trash2,
-  User,
-  UserCheck,
   Users,
   X,
 } from '@lucide/vue'
@@ -180,9 +177,6 @@ const {
               All time walk-ins
             </p>
           </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Users class="h-5 w-5" />
-          </div>
         </CardContent>
       </Card>
 
@@ -201,9 +195,6 @@ const {
             <p class="text-[11px] text-muted-foreground truncate">
               Checked in today
             </p>
-          </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <Clock class="h-5 w-5" />
           </div>
         </CardContent>
       </Card>
@@ -224,9 +215,6 @@ const {
               {{ statsSummary.total > 0 ? Math.round((statsSummary.male / statsSummary.total) * 100) : 0 }}% of total
             </p>
           </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
-            <User class="h-5 w-5" />
-          </div>
         </CardContent>
       </Card>
 
@@ -246,9 +234,6 @@ const {
               {{ statsSummary.total > 0 ? Math.round((statsSummary.female / statsSummary.total) * 100) : 0 }}% of total
             </p>
           </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400">
-            <UserCheck class="h-5 w-5" />
-          </div>
         </CardContent>
       </Card>
 
@@ -263,9 +248,6 @@ const {
             <p class="text-[11px] text-muted-foreground truncate">
               Most requested service
             </p>
-          </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <Briefcase class="h-5 w-5" />
           </div>
         </CardContent>
       </Card>
