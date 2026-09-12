@@ -6,7 +6,7 @@ export const pesoRoutes: RouteRecordRaw[] = [
   {
     path: '/dashboard',
     component: PesoLayout,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, allowedRoles: ['admin'] },
     children: [
       {
         path: '',

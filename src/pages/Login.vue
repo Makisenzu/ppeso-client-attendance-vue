@@ -3,10 +3,12 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthForm } from '../composables/useAuthForm'
 import { supabase } from '../services/supabase'
+import { useAuthStore, getDashboardByRole } from '../stores/authStore'
 import Button from '../components/ui/button/Button.vue'
 import Input from '../components/ui/input/Input.vue'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 const { error, loading, runAuthAction, validateRequiredFields } = useAuthForm()
@@ -26,10 +28,14 @@ const handleLogin = async () => {
       throw new Error(signInError.message)
     }
 
-    await router.push({ name: 'dashboard' })
+    await authStore.fetchUserRole()
+
+    const routeName = getDashboardByRole(authStore.userRole)
+    await router.push({ name: routeName })
   })
 }
 </script>
+
 
 <template>
   <div class="w-full max-w-md">
