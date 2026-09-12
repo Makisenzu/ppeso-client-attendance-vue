@@ -1,13 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRouter, useRoute, RouterLink } from 'vue-router'
-import {
-  ChevronUp,
-  LayoutDashboard,
-  Clock,
-  FingerprintPattern,
-  UserRound,
-} from '@lucide/vue'
+import { RouterLink } from 'vue-router'
+import { ChevronUp, LayoutDashboard, UserRound } from '@lucide/vue'
 
 import {
   Sidebar,
@@ -20,7 +13,6 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-  useSidebar,
 } from '@/components/ui/sidebar'
 
 import {
@@ -33,90 +25,20 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { supabase } from '@/services/supabase'
-import { buildFullName } from '@/helpers/peso/userManagementHelper'
-import { getInitials } from '@/helpers/peso/attendanceHelper'
+import { useBeneficiarySidebar } from '@/composables/beneficiary/useBeneficiarySidebar'
 
-const route = useRoute()
-const router = useRouter()
-
-const { state, isMobile } = useSidebar()
-
-const displayName = ref('User')
-const userInitials = ref('U')
-const userEmail = ref('')
-const isVerified = ref(false)
-const isLoading = ref(true)
-
-const myRecordsItems = [
-  { title: 'My Attendance', to: { name: 'beneficiary-dashboard' }, icon: FingerprintPattern },
-  { title: 'My DTR', to: { name: 'beneficiary-dashboard' }, icon: Clock },
-]
-
-const authSubscription = ref<ReturnType<typeof supabase.auth.onAuthStateChange> | null>(null)
-
-const updateUserInfo = async () => {
-  try {
-    const { data, error } = await supabase.auth.getUser()
-    const user = data?.user
-
-    if (error || !user) {
-      displayName.value = 'User'
-      userInitials.value = 'U'
-      userEmail.value = ''
-      isVerified.value = false
-      isLoading.value = false
-      return
-    }
-
-    userEmail.value = user.email || ''
-    isVerified.value = !!user.email_confirmed_at
-
-    // Fetch user profile from public.profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('firstname, middlename, lastname, position, role, status')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (profileError) {
-      console.warn('Error fetching profile in sidebar:', profileError.message)
-    }
-
-    if (profile && (profile.firstname || profile.lastname)) {
-      const completeName = buildFullName(profile.firstname, profile.middlename, profile.lastname)
-      displayName.value = completeName
-      userInitials.value = getInitials(completeName)
-    } else {
-      const fallbackFullName = (user.user_metadata?.full_name || user.user_metadata?.name || '') as string
-      const resolvedName = fallbackFullName.trim() || user.email?.split('@')[0] || 'User'
-      displayName.value = resolvedName
-      userInitials.value = getInitials(resolvedName)
-    }
-  } catch (err) {
-    console.error('Failed to update user info in sidebar:', err)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleSignOut = async () => {
-  await supabase.auth.signOut()
-  await router.replace({ name: 'login' })
-}
-
-onMounted(async () => {
-  await updateUserInfo()
-  authSubscription.value = supabase.auth.onAuthStateChange(async () => {
-    await updateUserInfo()
-  })
-})
-
-onUnmounted(() => {
-  authSubscription.value?.data.subscription.unsubscribe()
-})
-
-const isDashboard = computed(() => route.name === 'beneficiary-dashboard')
+const {
+  state,
+  isMobile,
+  isLoading,
+  displayName,
+  userInitials,
+  userEmail,
+  isVerified,
+  isDashboard,
+  myRecordsItems,
+  handleSignOut,
+} = useBeneficiarySidebar()
 </script>
 
 <template>
