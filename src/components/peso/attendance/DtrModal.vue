@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { toRef } from 'vue'
 import {
   ArrowLeft,
   Calendar,
@@ -25,16 +25,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import DtrSlip from './DtrSlip.vue'
-import type { ProfileRecord } from '@/types/peso/userManagement'
 import type { AttendanceRecord } from '@/types/peso/attendance'
-import type { DtrGenerationResult, DtrOptions } from '@/types/peso/dtr'
-import { attendanceService } from '@/services/peso/attendanceService'
-import { userManagementService } from '@/services/peso/userManagementService'
-import {
-  generateDtrData,
-  generateStandaloneDtrHtml,
-  formatMonthHeader,
-} from '@/helpers/peso/dtrHelper'
+import { useDtrModal } from '@/composables/peso/useDtrModal'
+import { formatMonthHeader } from '@/helpers/peso/dtrHelper'
 import { getInitials } from '@/helpers/peso/attendanceHelper'
 
 const props = defineProps<{
@@ -47,192 +40,36 @@ const emit = defineEmits<{
   (e: 'update:open', val: boolean): void
 }>()
 
-// ─── State ───
-const currentStep = ref<'config' | 'preview'>('config')
-const isLoadingProfiles = ref(false)
-const isGenerating = ref(false)
-const profiles = ref<ProfileRecord[]>([])
-const selectedProfileId = ref<string>('')
-const employeeSearch = ref('')
-const isEmployeeDropdownOpen = ref(false)
-
-// Dates
-const today = new Date()
-const currentYear = today.getFullYear()
-const currentMonth = today.getMonth() + 1 // 1-12
-const lastDayOfCurrentMonth = new Date(currentYear, currentMonth, 0).getDate()
-
-const defaultStart = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
-const defaultEnd = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(
-  Math.min(15, lastDayOfCurrentMonth)
-).padStart(2, '0')}`
-
-const startDate = ref<string>(defaultStart)
-const endDate = ref<string>(defaultEnd)
-
-// Official Hours & Signatories
-const regularHours = ref<string>('')
-const saturdayHours = ref<string>('')
-const supervisorName = ref<string>('PAULINE J. ANG')
-const supervisorTitle = ref<string>('PGDH(PESO Manager)')
-const dualCopy = ref<boolean>(true)
-const rightCopyHasName = ref<boolean>(false)
-
-// Generated Output Data
-const generatedData = ref<DtrGenerationResult | null>(null)
-const fetchError = ref<string | null>(null)
-
-// ─── Selected Employee Computed ───
-const selectedEmployee = computed<ProfileRecord | null>(() => {
-  if (!selectedProfileId.value) return null
-  return profiles.value.find((p) => p.id === selectedProfileId.value) || null
+const {
+  currentStep,
+  isLoadingProfiles,
+  isGenerating,
+  selectedProfileId,
+  employeeSearch,
+  isEmployeeDropdownOpen,
+  startDate,
+  endDate,
+  regularHours,
+  saturdayHours,
+  supervisorName,
+  supervisorTitle,
+  dualCopy,
+  rightCopyHasName,
+  generatedData,
+  fetchError,
+  selectedEmployee,
+  filteredEmployees,
+  applyPreset,
+  handleGenerate,
+  handlePrint,
+  handleClose,
+  selectEmployee,
+} = useDtrModal({
+  open: toRef(props, 'open'),
+  initialProfileId: toRef(props, 'initialProfileId'),
+  existingAttendances: toRef(props, 'existingAttendances'),
+  emit,
 })
-
-// Filtered Employees for Selector Dropdown
-const filteredEmployees = computed(() => {
-  const q = employeeSearch.value.trim().toLowerCase()
-  if (!q) return profiles.value
-  return profiles.value.filter((p) => {
-    return (
-      p.fullName.toLowerCase().includes(q) ||
-      (p.position || '').toLowerCase().includes(q) ||
-      (p.firstname || '').toLowerCase().includes(q) ||
-      (p.lastname || '').toLowerCase().includes(q)
-    )
-  })
-})
-
-// Load Profiles on open
-const loadProfiles = async () => {
-  if (profiles.value.length > 0) return
-  isLoadingProfiles.value = true
-  try {
-    const list = await userManagementService.getProfiles()
-    profiles.value = list
-    if (!selectedProfileId.value && list.length > 0) {
-      if (props.initialProfileId) {
-        selectedProfileId.value = props.initialProfileId
-      } else {
-        selectedProfileId.value = list[0].id
-      }
-    }
-  } catch (e) {
-    console.error('Failed to load profiles for DTR modal:', e)
-  } finally {
-    isLoadingProfiles.value = false
-  }
-}
-
-watch(
-  () => props.open,
-  (val) => {
-    if (val) {
-      currentStep.value = 'config'
-      loadProfiles()
-      if (props.initialProfileId) {
-        selectedProfileId.value = props.initialProfileId
-      }
-    }
-  }
-)
-
-// ─── Quick Preset Handlers ───
-const applyPreset = (preset: 'firstHalf' | 'secondHalf' | 'wholeMonth' | 'toCurrentDay') => {
-  const d = new Date(startDate.value || new Date())
-  const y = d.getFullYear()
-  const m = d.getMonth() + 1
-  const daysInM = new Date(y, m, 0).getDate()
-
-  if (preset === 'firstHalf') {
-    startDate.value = `${y}-${String(m).padStart(2, '0')}-01`
-    endDate.value = `${y}-${String(m).padStart(2, '0')}-15`
-  } else if (preset === 'secondHalf') {
-    startDate.value = `${y}-${String(m).padStart(2, '0')}-16`
-    endDate.value = `${y}-${String(m).padStart(2, '0')}-${String(daysInM).padStart(2, '0')}`
-  } else if (preset === 'wholeMonth') {
-    startDate.value = `${y}-${String(m).padStart(2, '0')}-01`
-    endDate.value = `${y}-${String(m).padStart(2, '0')}-${String(daysInM).padStart(2, '0')}`
-  } else if (preset === 'toCurrentDay') {
-    const now = new Date()
-    startDate.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-    endDate.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
-      now.getDate()
-    ).padStart(2, '0')}`
-  }
-}
-
-// ─── Generate DTR Handler ───
-const handleGenerate = async () => {
-  if (!selectedProfileId.value) {
-    fetchError.value = 'Please select an employee first.'
-    return
-  }
-  if (!startDate.value || !endDate.value) {
-    fetchError.value = 'Please provide both start date and end date.'
-    return
-  }
-  if (startDate.value > endDate.value) {
-    fetchError.value = 'Start date cannot be after end date.'
-    return
-  }
-
-  fetchError.value = null
-  isGenerating.value = true
-
-  try {
-    // 1. Fetch attendances for selected employee and date range
-    let records: AttendanceRecord[] = []
-    try {
-      records = await attendanceService.getAttendancesByProfileAndDateRange(
-        selectedProfileId.value,
-        startDate.value,
-        endDate.value
-      )
-    } catch (e) {
-      console.warn('API fetch by date range returned error, checking in-memory cache:', e)
-    }
-
-    // Fallback to existing loaded attendances if direct query returned empty or failed
-    if ((!records || records.length === 0) && props.existingAttendances) {
-      records = props.existingAttendances.filter(
-        (r) =>
-          r.profileId === selectedProfileId.value &&
-          r.attendanceDate >= startDate.value &&
-          r.attendanceDate <= endDate.value
-      )
-    }
-
-    // 2. Build DTR Options
-    const options: DtrOptions = {
-      employee: selectedEmployee.value,
-      startDate: startDate.value,
-      endDate: endDate.value,
-      regularHours: regularHours.value,
-      saturdayHours: saturdayHours.value,
-      supervisorName: supervisorName.value || 'PGDH',
-      supervisorTitle: supervisorTitle.value || '(PESO Manager)',
-      duplicateLayout: dualCopy.value,
-    }
-
-    // 3. Compute DTR Data
-    generatedData.value = generateDtrData(options, records)
-    currentStep.value = 'preview'
-  } catch (err: any) {
-    console.error('Error generating DTR:', err)
-    fetchError.value = err.message || 'Failed to generate DTR. Please try again.'
-  } finally {
-    isGenerating.value = false
-  }
-}
-
-// ─── Actions in Preview Mode ───
-const handlePrint = () => {
-  window.print()
-}
-
-const handleClose = () => {
-  emit('update:open', false)
-}
 </script>
 
 <template>
@@ -361,10 +198,7 @@ const handleClose = () => {
                   v-for="p in filteredEmployees"
                   :key="p.id"
                   class="flex items-center justify-between p-2.5 hover:bg-muted/50 cursor-pointer text-xs transition-colors"
-                  @click="
-                    selectedProfileId = p.id;
-                    isEmployeeDropdownOpen = false;
-                  "
+                  @click="selectEmployee(p.id)"
                 >
                   <div class="flex items-center gap-2.5">
                     <Avatar class="h-6 w-6 border text-[10px]">

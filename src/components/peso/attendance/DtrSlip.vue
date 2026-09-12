@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { DtrDayRow } from '@/types/peso/dtr'
+import { useDtrSlip } from '@/composables/peso/useDtrSlip'
 
 const props = withDefaults(
   defineProps<{
@@ -20,8 +20,8 @@ const props = withDefaults(
     monthDisplay: '',
     regularHours: '',
     saturdayHours: '',
-    supervisorName: 'PGDH',
-    supervisorTitle: '(PESO Manager)',
+    supervisorName: 'PAULINE J. ANG',
+    supervisorTitle: 'PGDH / PESO Manager',
     rows: () => [],
     activeEndDay: 31,
     totalDaysInMonth: 31,
@@ -29,20 +29,7 @@ const props = withDefaults(
   }
 )
 
-// Diagonal slash calculation (draw diagonal line across inactive days e.g. rows 18 to 30)
-const hasDiagonalSlash = computed(() => {
-  return props.activeEndDay < props.totalDaysInMonth && props.rows.length > 0
-})
-
-const slashYCoords = computed(() => {
-  if (!hasDiagonalSlash.value) return { y1: 0, y2: 0 }
-  const totalRows = 2 + props.totalDaysInMonth
-  const startRow = 2 + props.activeEndDay
-  const endRow = 2 + props.totalDaysInMonth
-  const y1 = ((startRow / totalRows) * 100).toFixed(2)
-  const y2 = ((endRow / totalRows) * 100).toFixed(2)
-  return { y1: Number(y1), y2: Number(y2) }
-})
+const { hasDiagonalSlash, slashYCoords } = useDtrSlip(props)
 </script>
 
 <template>

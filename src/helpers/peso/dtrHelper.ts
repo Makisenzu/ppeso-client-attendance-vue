@@ -129,7 +129,7 @@ export function buildDtrRows(
   totalUndertimeMinutes: number
 } {
   const [startY, startM, startD] = startDateStr.split('-').map(Number)
-  const [endY, endM, endD] = endDateStr.split('-').map(Number)
+  const [, , endD] = endDateStr.split('-').map(Number)
 
   const totalDaysInMonth = new Date(startY, startM, 0).getDate()
 
@@ -699,4 +699,86 @@ export function generateStandaloneDtrHtml(
   </div>
 </body>
 </html>`
+}
+
+export type DtrPresetType = 'firstHalf' | 'secondHalf' | 'wholeMonth' | 'toCurrentDay'
+
+/**
+ * Returns default DTR date range (1st of month to 15th, or last day if month has fewer days)
+ */
+export function getDefaultDtrDateRange(baseDate: Date = new Date()): { startDate: string; endDate: string } {
+  const currentYear = baseDate.getFullYear()
+  const currentMonth = baseDate.getMonth() + 1
+  const lastDayOfCurrentMonth = new Date(currentYear, currentMonth, 0).getDate()
+
+  const startDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
+  const endDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(
+    Math.min(15, lastDayOfCurrentMonth)
+  ).padStart(2, '0')}`
+
+  return { startDate, endDate }
+}
+
+/**
+ * Calculates start and end dates according to standard DTR presets
+ */
+export function getDtrPresetDateRange(
+  preset: DtrPresetType,
+  baseDate: Date = new Date()
+): { startDate: string; endDate: string } {
+  const y = baseDate.getFullYear()
+  const m = baseDate.getMonth() + 1
+  const daysInM = new Date(y, m, 0).getDate()
+
+  if (preset === 'firstHalf') {
+    return {
+      startDate: `${y}-${String(m).padStart(2, '0')}-01`,
+      endDate: `${y}-${String(m).padStart(2, '0')}-15`,
+    }
+  } else if (preset === 'secondHalf') {
+    return {
+      startDate: `${y}-${String(m).padStart(2, '0')}-16`,
+      endDate: `${y}-${String(m).padStart(2, '0')}-${String(daysInM).padStart(2, '0')}`,
+    }
+  } else if (preset === 'wholeMonth') {
+    return {
+      startDate: `${y}-${String(m).padStart(2, '0')}-01`,
+      endDate: `${y}-${String(m).padStart(2, '0')}-${String(daysInM).padStart(2, '0')}`,
+    }
+  } else if (preset === 'toCurrentDay') {
+    const now = new Date()
+    return {
+      startDate: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`,
+      endDate: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+        now.getDate()
+      ).padStart(2, '0')}`,
+    }
+  }
+
+  return getDefaultDtrDateRange(baseDate)
+}
+
+/**
+ * Calculates diagonal slash Y coordinates for inactive days in Civil Service Form 48 table
+ */
+export function calculateDiagonalSlash(
+  activeEndDay: number,
+  totalDaysInMonth: number,
+  rowCount: number
+): { hasSlash: boolean; coords: { y1: number; y2: number } } {
+  const hasSlash = activeEndDay < totalDaysInMonth && rowCount > 0
+  if (!hasSlash) {
+    return { hasSlash: false, coords: { y1: 0, y2: 0 } }
+  }
+
+  const totalRows = 2 + totalDaysInMonth
+  const startRow = 2 + activeEndDay
+  const endRow = 2 + totalDaysInMonth
+  const y1 = Number(((startRow / totalRows) * 100).toFixed(2))
+  const y2 = Number(((endRow / totalRows) * 100).toFixed(2))
+
+  return {
+    hasSlash: true,
+    coords: { y1, y2 },
+  }
 }
