@@ -115,7 +115,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      flag_daily_absences: {
+        Args: { target_date?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       gender_type: "male" | "female" | "not specified"
@@ -135,6 +138,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      offices: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -142,8 +172,10 @@ export type Database = {
           id: string
           lastname: string
           middlename: string | null
+          office_id: string | null
           passcode: string
           position: Database["public"]["Enums"]["profile_position"]
+          role: Database["public"]["Enums"]["profile_roles"] | null
           status: Database["public"]["Enums"]["profile_status"]
           updated_at: string | null
         }
@@ -153,8 +185,10 @@ export type Database = {
           id: string
           lastname: string
           middlename?: string | null
+          office_id?: string | null
           passcode: string
           position: Database["public"]["Enums"]["profile_position"]
+          role?: Database["public"]["Enums"]["profile_roles"] | null
           status?: Database["public"]["Enums"]["profile_status"]
           updated_at?: string | null
         }
@@ -164,12 +198,22 @@ export type Database = {
           id?: string
           lastname?: string
           middlename?: string | null
+          office_id?: string | null
           passcode?: string
           position?: Database["public"]["Enums"]["profile_position"]
+          role?: Database["public"]["Enums"]["profile_roles"] | null
           status?: Database["public"]["Enums"]["profile_status"]
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -180,6 +224,7 @@ export type Database = {
     }
     Enums: {
       profile_position: "employee" | "gip" | "tupad" | "client"
+      profile_roles: "admin" | "beneficiary" | "supervisor"
       profile_status: "active" | "inactive" | "pending"
     }
     CompositeTypes: {
@@ -324,6 +369,7 @@ export const Constants = {
   public: {
     Enums: {
       profile_position: ["employee", "gip", "tupad", "client"],
+      profile_roles: ["admin", "beneficiary", "supervisor"],
       profile_status: ["active", "inactive", "pending"],
     },
   },
