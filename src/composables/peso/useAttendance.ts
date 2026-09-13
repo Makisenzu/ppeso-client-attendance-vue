@@ -61,10 +61,17 @@ export function useAttendance() {
     const customDate = customDateFilter.value
 
     return attendances.value.filter((record) => {
-      // 1. Text Search Filter (name, position, date, id, punch times, statuses)
+      // 0. Only display those with role = beneficiary
+      if (record.role && record.role.toLowerCase() !== 'beneficiary') {
+        return false
+      }
+
+      // 1. Text Search Filter (name, office, position, date, id, punch times, statuses)
       if (q) {
         const nameMatch = record.fullName.toLowerCase().includes(q)
-        const posMatch = (record.position || 'employee').toLowerCase().includes(q)
+        const officeNameMatch = (record.officeName || '').toLowerCase().includes(q)
+        const officeCodeMatch = (record.officeCode || '').toLowerCase().includes(q)
+        const posMatch = (record.position || 'beneficiary').toLowerCase().includes(q)
         const rawDate = (record.attendanceDate || '').toLowerCase()
         const formattedDate = formatDateDisplay(record.attendanceDate).toLowerCase()
         const idMatch =
@@ -87,6 +94,8 @@ export function useAttendance() {
 
         if (
           !nameMatch &&
+          !officeNameMatch &&
+          !officeCodeMatch &&
           !posMatch &&
           !rawDate.includes(q) &&
           !formattedDate.includes(q) &&

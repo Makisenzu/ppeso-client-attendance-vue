@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import {
   AlertTriangle,
+  Building2,
   Calendar,
   CalendarX2,
   CheckCircle2,
@@ -299,7 +300,7 @@ const openDtrModal = (profileId?: string | null) => {
             <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               v-model="searchQuery"
-              placeholder="Search by employee name, position, or date..."
+              placeholder="Search by beneficiary name, office, position, or date..."
               class="pl-9 pr-8 text-xs h-9"
             />
             <button
@@ -438,7 +439,8 @@ const openDtrModal = (profileId?: string | null) => {
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>
-                <TableHead class="min-w-44 text-xs font-semibold">Employee</TableHead>
+                <TableHead class="min-w-44 text-xs font-semibold">Beneficiary</TableHead>
+                <TableHead class="min-w-36 text-xs font-semibold">Assigned Office</TableHead>
                 <TableHead class="min-w-28 text-xs font-semibold">Attendance Date</TableHead>
                 <TableHead class="min-w-28 text-xs font-semibold">AM Check In</TableHead>
                 <TableHead class="min-w-28 text-xs font-semibold">AM Check Out</TableHead>
@@ -451,10 +453,10 @@ const openDtrModal = (profileId?: string | null) => {
               <!-- Loading State -->
               <template v-if="isLoading">
                 <TableRow>
-                  <TableCell colspan="7" class="h-44 text-center text-muted-foreground">
+                  <TableCell colspan="8" class="h-44 text-center text-muted-foreground">
                     <div class="flex flex-col items-center justify-center gap-2 py-6">
                       <Loader2 class="h-8 w-8 animate-spin text-primary" />
-                      <p class="text-xs text-muted-foreground">Loading records from core.attendances...</p>
+                      <p class="text-xs text-muted-foreground">Loading records of attendances...</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -468,7 +470,7 @@ const openDtrModal = (profileId?: string | null) => {
                   class="transition-colors"
                   :class="[isRecordAbsent(record) ? 'bg-destructive/3 hover:bg-destructive/8' : 'hover:bg-muted/30']"
                 >
-                  <!-- 1. Employee (profile_id) -->
+                  <!-- 1. Beneficiary (profile_id) -->
                   <TableCell class="py-3">
                     <div class="flex items-center gap-2.5">
                       <Avatar class="h-8 w-8 text-xs shrink-0 font-medium">
@@ -485,7 +487,7 @@ const openDtrModal = (profileId?: string | null) => {
                             variant="outline"
                             :class="[getPositionBadgeClass(record.position), 'text-[10px] uppercase font-mono px-1.5 py-0 h-4']"
                           >
-                            {{ record.position || 'Employee' }}
+                            {{ record.position || 'Beneficiary' }}
                           </Badge>
                           <Badge
                             v-if="isRecordAbsent(record)"
@@ -499,7 +501,25 @@ const openDtrModal = (profileId?: string | null) => {
                     </div>
                   </TableCell>
 
-                  <!-- 2. Attendance Date (attendance_date) -->
+                  <!-- 2. Assigned Office -->
+                  <TableCell class="py-3">
+                    <div v-if="record.officeName" class="flex items-center gap-2">
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-xs font-medium text-foreground truncate max-w-[170px]" :title="record.officeName">
+                          {{ record.officeName }}
+                        </span>
+                        <span v-if="record.officeCode" class="text-[10px] text-muted-foreground font-mono">
+                          {{ record.officeCode }}
+                        </span>
+                      </div>
+                    </div>
+                    <div v-else class="flex items-center gap-1.5 text-xs text-muted-foreground/70 italic">
+                      <Building2 class="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                      <span>Unassigned</span>
+                    </div>
+                  </TableCell>
+
+                  <!-- 3. Attendance Date (attendance_date) -->
                   <TableCell class="py-3">
                     <div class="flex items-center gap-1.5 text-xs font-mono font-medium text-foreground">
                       <Calendar class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -666,7 +686,7 @@ const openDtrModal = (profileId?: string | null) => {
               </template>
 
               <!-- Empty State using UI Empty Component -->
-              <TableEmpty v-else :colspan="7">
+              <TableEmpty v-else :colspan="8">
                 <Empty class="border-0 p-6 md:p-8">
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
@@ -799,7 +819,7 @@ const openDtrModal = (profileId?: string | null) => {
             Daily Time Record Details
           </DialogTitle>
           <DialogDescription class="text-xs">
-            Detailed view of attendance entry in core.attendances.
+            Detailed view of attendance entry.
           </DialogDescription>
         </DialogHeader>
 
@@ -834,6 +854,16 @@ const openDtrModal = (profileId?: string | null) => {
               </div>
               <p class="text-muted-foreground text-[11px] font-mono">
                 Date: <span class="font-semibold text-foreground">{{ formatDateDisplay(selectedRecord.attendanceDate) }}</span>
+              </p>
+              <p class="text-muted-foreground text-[11px] flex items-center gap-1.5 pt-0.5">
+                <Building2 class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span>Office:</span>
+                <span class="font-semibold text-foreground">
+                  {{ selectedRecord.officeName || 'Unassigned' }}
+                </span>
+                <span v-if="selectedRecord.officeCode" class="text-[10px] text-muted-foreground font-mono">
+                  ({{ selectedRecord.officeCode }})
+                </span>
               </p>
             </div>
           </div>
@@ -912,6 +942,12 @@ const openDtrModal = (profileId?: string | null) => {
 
           <!-- Metadata -->
           <div class="p-3 rounded-lg border bg-muted/20 space-y-1.5 text-muted-foreground text-[11px] font-mono">
+            <div v-if="selectedRecord.officeName" class="flex justify-between">
+              <span>Assigned Office:</span>
+              <span class="text-foreground truncate max-w-64 font-sans font-medium">
+                {{ selectedRecord.officeName }}{{ selectedRecord.officeCode ? ` (${selectedRecord.officeCode})` : '' }}
+              </span>
+            </div>
             <div class="flex justify-between">
               <span>Profile ID:</span>
               <span class="text-foreground truncate max-w-64">{{ selectedRecord.profileId }}</span>

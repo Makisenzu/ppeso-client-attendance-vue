@@ -3,6 +3,7 @@ import type { Database } from '../database.types'
 export type PunchStatus = Database['core']['Enums']['punch_status']
 export type ProfilePosition = Database['public']['Enums']['profile_position']
 export type ProfileStatus = Database['public']['Enums']['profile_status']
+export type ProfileRole = Database['public']['Enums']['profile_roles']
 
 export interface AttendanceRecord {
   id: string
@@ -15,6 +16,10 @@ export interface AttendanceRecord {
   lastName: string
   middleName?: string | null
   position?: ProfilePosition | string | null
+  role?: ProfileRole | string | null
+  officeId?: string | null
+  officeName?: string | null
+  officeCode?: string | null
 
   // Columns from core.attendances
   amCheckIn: string | null

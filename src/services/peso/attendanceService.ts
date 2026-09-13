@@ -40,6 +40,8 @@ export const attendanceService = {
       )
 
       const profileMap = new Map<string, any>()
+      const officeMap = new Map<string, any>()
+
       if (profileIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
@@ -50,25 +52,59 @@ export const attendanceService = {
           console.warn('Error fetching profiles for attendances:', profilesError.message)
         } else if (profilesData) {
           profilesData.forEach((p) => profileMap.set(p.id, p))
+
+          const officeIds = Array.from(
+            new Set(
+              profilesData
+                .map((p) => p.office_id)
+                .filter((id): id is string => Boolean(id))
+            )
+          )
+
+          if (officeIds.length > 0) {
+            const { data: officesData, error: officesError } = await supabase
+              .from('offices')
+              .select('id, name, code')
+              .in('id', officeIds)
+
+            if (officesError) {
+              console.warn('Error fetching offices for attendances:', officesError.message)
+            } else if (officesData) {
+              officesData.forEach((o) => officeMap.set(o.id, o))
+            }
+          }
         }
       }
 
-      // 3. Map into AttendanceRecord following core.attendances columns
-      const results: AttendanceRecord[] = attendancesData.map((item) => {
+      // 3. Map into AttendanceRecord following core.attendances columns,
+      // displaying only beneficiaries (role = 'beneficiary')
+      const results: AttendanceRecord[] = []
+      for (const item of attendancesData) {
         const p = profileMap.get(item.profile_id)
+        // Only display those with role = beneficiary
+        if (p?.role?.toLowerCase() !== 'beneficiary') {
+          continue
+        }
+
         const fullName = p
           ? `${p.firstname || ''} ${p.middlename ? p.middlename + ' ' : ''}${p.lastname || ''}`.trim()
-          : 'Unknown Profile'
+          : 'Unknown Beneficiary'
 
-        return {
+        const office = p?.office_id ? officeMap.get(p.office_id) : null
+
+        results.push({
           id: item.id,
           profileId: item.profile_id,
           attendanceDate: item.attendance_date,
-          fullName: fullName || 'Unknown Profile',
+          fullName: fullName || 'Unknown Beneficiary',
           firstName: p?.firstname || 'N/A',
           lastName: p?.lastname || '',
           middleName: p?.middlename || null,
           position: p?.position || 'employee',
+          role: p?.role || 'beneficiary',
+          officeId: p?.office_id || null,
+          officeName: office?.name || null,
+          officeCode: office?.code || null,
           amCheckIn: item.am_check_in,
           amInStatus: item.am_in_status,
           amCheckOut: item.am_check_out,
@@ -79,8 +115,8 @@ export const attendanceService = {
           pmOutStatus: item.pm_out_status,
           status: item.status || null,
           createdAt: item.created_at,
-        }
-      })
+        })
+      }
 
       // Sort newest attendance_date first, fallback to created_at
       return results.sort((a, b) => {
@@ -273,9 +309,21 @@ export const attendanceService = {
         .eq('id', profileId)
         .single()
 
+      let officeData: { id: string; name: string; code: string | null } | null = null
+      if (profile?.office_id) {
+        const { data: off } = await supabase
+          .from('offices')
+          .select('id, name, code')
+          .eq('id', profile.office_id)
+          .single()
+        if (off) {
+          officeData = off
+        }
+      }
+
       const fullName = profile
         ? `${profile.firstname || ''} ${profile.middlename ? profile.middlename + ' ' : ''}${profile.lastname || ''}`.trim()
-        : 'Employee'
+        : 'Beneficiary'
 
       return attendancesData.map((item) => ({
         id: item.id,
@@ -286,6 +334,10 @@ export const attendanceService = {
         lastName: profile?.lastname || '',
         middleName: profile?.middlename || null,
         position: profile?.position || 'employee',
+        role: profile?.role || null,
+        officeId: profile?.office_id || null,
+        officeName: officeData?.name || null,
+        officeCode: officeData?.code || null,
         amCheckIn: item.am_check_in,
         amInStatus: item.am_in_status,
         amCheckOut: item.am_check_out,
