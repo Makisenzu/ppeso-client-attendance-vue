@@ -6,20 +6,82 @@ export const userManagementService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          offices:offices (
+            id,
+            name,
+            code
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.warn('Error fetching profiles:', error.message)
-        return []
+        console.warn('Error fetching profiles with offices, falling back to basic query:', error.message)
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (fallbackError || !fallbackData) {
+          console.error('Failed to fetch profiles fallback:', fallbackError?.message)
+          return []
+        }
+
+        // Fetch office details for non-empty office_ids
+        const officeMap = new Map<string, { id: string; name: string; code: string | null }>()
+        const officeIds = Array.from(
+          new Set(
+            fallbackData
+              .map((p) => p.office_id)
+              .filter((id): id is string => Boolean(id)),
+          ),
+        )
+
+        if (officeIds.length > 0) {
+          const { data: officesData } = await supabase
+            .from('offices')
+            .select('id, name, code')
+            .in('id', officeIds)
+
+          if (officesData) {
+            officesData.forEach((o) => officeMap.set(o.id, o))
+          }
+        }
+
+        return fallbackData.map((p) => {
+          const fullName = `${p.firstname || ''} ${p.middlename ? p.middlename + ' ' : ''}${p.lastname || ''}`.trim()
+          const office = p.office_id ? officeMap.get(p.office_id) : null
+
+          return {
+            id: p.id,
+            firstname: p.firstname,
+            middlename: p.middlename,
+            lastname: p.lastname,
+            fullName: fullName || 'Unknown',
+            position: p.position,
+            status: p.status,
+            passcode: p.passcode,
+            officeId: p.office_id || null,
+            officeName: office?.name || null,
+            officeCode: office?.code || null,
+            createdAt: p.created_at,
+            updatedAt: p.updated_at,
+          }
+        })
       }
 
       if (!data || data.length === 0) {
         return []
       }
 
-      return data.map((p) => {
+      return data.map((p: any) => {
         const fullName = `${p.firstname || ''} ${p.middlename ? p.middlename + ' ' : ''}${p.lastname || ''}`.trim()
+        const office = p.offices
+          ? Array.isArray(p.offices)
+            ? p.offices[0]
+            : p.offices
+          : null
 
         return {
           id: p.id,
@@ -30,6 +92,9 @@ export const userManagementService = {
           position: p.position,
           status: p.status,
           passcode: p.passcode,
+          officeId: p.office_id || null,
+          officeName: office?.name || null,
+          officeCode: office?.code || null,
           createdAt: p.created_at,
           updatedAt: p.updated_at,
         }
@@ -42,6 +107,16 @@ export const userManagementService = {
 
   async createUser(formData: UserFormData): Promise<{ success: boolean; error?: string }> {
     try {
+      const officeId = formData.officeId?.trim() || null
+
+      // Determine role based on position
+      const role =
+        formData.position === 'gip' || formData.position === 'tupad'
+          ? 'beneficiary'
+          : formData.position === 'employee'
+            ? 'admin'
+            : null
+
       // 1. Save the current admin session before signUp
       const { data: sessionData } = await supabase.auth.getSession()
       const adminSession = sessionData.session
@@ -56,6 +131,8 @@ export const userManagementService = {
             middlename: formData.middlename || null,
             lastname: formData.lastname,
             position: formData.position,
+            office_id: officeId,
+            role,
           },
         },
       })
@@ -83,6 +160,8 @@ export const userManagementService = {
             position: formData.position,
             passcode: passcode,
             status: 'active',
+            office_id: officeId,
+            role,
           },
           { onConflict: 'id' },
         )

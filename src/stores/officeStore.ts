@@ -8,6 +8,10 @@ export const useOfficeStore = defineStore('office', () => {
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
+  const activeOffices = computed<OfficeRecord[]>(() =>
+    offices.value.filter((off) => off.isActive),
+  )
+
   const statsSummary = computed<OfficeStatsSummary>(() => {
     let activeCount = 0
     let inactiveCount = 0
@@ -81,6 +85,7 @@ export const useOfficeStore = defineStore('office', () => {
 
   return {
     offices,
+    activeOffices,
     isLoading,
     error,
     statsSummary,

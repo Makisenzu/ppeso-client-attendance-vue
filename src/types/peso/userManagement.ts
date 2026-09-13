@@ -12,6 +12,9 @@ export interface ProfileRecord {
   position: ProfilePosition
   status: ProfileStatus
   passcode: string
+  officeId: string | null
+  officeName?: string | null
+  officeCode?: string | null
   createdAt: string
   updatedAt: string | null
 }
@@ -23,6 +26,7 @@ export interface UserFormData {
   middlename: string
   lastname: string
   position: ProfilePosition
+  officeId?: string | null
 }
 
 export interface ProfileFilterState {

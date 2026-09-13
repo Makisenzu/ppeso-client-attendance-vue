@@ -213,4 +213,15 @@ export const officeService = {
       }
     }
   },
+
+  async getActiveOffices(): Promise<OfficeRecord[]> {
+    try {
+      const allOffices = await this.getOffices()
+      return allOffices.filter((o) => o.isActive)
+    } catch (err) {
+      console.error('Failed to fetch active offices:', err)
+      return []
+    }
+  },
 }
+

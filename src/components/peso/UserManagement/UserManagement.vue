@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   AlertTriangle,
+  Building2,
   CheckCircle2,
   Download,
   Eye,
@@ -74,6 +75,8 @@ const {
   submitError,
   submitSuccess,
   formData,
+  activeOffices,
+  isOfficesLoading,
   profileToDelete,
   isDeleteDialogOpen,
   isDeleting,
@@ -306,6 +309,7 @@ const {
             <TableHeader class="bg-muted/40">
               <TableRow>
                 <TableHead class="min-w-44 text-xs font-semibold">User</TableHead>
+                <TableHead class="min-w-24 text-xs font-semibold">Office</TableHead>
                 <TableHead class="min-w-24 text-xs font-semibold">Status</TableHead>
                 <TableHead class="min-w-24 text-xs font-semibold">Passcode</TableHead>
                 <TableHead class="min-w-28 text-xs font-semibold">Created At</TableHead>
@@ -316,7 +320,7 @@ const {
               <!-- Loading State -->
               <template v-if="isLoading">
                 <TableRow>
-                  <TableCell colspan="5" class="h-44 text-center text-muted-foreground">
+                  <TableCell colspan="6" class="h-44 text-center text-muted-foreground">
                     <div class="flex flex-col items-center justify-center gap-2 py-6">
                       <Loader2 class="h-8 w-8 animate-spin text-primary" />
                       <p class="text-xs text-muted-foreground">Loading profiles from public.profiles...</p>
@@ -356,7 +360,21 @@ const {
                     </div>
                   </TableCell>
 
-                  <!-- 2. Status -->
+                  <!-- 2. Office -->
+                  <TableCell class="py-3">
+                    <div v-if="profile.officeName" class="flex items-center gap-1.5">
+                      <Building2 class="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span class="text-xs text-foreground truncate max-w-32">
+                        {{ profile.officeName }}
+                      </span>
+                      <span v-if="profile.officeCode" class="text-[10px] font-mono text-muted-foreground">
+                        ({{ profile.officeCode }})
+                      </span>
+                    </div>
+                    <span v-else class="text-xs text-muted-foreground">—</span>
+                  </TableCell>
+
+                  <!-- 3. Status -->
                   <TableCell class="py-3">
                     <Badge
                       variant="outline"
@@ -407,7 +425,7 @@ const {
               </template>
 
               <!-- Empty State -->
-              <TableEmpty v-else :colspan="5">
+              <TableEmpty v-else :colspan="6">
                 <Empty class="border-0 p-6 md:p-8">
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
@@ -570,6 +588,17 @@ const {
                 <p class="font-medium font-mono text-foreground mt-0.5">
                   <span class="bg-muted/60 px-2 py-0.5 rounded">{{ selectedProfile.passcode }}</span>
                 </p>
+              <div>
+                <p class="text-[11px] text-muted-foreground">Assigned Office</p>
+                <p class="font-medium font-mono text-foreground mt-0.5">
+                  <span v-if="selectedProfile.officeName" class="flex items-center gap-1.5">
+                    <Building2 class="h-3 w-3 text-muted-foreground shrink-0" />
+                    {{ selectedProfile.officeName }}
+                    <span v-if="selectedProfile.officeCode" class="text-[10px] text-muted-foreground">({{ selectedProfile.officeCode }})</span>
+                  </span>
+                  <span v-else>—</span>
+                </p>
+              </div>
               </div>
             </div>
           </div>
@@ -672,6 +701,36 @@ const {
               <option value="tupad">TUPAD</option>
               <option value="client">Client</option>
             </select>
+          </div>
+
+          <!-- Assigned Office -->
+          <div class="space-y-1.5">
+            <label for="add-office" class="text-xs font-medium text-foreground">
+              Assigned Office
+            </label>
+            <div v-if="isOfficesLoading" class="flex items-center gap-2 h-9 px-3 text-xs text-muted-foreground">
+              <Loader2 class="h-3.5 w-3.5 animate-spin" />
+              <span>Loading offices...</span>
+            </div>
+            <select
+              v-else
+              id="add-office"
+              v-model="formData.officeId"
+              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              :disabled="isSubmitting"
+            >
+              <option value="">No Office Assigned</option>
+              <option
+                v-for="office in activeOffices"
+                :key="office.id"
+                :value="office.id"
+              >
+                {{ office.name }}<template v-if="office.code"> ({{ office.code }})</template>
+              </option>
+            </select>
+            <p v-if="!isOfficesLoading && activeOffices.length === 0" class="text-[11px] text-muted-foreground">
+              No active offices available. Create one in Office Management first.
+            </p>
           </div>
 
           <!-- Auth Fields -->

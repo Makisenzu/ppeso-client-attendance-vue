@@ -6,8 +6,10 @@ import type {
 } from '@/types/peso/userManagement'
 import { userManagementService } from '@/services/peso/userManagementService'
 import { exportProfilesToCsv } from '@/helpers/peso/userManagementHelper'
+import { useOfficeStore } from '@/stores/officeStore'
 
 export function useUserManagement() {
+  const officeStore = useOfficeStore()
   const profiles = ref<ProfileRecord[]>([])
   const isLoading = ref<boolean>(false)
   const searchQuery = ref<string>('')
@@ -19,6 +21,10 @@ export function useUserManagement() {
 
   const selectedProfile = ref<ProfileRecord | null>(null)
   const isDetailsOpen = ref<boolean>(false)
+
+  // ─── Active Offices for Add User ───
+  const activeOffices = computed(() => officeStore.activeOffices)
+  const isOfficesLoading = computed(() => officeStore.isLoading)
 
   // ─── Add User Dialog State ───
   const isAddUserOpen = ref<boolean>(false)
@@ -33,6 +39,7 @@ export function useUserManagement() {
     middlename: '',
     lastname: '',
     position: 'employee',
+    officeId: '',
   })
 
   // ─── Fetch Profiles ───
@@ -75,8 +82,12 @@ export function useUserManagement() {
         const posMatch = profile.position.toLowerCase().includes(q)
         const idMatch = profile.id.toLowerCase().includes(q)
         const passcodeMatch = profile.passcode.includes(q)
+        const officeMatch = Boolean(
+          (profile.officeName && profile.officeName.toLowerCase().includes(q)) ||
+          (profile.officeCode && profile.officeCode.toLowerCase().includes(q)),
+        )
 
-        if (!nameMatch && !firstMatch && !lastMatch && !posMatch && !idMatch && !passcodeMatch) {
+        if (!nameMatch && !firstMatch && !lastMatch && !posMatch && !idMatch && !passcodeMatch && !officeMatch) {
           return false
         }
       }
@@ -185,7 +196,7 @@ export function useUserManagement() {
   }
 
   // ─── Add User Dialog ───
-  const openAddUser = () => {
+  const openAddUser = async () => {
     formData.value = {
       email: '',
       password: '',
@@ -193,10 +204,15 @@ export function useUserManagement() {
       middlename: '',
       lastname: '',
       position: 'employee',
+      officeId: '',
     }
     submitError.value = ''
     submitSuccess.value = false
     isAddUserOpen.value = true
+
+    if (officeStore.offices.length === 0) {
+      await officeStore.fetchOffices()
+    }
   }
 
   const closeAddUser = () => {
@@ -317,6 +333,9 @@ export function useUserManagement() {
 
   onMounted(() => {
     fetchProfiles()
+    if (officeStore.offices.length === 0) {
+      officeStore.fetchOffices()
+    }
   })
 
   return {
@@ -339,6 +358,8 @@ export function useUserManagement() {
     submitError,
     submitSuccess,
     formData,
+    activeOffices,
+    isOfficesLoading,
     profileToDelete,
     isDeleteDialogOpen,
     isDeleting,
