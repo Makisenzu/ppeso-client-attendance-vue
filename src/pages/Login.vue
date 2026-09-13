@@ -39,13 +39,13 @@ const handleLogin = async () => {
 
 <template>
   <div class="w-full max-w-md">
-    <div class="rounded-lg bg-white p-8 shadow-lg">
-      <h1 class="mb-2 text-center text-3xl font-bold text-slate-900">Welcome Back</h1>
-      <p class="mb-8 text-center text-slate-600">Sign in to your account</p>
+    <div class="rounded-lg bg-card text-card-foreground border border-border p-8 shadow-lg transition-colors">
+      <h1 class="mb-2 text-center text-3xl font-bold text-foreground">Welcome Back</h1>
+      <p class="mb-8 text-center text-muted-foreground">Sign in to your account</p>
 
       <form class="space-y-4" @submit.prevent="handleLogin">
         <div>
-          <label for="email" class="mb-2 block text-sm font-medium text-slate-700">
+          <label for="email" class="mb-2 block text-sm font-medium text-foreground">
             Email
           </label>
           <Input
@@ -58,7 +58,7 @@ const handleLogin = async () => {
         </div>
 
         <div>
-          <label for="password" class="mb-2 block text-sm font-medium text-slate-700">
+          <label for="password" class="mb-2 block text-sm font-medium text-foreground">
             Password
           </label>
           <Input
@@ -70,30 +70,30 @@ const handleLogin = async () => {
           />
         </div>
 
-        <div v-if="error" class="rounded-md border border-red-200 bg-red-50 p-3">
-          <p class="text-sm text-red-700">{{ error }}</p>
+        <div v-if="error" class="rounded-md border border-destructive/20 bg-destructive/10 p-3">
+          <p class="text-sm text-destructive">{{ error }}</p>
         </div>
 
         <Button
           type="submit"
           :disabled="loading"
-          class="w-full bg-blue-600 text-white hover:bg-blue-700"
+          class="w-full bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 cursor-pointer shadow-sm transition-colors"
         >
           {{ loading ? 'Signing in...' : 'Sign In' }}
         </Button>
 
         <div class="relative">
           <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-slate-300"></div>
+            <div class="w-full border-t border-border"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="bg-white px-2 text-slate-500">or</span>
+            <span class="bg-card px-2 text-muted-foreground">or</span>
           </div>
         </div>
 
-        <p class="text-center text-slate-600">
+        <p class="text-center text-muted-foreground">
           Don't have an account?
-          <router-link to="/signup" class="font-semibold text-blue-600 hover:text-blue-700">
+          <router-link to="/signup" class="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
             Sign up
           </router-link>
         </p>

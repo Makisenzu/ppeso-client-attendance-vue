@@ -11,12 +11,12 @@ function toggleTheme() {
 </script>
 
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-linear-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
-    <div class="absolute inset-0 bg-black/10" />
+  <div class="relative min-h-screen overflow-hidden bg-linear-to-br from-slate-100 via-slate-50 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 text-foreground transition-colors duration-200">
+    <div class="absolute inset-0 bg-black/5 dark:bg-black/20" />
 
     <button
       @click="toggleTheme"
-      class="absolute right-4 top-4 z-20 flex size-8 items-center justify-center rounded-md bg-white/10 text-white/80 backdrop-blur hover:bg-white/20 hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70"
+      class="absolute right-4 top-4 z-20 flex size-8 items-center justify-center rounded-md bg-slate-200/80 text-slate-700 hover:bg-slate-300 hover:text-slate-900 dark:bg-white/10 dark:text-white/80 backdrop-blur dark:hover:bg-white/20 dark:hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       title="Toggle color theme"
     >
       <component :is="mode === 'dark' ? Sun : Moon" class="size-4 shrink-0" />
