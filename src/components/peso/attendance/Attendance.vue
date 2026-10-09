@@ -505,7 +505,7 @@ const openDtrModal = (profileId?: string | null) => {
                   <TableCell class="py-3">
                     <div v-if="record.officeName" class="flex items-center gap-2">
                       <div class="flex flex-col min-w-0">
-                        <span class="text-xs font-medium text-foreground truncate max-w-[170px]" :title="record.officeName">
+                        <span class="text-xs font-medium text-foreground truncate max-w-42.5" :title="record.officeName">
                           {{ record.officeName }}
                         </span>
                         <span v-if="record.officeCode" class="text-[10px] text-muted-foreground font-mono">

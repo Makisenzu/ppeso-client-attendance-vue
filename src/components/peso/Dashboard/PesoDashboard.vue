@@ -2,12 +2,8 @@
 import { computed, ref } from 'vue'
 import {
   CalendarDays,
-  CheckCircle2,
-  Clock,
   PieChart as PieChartIcon,
   RefreshCw,
-  UserCheck,
-  UserRound,
   Users,
 } from '@lucide/vue'
 import {
@@ -402,9 +398,6 @@ function hasData(numbers: number[]): boolean {
           <CardTitle class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Clients Today
           </CardTitle>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            <UserRound class="h-5 w-5" />
-          </div>
         </CardHeader>
         <CardContent>
           <div v-if="isLoading" class="space-y-2">
@@ -428,9 +421,6 @@ function hasData(numbers: number[]): boolean {
           <CardTitle class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             DTR Logs
           </CardTitle>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-            <Clock class="h-5 w-5" />
-          </div>
         </CardHeader>
         <CardContent>
           <div v-if="isLoading" class="space-y-2">
@@ -454,9 +444,6 @@ function hasData(numbers: number[]): boolean {
           <CardTitle class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Active Personnel
           </CardTitle>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <UserCheck class="h-5 w-5" />
-          </div>
         </CardHeader>
         <CardContent>
           <div v-if="isLoading" class="space-y-2">
@@ -480,9 +467,6 @@ function hasData(numbers: number[]): boolean {
           <CardTitle class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             On-Time Rate
           </CardTitle>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <CheckCircle2 class="h-5 w-5" />
-          </div>
         </CardHeader>
         <CardContent>
           <div v-if="isLoading" class="space-y-2">
