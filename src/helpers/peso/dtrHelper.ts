@@ -1,5 +1,16 @@
 import type { AttendanceRecord } from '@/types/peso/attendance'
 import type { DtrDayRow, DtrGenerationResult, DtrOptions } from '@/types/peso/dtr'
+import type { HolidayRecord } from '@/types/peso/holiday'
+
+/** Escapes text placed into the standalone DTR HTML document. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
 /**
  * Formats a raw time string (e.g. "07:36:00", "07:36", "17:16:00", "2026-06-01T07:36:00Z")
@@ -119,7 +130,8 @@ export function formatMonthHeader(startDateStr: string, endDateStr: string): str
 export function buildDtrRows(
   startDateStr: string,
   endDateStr: string,
-  attendances: AttendanceRecord[]
+  attendances: AttendanceRecord[],
+  holidays: HolidayRecord[] = []
 ): {
   rows: DtrDayRow[]
   activeStartDay: number
@@ -143,6 +155,9 @@ export function buildDtrRows(
       }
     }
   }
+
+  // Printed in capitals across the row, like SATURDAY / SUNDAY.
+  const holidayNameByDate = new Map(holidays.map((h) => [h.date, h.name.trim().toUpperCase()]))
 
   const rows: DtrDayRow[] = []
   let totalUndertimeMinutes = 0
@@ -187,12 +202,18 @@ export function buildDtrRows(
       }
     }
 
+    // A weekday holiday prints its name across the row — unless the person punched in that day.
+    const hasPunches = Boolean(amArrival || amDeparture || pmArrival || pmDeparture)
+    const holidayName =
+      !isSaturday && !isSunday && !hasPunches ? holidayNameByDate.get(dateStr) ?? null : null
+
     rows.push({
       day,
       dateStr,
       dayOfWeek,
       isSaturday,
       isSunday,
+      holidayName,
       isWithinRange,
       amArrival,
       amDeparture,
@@ -221,7 +242,8 @@ export function buildDtrRows(
  */
 export function generateDtrData(
   options: DtrOptions,
-  attendances: AttendanceRecord[]
+  attendances: AttendanceRecord[],
+  holidays: HolidayRecord[] = []
 ): DtrGenerationResult {
   const employeeName = options.employee?.fullName
     ? options.employee.fullName.toUpperCase()
@@ -240,7 +262,7 @@ export function generateDtrData(
     totalDaysInMonth,
     totalUndertimeHours,
     totalUndertimeMinutes,
-  } = buildDtrRows(options.startDate, options.endDate, attendances)
+  } = buildDtrRows(options.startDate, options.endDate, attendances, holidays)
 
   return {
     employeeName,
@@ -286,6 +308,12 @@ export function generateStandaloneDtrHtml(
             <td class="col-day">${row.day}</td>
             <td colspan="6" class="col-weekend">S U N D A Y</td>
           </tr>`
+      } else if (row.holidayName) {
+        tableRowsHtml += `
+          <tr class="day-row holiday-row">
+            <td class="col-day">${row.day}</td>
+            <td colspan="6" class="col-weekend">${escapeHtml(row.holidayName)}</td>
+          </tr>`
       } else {
         tableRowsHtml += `
           <tr class="day-row">
@@ -315,7 +343,7 @@ export function generateStandaloneDtrHtml(
         <div class="dtr-subtitle">-----o0o-----</div>
 
         <div class="dtr-name-section">
-          <div class="dtr-name-text">${employeeNameDisplay || '&nbsp;'}</div>
+          <div class="dtr-name-text">${employeeNameDisplay ? escapeHtml(employeeNameDisplay) : '&nbsp;'}</div>
           <div class="dtr-name-line"></div>
           <div class="dtr-name-label">(Name)</div>
         </div>

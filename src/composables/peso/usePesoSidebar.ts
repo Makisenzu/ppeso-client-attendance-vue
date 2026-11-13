@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Book, Building2, Clock, FingerprintPattern, Users } from '@lucide/vue'
+import { Book, Building2, CalendarDays, Clock, FingerprintPattern, Users } from '@lucide/vue'
 import { useSidebarUser } from '@/composables/common/useSidebarUser'
 import type { SidebarNavItem } from '@/composables/supervisor/useSupervisorSidebar'
 
@@ -15,6 +15,7 @@ export function usePesoSidebar() {
     { title: 'Client Records', to: { name: 'records' }, icon: Book },
     { title: 'Offices', to: { name: 'offices' }, icon: Building2 },
     { title: 'User Management', to: { name: 'management' }, icon: Users },
+    { title: 'Calendar', to: { name: 'calendar' }, icon: CalendarDays },
   ]
 
   const isDashboard = computed(() => route.name === 'dashboard')

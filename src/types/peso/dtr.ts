@@ -6,6 +6,8 @@ export interface DtrDayRow {
   dayOfWeek: number // 0 = Sunday, 6 = Saturday
   isSaturday: boolean
   isSunday: boolean
+  /** Holiday name in capitals on a weekday with no punches (printed across the row), else null. */
+  holidayName: string | null
   isWithinRange: boolean
   amArrival: string
   amDeparture: string

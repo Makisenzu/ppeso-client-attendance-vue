@@ -102,7 +102,7 @@ Defined in `supabase/migrations/20261113000100_rls_policies.sql`. Verified on th
 
 ### 4.1 Access Model
 
-| Role            | `profiles`                          | `offices` / `directories` | `attendances`        | `walkin_attendances` |
+| Role            | `profiles`                          | `offices` / `directories` / `holidays` | `attendances`        | `walkin_attendances` |
 | --------------- | ----------------------------------- | ------------------------- | -------------------- | -------------------- |
 | **Admin**       | all; create, update, delete others  | all                       | all                  | all                  |
 | **Supervisor**  | read users in **own office**        | read                      | read **own office**  | read                 |

@@ -65,6 +65,20 @@ Office directory: each office's name, code and head (migration `20261113000200_d
 | `status`      | `text`        | NOT NULL, default `'active'`, CHECK `in ('active', 'inactive')`; trimmed + lowercased by `trg_normalize_directory_status` (CSV `Active` works) |
 | `created_at`  | `timestamptz` | NOT NULL, default `now()`                            |
 
+### `holidays`
+
+Set by admins on the Calendar page (migration `20261113000700_holidays.sql`).
+
+| Column         | Type          | Constraints                         |
+| -------------- | ------------- | ----------------------------------- |
+| `id`           | `uuid`        | PK                                  |
+| `holiday_date` | `date`        | NOT NULL, UNIQUE                    |
+| `name`         | `text`        | NOT NULL, not blank                 |
+| `created_at` / `updated_at` | `timestamptz` | `updated_at` set by `trg_touch_holiday_updated_at` |
+
+Effects: a weekday holiday with no punches prints its name across that DTR row (`dtrHelper.buildDtrRows`), and
+`core.flag_daily_absences` does nothing on a holiday.
+
 ### `profiles`
 
 One row per auth user. Created by the `on_auth_user_created` trigger — never inserted by the client.
@@ -149,7 +163,7 @@ Walk-in client log (not linked to an account).
 | `public.set_profile_passcode()` | `BEFORE INSERT ON profiles`, DEFINER | Generates a unique 6-digit passcode when none is given |
 | `public.guard_profile_update()` | `BEFORE UPDATE ON profiles` (`trg_guard_profile_update`), DEFINER | Non-admin API callers may change only their own name fields; sets `updated_at` |
 | `core.calculate_punch_status()` | `BEFORE INSERT OR UPDATE ON attendances` | 5-minute cooldown between punches (`'Already Recorded'`); fills statuses left null |
-| `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles |
+| `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles; skips dates in `public.holidays` |
 | `private.user_role()`, `user_office_id()`, `is_admin()`, `is_supervisor()`, `supervises(uuid)` | DEFINER, `private` schema | RLS helpers (SECURITY.md §4.3) |
 
 | pg_cron job | Schedule | Command |
@@ -171,6 +185,7 @@ Full rules in SECURITY.md §4. Policy names are prefixed with the table (`"atten
 | `public.profiles`         | own row · admin all · supervisor same office            | insert: admin · update: own (names only) or admin · delete: admin, not self |
 | `public.offices`          | any signed-in user                                      | admin                    |
 | `public.directories`      | any signed-in user                                      | admin                    |
+| `public.holidays`         | any signed-in user                                      | admin                    |
 | `core.attendances`        | own rows · admin all · supervisor same office           | admin                    |
 | `core.walkin_attendances` | admin, supervisor                                       | admin                    |
 
@@ -238,6 +253,7 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261113000400_offices_directory_link.sql` | `offices.directory_id` → `directories` (one office per directory entry) |
 | `20261113000500_profile_position_admin.sql` | Adds `admin` to `profile_position` |
 | `20261113000600_admins_to_admin_position.sql` | Sets `position = admin` for every `role = admin` account |
+| `20261113000700_holidays.sql` | `public.holidays` + RLS; `flag_daily_absences` skips holidays |
 
 ### Workflow
 

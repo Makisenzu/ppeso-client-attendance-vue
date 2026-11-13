@@ -109,6 +109,12 @@ const { slashSegments } = useDtrSlip(props)
               <td colspan="6" class="col-weekend">S U N D A Y</td>
             </tr>
 
+            <!-- Holiday Row (set on the Calendar page) -->
+            <tr v-else-if="row.holidayName" class="day-row holiday-row">
+              <td class="col-day">{{ row.day }}</td>
+              <td colspan="6" class="col-weekend">{{ row.holidayName }}</td>
+            </tr>
+
             <!-- Normal Day Row -->
             <tr v-else class="day-row">
               <td class="col-day">{{ row.day }}</td>
