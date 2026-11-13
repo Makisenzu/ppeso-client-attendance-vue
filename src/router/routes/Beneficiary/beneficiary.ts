@@ -13,6 +13,12 @@ export const beneficiaryRoutes: RouteRecordRaw[] = [
         name: 'beneficiary-dashboard',
         component: () => import('@/components/beneficiary/Dashboard/BeneficiaryDashboard.vue'),
       },
+      {
+        path: 'account',
+        name: 'beneficiary-account',
+        component: () => import('@/components/common/Account/AccountPage.vue'),
+        meta: { title: 'Account' },
+      },
     ],
   },
 ]

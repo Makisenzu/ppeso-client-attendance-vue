@@ -38,6 +38,7 @@ const {
   isDashboard,
   myRecordsItems,
   handleSignOut,
+  accountRoute,
 } = useBeneficiarySidebar()
 </script>
 
@@ -176,9 +177,11 @@ const {
 
                 <div class="my-1 h-px bg-sidebar-border" />
 
-                <DropdownMenuItem class="cursor-pointer gap-2">
-                  <UserRound class="size-4" />
-                  <span>Account</span>
+                <DropdownMenuItem as-child class="cursor-pointer gap-2">
+                  <RouterLink :to="accountRoute">
+                    <UserRound class="size-4" />
+                    <span>Account</span>
+                  </RouterLink>
                 </DropdownMenuItem>
 
                 <div class="my-1 h-px bg-sidebar-border" />

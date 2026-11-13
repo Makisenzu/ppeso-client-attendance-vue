@@ -24,5 +24,6 @@ export function usePesoSidebar() {
     ...sidebarUser,
     operationsItems,
     isDashboard,
+    accountRoute: { name: 'account' },
   }
 }

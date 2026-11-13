@@ -24,5 +24,6 @@ export function useSupervisorSidebar() {
     ...sidebarUser,
     operationsItems,
     isDashboard,
+    accountRoute: { name: 'supervisor-account' },
   }
 }

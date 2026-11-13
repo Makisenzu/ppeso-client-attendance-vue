@@ -24,5 +24,6 @@ export function useBeneficiarySidebar() {
     ...sidebarUser,
     myRecordsItems,
     isDashboard,
+    accountRoute: { name: 'beneficiary-account' },
   }
 }
