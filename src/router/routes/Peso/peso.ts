@@ -24,6 +24,12 @@ export const pesoRoutes: RouteRecordRaw[] = [
         component: () => import('@/components/peso/attendance/Attendance.vue'),
       },
       {
+        path: 'attendance/dtr',
+        name: 'attendance-dtr',
+        component: () => import('@/components/peso/attendance/DtrGenerator.vue'),
+        meta: { title: 'Generate DTR' },
+      },
+      {
         path: 'management',
         name: 'management',
         component: () => import('@/components/peso/UserManagement/UserManagement.vue'),

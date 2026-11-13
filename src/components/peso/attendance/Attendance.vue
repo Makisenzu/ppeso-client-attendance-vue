@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   AlertTriangle,
   Building2,
@@ -17,7 +17,6 @@ import {
   Trash2,
   X,
 } from '@lucide/vue'
-import DtrModal from './DtrModal.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -116,13 +115,11 @@ const {
 const checkboxClass =
   'h-4 w-4 cursor-pointer rounded border-input accent-primary align-middle disabled:cursor-not-allowed disabled:opacity-50'
 
-// ─── Civil Service Form 48 DTR Modal ───
-const isDtrModalOpen = ref(false)
-const dtrProfileId = ref<string | null>(null)
+// ─── Civil Service Form 48 DTR — opens the Generate DTR page ───
+const router = useRouter()
 
-const openDtrModal = (profileId?: string | null) => {
-  dtrProfileId.value = profileId || null
-  isDtrModalOpen.value = true
+const openDtrPage = (profileId?: string | null) => {
+  router.push({ name: 'attendance-dtr', query: profileId ? { profileId } : {} })
 }
 </script>
 
@@ -145,7 +142,7 @@ const openDtrModal = (profileId?: string | null) => {
           variant="default"
           size="sm"
           class="gap-1.5 text-xs cursor-pointer shadow-xs font-semibold"
-          @click="openDtrModal()"
+          @click="openDtrPage()"
         >
           <FileText class="h-3.5 w-3.5" />
           <span>Generate DTR</span>
@@ -1052,7 +1049,7 @@ const openDtrModal = (profileId?: string | null) => {
             variant="outline"
             size="sm"
             class="text-xs cursor-pointer gap-1.5 w-full sm:w-auto"
-            @click="(() => { const pid = selectedRecord?.profileId; closeDetails(); openDtrModal(pid); })()"
+            @click="(() => { const pid = selectedRecord?.profileId; closeDetails(); openDtrPage(pid); })()"
           >
             <span>Generate DTR Form 48</span>
           </Button>
@@ -1192,12 +1189,5 @@ const openDtrModal = (profileId?: string | null) => {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-
-    <!-- ─── Civil Service Form 48 DTR Generation Modal ─── -->
-    <DtrModal
-      v-model:open="isDtrModalOpen"
-      :initial-profile-id="dtrProfileId"
-      :existing-attendances="attendances"
-    />
   </div>
 </template>

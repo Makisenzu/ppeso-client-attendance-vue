@@ -10,6 +10,7 @@ const mode = useColorMode()
 const route = useRoute()
 
 const currentLabel = computed(() => {
+  if (route.meta.title) return route.meta.title
   const name = String(route.name || 'dashboard')
   return name
     .split('-')

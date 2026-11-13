@@ -404,7 +404,7 @@ There is no toast library yet. Screens use the composable's **feedback banner**:
 
 > [!CAUTION]
 > 1. **NO `<style>` blocks** in `.vue` components — Tailwind utilities only. **Exception:** print layouts for official
->    forms (`DtrSlip.vue`, `DtrModal.vue`) may keep scoped print CSS. (`Login.vue` / `Signup.vue` also have `<style>`
+>    forms (`DtrSlip.vue`, `DtrGenerator.vue`) may keep scoped print CSS. (`Login.vue` / `Signup.vue` also have `<style>`
 >    blocks — move them to utilities when touched.)
 > 2. **NO new CSS files.** Global styles go in `src/style.css`.
 > 3. **NO inline styles** — except values that must be computed at runtime (e.g. chart sizing, the DTR diagonal slash).

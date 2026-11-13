@@ -109,7 +109,7 @@ src/
 │   └── beneficiary/         # Beneficiary screens (Dashboard/)
 ├── composables/
 │   ├── common/              # usePsgc, useSidebarUser
-│   ├── peso/                # useAttendance, useKiosk, useDtrModal, useDtrSlip, useClientRecords,
+│   ├── peso/                # useAttendance, useKiosk, useDtrGenerator, useDtrSlip, useClientRecords,
 │   │                        #   useClientRecordSheet, useOffice, useUserManagement, useDashboard
 │   ├── supervisor/          # useSupervisorSidebar
 │   ├── beneficiary/         # useBeneficiarySidebar
