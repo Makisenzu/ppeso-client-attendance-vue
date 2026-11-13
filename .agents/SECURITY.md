@@ -102,12 +102,12 @@ Defined in `supabase/migrations/20261113000100_rls_policies.sql`. Verified on th
 
 ### 4.1 Access Model
 
-| Role            | `profiles`                          | `offices` | `attendances`                    | `walkin_attendances` |
-| --------------- | ----------------------------------- | --------- | -------------------------------- | -------------------- |
-| **Admin**       | all; create, update, delete others  | all       | all                              | all                  |
-| **Supervisor**  | read users in **own office**        | read      | read **own office**              | read                 |
-| **Beneficiary** | read own; edit own **name only**    | read      | read own                         | —                    |
-| **anon**        | —                                   | —         | —                                | —                    |
+| Role            | `profiles`                          | `offices` / `directories` | `attendances`        | `walkin_attendances` |
+| --------------- | ----------------------------------- | ------------------------- | -------------------- | -------------------- |
+| **Admin**       | all; create, update, delete others  | all                       | all                  | all                  |
+| **Supervisor**  | read users in **own office**        | read                      | read **own office**  | read                 |
+| **Beneficiary** | read own; edit own **name only**    | read                      | read own             | —                    |
+| **anon**        | —                                   | —                         | —                    | —                    |
 
 **Inactive / pending accounts** get no admin or supervisor rights (`private.user_role()` only returns a role for
 `status = 'active'`). They keep read access to their own profile and attendance.

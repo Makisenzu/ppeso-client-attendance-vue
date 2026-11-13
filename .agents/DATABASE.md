@@ -11,7 +11,7 @@
 | ------------------- | ---------------------------------------------------------------------- |
 | **Provider**        | Supabase (managed PostgreSQL 17)                                        |
 | **Project**         | `ppeso-client-attendance` — ref `otulzqszdvyzebetiqkn` (ap-southeast-1) |
-| **Schemas**         | 2 app schemas: `public`, `core` (+ `private` for RLS helpers, not exposed) |
+| **Schemas**         | 2 app schemas: `public` (`profiles`, `offices`, `directories`), `core` (+ `private` for RLS helpers, not exposed) |
 | **Type Generation** | `npm run types:gen`                                                     |
 | **Type File**       | [`src/types/database.types.ts`](../src/types/database.types.ts) (DO NOT EDIT) |
 | **Migrations**      | [`supabase/migrations/`](../supabase/migrations) — source of truth for schema + RLS |
@@ -50,6 +50,19 @@
 | `is_active`  | `boolean`     | default `true`           |
 | `created_at` | `timestamptz` | default `now()`          |
 | `updated_at` | `timestamptz` | default `now()` (set by the app on update) |
+
+### `directories`
+
+Office directory: each office's name, code and head (migration `20261113000200_directories.sql`).
+
+| Column        | Type          | Constraints                                         |
+| ------------- | ------------- | --------------------------------------------------- |
+| `id`          | `uuid`        | PK, `gen_random_uuid()`                              |
+| `office_name` | `text`        | NOT NULL; indexed                                    |
+| `office_code` | `text`        | UNIQUE, nullable                                     |
+| `office_head` | `text`        | nullable — a person's name (PRIVACY.md §2)           |
+| `status`      | `text`        | NOT NULL, default `'active'`, CHECK `in ('active', 'inactive')`; trimmed + lowercased by `trg_normalize_directory_status` (CSV `Active` works) |
+| `created_at`  | `timestamptz` | NOT NULL, default `now()`                            |
 
 ### `profiles`
 
@@ -155,6 +168,7 @@ Full rules in SECURITY.md §4. Policy names are prefixed with the table (`"atten
 | ------------------------- | ------------------------------------------------------- | ------------------------ |
 | `public.profiles`         | own row · admin all · supervisor same office            | insert: admin · update: own (names only) or admin · delete: admin, not self |
 | `public.offices`          | any signed-in user                                      | admin                    |
+| `public.directories`      | any signed-in user                                      | admin                    |
 | `core.attendances`        | own rows · admin all · supervisor same office           | admin                    |
 | `core.walkin_attendances` | admin, supervisor                                       | admin                    |
 
@@ -217,6 +231,8 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | ---- | ------- |
 | `20261113000000_baseline_schema.sql` | Idempotent capture of the existing schema: enums, 4 tables, constraints, indexes, triggers, functions |
 | `20261113000100_rls_policies.sql` | Drops all old policies; `private` helpers; grants; RLS policies; profile guard trigger; function privileges |
+| `20261113000200_directories.sql` | `public.directories` table + RLS (signed-in read, admin write) |
+| `20261113000300_directories_normalize_status.sql` | Normalises `directories.status` case before the CHECK runs |
 
 ### Workflow
 
