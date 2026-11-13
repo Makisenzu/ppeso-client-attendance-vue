@@ -13,7 +13,8 @@ export interface ProfileRecord {
   position: ProfilePosition
   role: ProfileRole | null
   status: ProfileStatus
-  passcode: string
+  /** Kiosk passcode; null for admins and supervisors (they don't use the kiosk). */
+  passcode: string | null
   officeId: string | null
   officeName?: string | null
   officeCode?: string | null
@@ -29,6 +30,18 @@ export interface UserFormData {
   lastname: string
   position: ProfilePosition
   officeId?: string | null
+  /** Overrides the position's default role (Add Supervisor sets 'supervisor'). */
+  role?: ProfileRole | null
+}
+
+/** Add Supervisor dialog: the office's chief becomes its supervisor account. */
+export interface SupervisorFormData {
+  officeId: string
+  firstname: string
+  middlename: string
+  lastname: string
+  email: string
+  password: string
 }
 
 /** Edit User form. Email / password are managed by Supabase Auth and are not editable here. */

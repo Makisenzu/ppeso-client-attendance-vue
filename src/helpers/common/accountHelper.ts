@@ -3,6 +3,12 @@ import type { MyAccount } from '@/types/common/account'
 /** Minimum password length — keep in step with Supabase Auth settings and the signup form. */
 export const MIN_PASSWORD_LENGTH = 6
 
+/**
+ * Starting password for supervisor accounts made with Add Supervisor. Shared and easy to guess,
+ * so the person must change it in My Account right after their first login.
+ */
+export const DEFAULT_STAFF_PASSWORD = '123123'
+
 export function formatAccountFullName(account: Pick<MyAccount, 'firstname' | 'middlename' | 'lastname'>): string {
   return [account.firstname, account.middlename, account.lastname].filter(Boolean).join(' ').trim()
 }

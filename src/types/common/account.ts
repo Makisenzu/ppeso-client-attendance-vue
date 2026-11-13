@@ -13,7 +13,8 @@ export interface MyAccount {
   position: Enums['profile_position']
   role: Enums['profile_roles'] | null
   status: Enums['profile_status']
-  passcode: string
+  /** Kiosk passcode; null for admins and supervisors. */
+  passcode: string | null
   officeName: string | null
   officeCode: string | null
   createdAt: string

@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type {
   EditUserFormData,
   ProfileRecord,
@@ -6,6 +6,7 @@ import type {
   UserFormData,
 } from '@/types/peso/userManagement'
 import { userManagementService } from '@/services/peso/userManagementService'
+import { useAddSupervisor } from '@/composables/peso/useAddSupervisor'
 import { authService } from '@/services/common/authService'
 import {
   exportProfilesToCsv,
@@ -92,7 +93,7 @@ export function useUserManagement() {
         const lastMatch = profile.lastname.toLowerCase().includes(q)
         const posMatch = profile.position.toLowerCase().includes(q)
         const idMatch = profile.id.toLowerCase().includes(q)
-        const passcodeMatch = profile.passcode.includes(q)
+        const passcodeMatch = (profile.passcode ?? '').includes(q)
         const officeMatch = Boolean(
           (profile.officeName && profile.officeName.toLowerCase().includes(q)) ||
           (profile.officeCode && profile.officeCode.toLowerCase().includes(q)),
@@ -278,6 +279,25 @@ export function useUserManagement() {
       isSubmitting.value = false
     }
   }
+
+  // ─── Add Supervisor (the office's chief becomes its supervisor; dialog markup inline in UserManagement.vue) ───
+  const isAddSupervisorOpen = ref<boolean>(false)
+  const openAddSupervisor = () => {
+    isAddSupervisorOpen.value = true
+  }
+  // reactive() unwraps the form's refs so the template can bind `supervisor.form.firstname` directly.
+  const supervisor = reactive(
+    useAddSupervisor({
+      open: isAddSupervisorOpen,
+      profiles,
+      close: () => {
+        isAddSupervisorOpen.value = false
+      },
+      onCreated: () => {
+        void fetchProfiles()
+      },
+    }),
+  )
 
   // ─── Edit User ───
   const isEditUserOpen = ref<boolean>(false)
@@ -471,6 +491,9 @@ export function useUserManagement() {
   }
 
   return {
+    isAddSupervisorOpen,
+    openAddSupervisor,
+    supervisor,
     pageRange,
     visiblePages,
     hasHiddenPages,

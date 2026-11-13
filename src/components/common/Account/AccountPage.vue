@@ -29,6 +29,7 @@ const {
   passwordHint,
   changePassword,
   isPasscodeVisible,
+  hasPasscode,
   passcodeDisplay,
   togglePasscode,
 } = useAccount()
@@ -39,7 +40,7 @@ const {
     <!-- ─── Header ─── -->
     <div class="space-y-1">
       <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">My Account</h1>
-      <p class="text-sm text-muted-foreground">Your profile, kiosk passcode and password.</p>
+      <p class="text-sm text-muted-foreground">Your profile and password.</p>
     </div>
 
     <!-- ─── Loading ─── -->
@@ -124,7 +125,7 @@ const {
                 <dt class="text-xs text-muted-foreground">Last Updated</dt>
                 <dd class="font-mono text-sm font-medium text-foreground">{{ summary.lastUpdated }}</dd>
               </div>
-              <div class="sm:col-span-2">
+              <div v-if="hasPasscode" class="sm:col-span-2">
                 <dt class="text-xs text-muted-foreground">Kiosk Passcode</dt>
                 <dd class="mt-0.5 flex items-center gap-2">
                   <span class="font-mono text-lg font-semibold tracking-[0.3em] text-foreground">{{ passcodeDisplay }}</span>

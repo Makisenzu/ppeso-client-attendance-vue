@@ -116,6 +116,8 @@ export function useAccount() {
   const togglePasscode = () => {
     isPasscodeVisible.value = !isPasscodeVisible.value
   }
+  /** Admins and supervisors have no passcode (they don't use the kiosk). */
+  const hasPasscode = computed(() => Boolean(account.value?.passcode))
   const passcodeDisplay = computed(() => {
     const code = account.value?.passcode ?? ''
     return isPasscodeVisible.value ? code : '•'.repeat(code.length || 6)
@@ -162,6 +164,7 @@ export function useAccount() {
     passwordHint,
     changePassword,
     isPasscodeVisible,
+    hasPasscode,
     passcodeDisplay,
     togglePasscode,
   }

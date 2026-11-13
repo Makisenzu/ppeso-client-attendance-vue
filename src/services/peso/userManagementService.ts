@@ -112,8 +112,9 @@ export const userManagementService = {
     try {
       const officeId = formData.officeId?.trim() || null
 
-      // Determine role based on position: only the Admin position gets admin access.
-      const role = getDefaultRoleForPosition(formData.position)
+      // Role: an explicit one (e.g. Add Supervisor), else the position's default —
+      // only the Admin position gets admin access.
+      const role = formData.role !== undefined ? formData.role : getDefaultRoleForPosition(formData.position)
 
       // 1. Save the current admin session before signUp
       const { data: sessionData } = await supabase.auth.getSession()
@@ -228,15 +229,17 @@ export const userManagementService = {
     }
   },
 
+  /**
+   * Deletes the whole account: the login (auth.users) via the admin-only `admin_delete_user`
+   * function; the profile and the person's attendance records follow by cascade.
+   */
   async deleteUser(id: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', id)
+      const { error } = await supabase.rpc('admin_delete_user', { target_user_id: id })
 
       if (error) {
-        return { success: false, error: error.message }
+        // Messages raised on purpose by the function are written for the admin; pass them through.
+        return { success: false, error: error.message || 'Failed to delete the account.' }
       }
 
       return { success: true }

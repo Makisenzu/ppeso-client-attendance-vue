@@ -139,7 +139,7 @@ export function exportProfilesToCsv(records: ProfileRecord[]): void {
     `"${r.position.toUpperCase()}"`,
     `"${r.officeName ? `${r.officeName}${r.officeCode ? ` (${r.officeCode})` : ''}` : 'None'}"`,
     `"${r.status}"`,
-    `"${r.passcode}"`,
+    `"${r.passcode ?? ''}"`,
     `"${formatDateDisplay(r.createdAt)}"`,
     `"${formatDateDisplay(r.updatedAt)}"`,
   ])

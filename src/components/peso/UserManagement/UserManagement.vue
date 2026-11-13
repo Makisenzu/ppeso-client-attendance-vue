@@ -55,6 +55,8 @@ import {
   getStatusBadgeClass,
 } from '@/helpers/peso/userManagementHelper'
 import SearchSelect from '@/components/common/SearchSelect.vue'
+import PasswordInput from '@/components/common/PasswordInput.vue'
+import { Label } from '@/components/ui/label'
 import {
   Sheet,
   SheetContent,
@@ -99,6 +101,9 @@ const {
   openDetails,
   closeDetails,
   openAddUser,
+  isAddSupervisorOpen,
+  openAddSupervisor,
+  supervisor,
   closeAddUser,
   handleAddUser,
   isEditUserOpen,
@@ -148,6 +153,14 @@ const {
         >
           <Plus class="h-3.5 w-3.5" />
           <span>Add User</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="gap-1.5 text-xs cursor-pointer shadow-xs"
+          @click="openAddSupervisor"
+        >
+          <span>Add Supervisor</span>
         </Button>
         <Button
           variant="outline"
@@ -395,9 +408,10 @@ const {
 
                   <!-- 3. Passcode -->
                   <TableCell class="py-3">
-                    <span class="text-xs font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded">
+                    <span v-if="profile.passcode" class="text-xs font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded">
                       {{ profile.passcode }}
                     </span>
+                    <span v-else class="text-xs text-muted-foreground" title="Admins and supervisors don't use the kiosk">None</span>
                   </TableCell>
 
                   <!-- 4. Created At -->
@@ -606,7 +620,8 @@ const {
               <div>
                 <p class="text-[11px] text-muted-foreground">Passcode</p>
                 <p class="font-medium font-mono text-foreground mt-0.5">
-                  <span class="bg-muted/60 px-2 py-0.5 rounded">{{ selectedProfile.passcode }}</span>
+                  <span v-if="selectedProfile.passcode" class="bg-muted/60 px-2 py-0.5 rounded">{{ selectedProfile.passcode }}</span>
+                  <span v-else class="font-sans text-xs font-normal text-muted-foreground">None (doesn't use the kiosk)</span>
                 </p>
               <div>
                 <p class="text-[11px] text-muted-foreground">Assigned Office</p>
@@ -763,6 +778,130 @@ const {
         </form>
       </SheetContent>
     </Sheet>
+
+    <!-- ─── Add Supervisor: the office's chief becomes its supervisor (useAddSupervisor via useUserManagement) ─── -->
+    <Dialog :open="isAddSupervisorOpen" @update:open="(val: boolean) => (!val ? supervisor.close() : null)">
+      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle class="text-base sm:text-lg">Add Supervisor</DialogTitle>
+          <DialogDescription class="text-xs">Pick an office; its chief becomes the supervisor.</DialogDescription>
+        </DialogHeader>
+
+        <form class="space-y-4 py-2" novalidate @submit.prevent="supervisor.submit">
+          <!-- Office (its chief fills the name) -->
+          <div class="space-y-1.5">
+            <Label for="supervisor-office">Office <span class="text-destructive">*</span></Label>
+            <SearchSelect
+              id="supervisor-office"
+              v-model="supervisor.form.officeId"
+              :options="supervisor.officeOptions"
+              placeholder="Select an office"
+              search-placeholder="Search office, code or chief..."
+              empty-text="No matching offices."
+              :disabled="supervisor.isSubmitting || supervisor.isLoadingOffices"
+              :invalid="!!supervisor.errors.officeId"
+              @change="supervisor.onOfficeChange"
+            />
+            <p v-if="supervisor.errors.officeId" class="text-xs text-destructive">{{ supervisor.errors.officeId }}</p>
+            <p v-else-if="supervisor.hasNoEligibleOffice" class="text-[11px] text-muted-foreground">
+              Every office already has a supervisor or has no chief in the directory.
+            </p>
+            <p v-else-if="supervisor.chiefName" class="text-[11px] text-muted-foreground">
+              Name filled from the chief: <span class="font-medium text-foreground">{{ supervisor.chiefName }}</span>. Edit it if needed.
+            </p>
+          </div>
+
+          <!-- Name (auto-filled, editable) -->
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="space-y-1.5">
+              <Label for="supervisor-firstname">First Name <span class="text-destructive">*</span></Label>
+              <Input
+                id="supervisor-firstname"
+                v-model="supervisor.form.firstname"
+                class="h-9 text-base md:text-xs"
+                :disabled="supervisor.isSubmitting"
+                :class="supervisor.errors.firstname ? 'border-destructive' : ''"
+              />
+              <p v-if="supervisor.errors.firstname" class="text-xs text-destructive">{{ supervisor.errors.firstname }}</p>
+            </div>
+            <div class="space-y-1.5">
+              <Label for="supervisor-lastname">Last Name <span class="text-destructive">*</span></Label>
+              <Input
+                id="supervisor-lastname"
+                v-model="supervisor.form.lastname"
+                class="h-9 text-base md:text-xs"
+                :disabled="supervisor.isSubmitting"
+                :class="supervisor.errors.lastname ? 'border-destructive' : ''"
+              />
+              <p v-if="supervisor.errors.lastname" class="text-xs text-destructive">{{ supervisor.errors.lastname }}</p>
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <Label for="supervisor-middlename">Middle Name</Label>
+            <Input
+              id="supervisor-middlename"
+              v-model="supervisor.form.middlename"
+              class="h-9 text-base md:text-xs"
+              :disabled="supervisor.isSubmitting"
+            />
+          </div>
+
+          <!-- Login -->
+          <div class="space-y-1.5">
+            <Label for="supervisor-email">Email <span class="text-destructive">*</span></Label>
+            <Input
+              id="supervisor-email"
+              v-model="supervisor.form.email"
+              type="email"
+              autocomplete="off"
+              placeholder="lastname.firstname@peso.ph"
+              class="h-9 text-base md:text-xs"
+              :disabled="supervisor.isSubmitting"
+              :class="supervisor.errors.email ? 'border-destructive' : ''"
+            />
+            <p v-if="supervisor.errors.email" class="text-xs text-destructive">{{ supervisor.errors.email }}</p>
+            <p v-else class="text-[11px] text-muted-foreground">
+              {{ supervisor.isEmailEdited ? 'Custom email. Clear it to use lastname.firstname@peso.ph.' : 'Filled from the name.' }}
+            </p>
+          </div>
+          <div class="space-y-1.5">
+            <Label for="supervisor-password">Password <span class="text-destructive">*</span></Label>
+            <PasswordInput
+              id="supervisor-password"
+              v-model="supervisor.form.password"
+              autocomplete="new-password"
+              class="h-9 text-base md:text-xs"
+              :disabled="supervisor.isSubmitting"
+              :class="supervisor.errors.password ? 'border-destructive' : ''"
+            />
+            <p v-if="supervisor.errors.password" class="text-xs text-destructive">{{ supervisor.errors.password }}</p>
+            <p v-else class="text-[11px] text-muted-foreground">{{ supervisor.passwordHint }}</p>
+          </div>
+
+          <div v-if="supervisor.errors.submit" class="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+            <ShieldAlert class="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <p class="text-xs text-destructive">{{ supervisor.errors.submit }}</p>
+          </div>
+
+          <DialogFooter class="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              class="text-xs cursor-pointer"
+              :disabled="supervisor.isSubmitting"
+              @click="supervisor.close"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" class="gap-1.5 text-xs cursor-pointer" :disabled="supervisor.isSubmitting">
+              <Loader2 v-if="supervisor.isSubmitting" class="h-3.5 w-3.5 animate-spin" />
+              <span>{{ supervisor.isSubmitting ? 'Creating...' : 'Create Supervisor' }}</span>
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
 
     <!-- ─── Add User Modal ─── -->
     <Dialog :open="isAddUserOpen" @update:open="(val: boolean) => { if (!val) closeAddUser() }">
@@ -937,10 +1076,10 @@ const {
             </div>
             <div>
               <DialogTitle class="text-base font-semibold text-foreground">
-                Delete User Profile
+                Delete User Account
               </DialogTitle>
               <DialogDescription class="text-xs text-muted-foreground mt-0.5">
-                This action cannot be undone. Are you sure you want to permanently delete this user account?
+                Their login, profile and attendance records will be permanently deleted.
               </DialogDescription>
             </div>
           </div>
@@ -957,7 +1096,8 @@ const {
           </div>
           <div class="flex justify-between">
             <span class="text-muted-foreground">Passcode:</span>
-            <span class="font-mono font-medium text-foreground bg-muted px-1.5 py-0.5 rounded">{{ profileToDelete.passcode }}</span>
+            <span v-if="profileToDelete.passcode" class="font-mono font-medium text-foreground bg-muted px-1.5 py-0.5 rounded">{{ profileToDelete.passcode }}</span>
+            <span v-else class="text-muted-foreground">None</span>
           </div>
           <div class="flex justify-between">
             <span class="text-muted-foreground">Status:</span>

@@ -89,7 +89,7 @@ One row per auth user. Created by the `on_auth_user_created` trigger — never i
 | `firstname`  | `text`             | NOT NULL                                            |
 | `middlename` | `text`             | nullable                                            |
 | `lastname`   | `text`             | NOT NULL                                            |
-| `passcode`   | `text`             | NOT NULL, UNIQUE — 6-digit kiosk code, auto-generated |
+| `passcode`   | `text`             | UNIQUE, nullable — 6-digit kiosk code, auto-generated; **NULL for admins and supervisors** |
 | `status`     | `profile_status`   | NOT NULL, default `'active'`                         |
 | `position`   | `profile_position` | NOT NULL                                            |
 | `role`       | `profile_roles`    | nullable, default `'beneficiary'`                    |
@@ -106,7 +106,9 @@ One row per auth user. Created by the `on_auth_user_created` trigger — never i
 | `profile_status`   | `active`, `inactive`, `pending`          |
 
 Role ↔ position convention used by `userManagementService.createUser`: **`admin` → `admin`** (the only position with
-admin access), `employee` / `gip` / `tupad` → `beneficiary`, `client` → no role. Supervisors are promoted by an admin.
+admin access), `employee` / `gip` / `tupad` → `beneficiary`, `client` → no role. Supervisors are created with **Add Supervisor**
+(User Management): the office's chief from `directories.office_head` becomes an `employee` with role `supervisor` for that
+office (one per office), or an admin promotes someone in Edit User.
 Migration `20261113000600` moved every existing admin account to the `admin` position.
 
 ---
@@ -160,10 +162,11 @@ Walk-in client log (not linked to an account).
 | Object | Kind | What it does |
 | ------ | ---- | ------------ |
 | `public.handle_new_user()` | `AFTER INSERT ON auth.users` (`on_auth_user_created`), DEFINER | Creates the `profiles` row from signup metadata. **Never reads `role` from metadata.** |
-| `public.set_profile_passcode()` | `BEFORE INSERT ON profiles`, DEFINER | Generates a unique 6-digit passcode when none is given |
+| `public.set_profile_passcode()` | `BEFORE INSERT OR UPDATE OF role, passcode ON profiles`, DEFINER | Admin / supervisor role → passcode NULL; any other role → unique 6-digit passcode if missing |
 | `public.guard_profile_update()` | `BEFORE UPDATE ON profiles` (`trg_guard_profile_update`), DEFINER | Non-admin API callers may change only their own name fields; sets `updated_at` |
+| `public.admin_delete_user(uuid)` | DEFINER, RPC for `authenticated` | Admin-only (not self): deletes the `auth.users` row; profile and attendance cascade |
 | `core.calculate_punch_status()` | `BEFORE INSERT OR UPDATE ON attendances` | 5-minute cooldown between punches (`'Already Recorded'`); fills statuses left null |
-| `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles; skips dates in `public.holidays` |
+| `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles that use the kiosk (not admins / supervisors); skips dates in `public.holidays` |
 | `private.user_role()`, `user_office_id()`, `is_admin()`, `is_supervisor()`, `supervises(uuid)` | DEFINER, `private` schema | RLS helpers (SECURITY.md §4.3) |
 
 | pg_cron job | Schedule | Command |
@@ -254,6 +257,8 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261113000500_profile_position_admin.sql` | Adds `admin` to `profile_position` |
 | `20261113000600_admins_to_admin_position.sql` | Sets `position = admin` for every `role = admin` account |
 | `20261113000700_holidays.sql` | `public.holidays` + RLS; `flag_daily_absences` skips holidays |
+| `20261113000800_passcode_only_for_kiosk_roles.sql` | Passcode nullable; none for admins / supervisors; absence flagging skips them |
+| `20261113000900_admin_delete_user.sql` | `admin_delete_user()` — User Management deletes the login, not just the profile |
 
 ### Workflow
 
@@ -313,4 +318,5 @@ Read-only inspection without Docker: `rtk npx supabase db query --linked "select
 >    ended (`CURRENT_DATE` in UTC is still that day). Mon–Fri PHT days are covered.
 > 6. **`profiles.role` is nullable** (`client` position accounts have none); the router sends a null role to `/login`.
 > 7. **`core.attendances` is not in the `supabase_realtime` publication** (BACKEND.md §9).
-> 8. **Deleting a profile** cascades to its attendance rows but does **not** delete the `auth.users` account.
+> 8. **Delete accounts with `admin_delete_user()`**, never `delete from profiles`: deleting only the profile leaves the
+>    `auth.users` login behind. Deleting the auth user cascades to the profile and its attendance rows.

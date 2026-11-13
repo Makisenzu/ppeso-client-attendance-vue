@@ -119,8 +119,8 @@ When asked to add one:
 - Walk-in client logs should get a retention period set by the PIC/DPO. When one is decided, implement it as a
   database function scheduled with pg_cron (like `core.flag_daily_absences`), never from the browser, and record the
   period here.
-- Deleting a user profile cascades to their attendance rows but leaves the `auth.users` account — remove the auth user
-  too (Supabase dashboard / admin API) when an account must be erased.
+- Deleting a user in User Management (`admin_delete_user`) removes the login, the profile and their attendance rows.
+  Daily time records are government records (above): export them first if the records schedule requires keeping them.
 
 ---
 
@@ -131,7 +131,7 @@ When asked to add one:
 | Be informed           | Office notice at collection (§3 gap) |
 | Access / portability  | Beneficiaries see their own DTR in the app; admins can export a person's records on request (CSV) |
 | Rectification         | Users edit their own name; admins correct everything else |
-| Erasure or blocking   | Admin deletes the record (walk-in) or profile + auth user (account), unless a records schedule requires keeping it |
+| Erasure or blocking   | Admin deletes the record (walk-in) or the account (User Management → login, profile, attendance), unless a records schedule requires keeping it |
 | Object / complaint    | Handled by the DPO outside the app |
 
 > [!IMPORTANT]

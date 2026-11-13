@@ -134,6 +134,9 @@ if ((deleted?.length ?? 0) < ids.length) { /* report the skipped rows */ }
 | `private.is_supervisor()`  | `true` for active supervisors |
 | `private.supervises(uuid)` | `true` if caller is a supervisor and the profile is in their office |
 
+The one client-callable DEFINER function is `public.admin_delete_user(uuid)` (User Management → Delete): it checks
+`private.is_admin()`, refuses the caller's own id, then deletes the `auth.users` row (profile + attendance cascade).
+
 They are `SECURITY DEFINER` (owner `postgres`, bypasses RLS — no policy recursion), `STABLE`, `SET search_path = ''`.
 The `private` schema is not exposed through the Data API, so they cannot be called as RPCs.
 In policies, wrap them as `(select private.is_admin())` so Postgres evaluates them once per query.
@@ -170,7 +173,8 @@ passcodes and write `core.attendances`.
 > 1. **Never move the kiosk to a public / anon route** without first replacing direct table access with a narrow
 >    `SECURITY DEFINER` RPC (e.g. `core.record_punch(passcode)`) that returns only the punch result — anon must never
 >    read `profiles` or passcodes.
-> 2. **Passcodes are credentials**: never log them, show them in lists other than User Management, put them in URLs, or
+> 2. **Only kiosk users have passcodes** — admins and supervisors have none (NULL, enforced by `set_profile_passcode`).
+> 3. **Passcodes are credentials**: never log them, show them in lists other than User Management, put them in URLs, or
 >    cache them.
 > 3. **Lock the kiosk device**: the admin session it runs under can open every admin screen. Recommend a dedicated
 >    kiosk admin account to the user rather than a personal one.
