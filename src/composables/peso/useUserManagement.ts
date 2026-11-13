@@ -1,11 +1,13 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import type {
+  EditUserFormData,
   ProfileRecord,
   ProfileStatsSummary,
   UserFormData,
 } from '@/types/peso/userManagement'
 import { userManagementService } from '@/services/peso/userManagementService'
-import { exportProfilesToCsv } from '@/helpers/peso/userManagementHelper'
+import { authService } from '@/services/common/authService'
+import { exportProfilesToCsv, getDefaultRoleForPosition } from '@/helpers/peso/userManagementHelper'
 import { useOfficeStore } from '@/stores/officeStore'
 
 export function useUserManagement() {
@@ -268,6 +270,115 @@ export function useUserManagement() {
     }
   }
 
+  // ─── Edit User ───
+  const isEditUserOpen = ref<boolean>(false)
+  const editingProfile = ref<ProfileRecord | null>(null)
+  const isSavingEdit = ref<boolean>(false)
+  const editError = ref<string>('')
+  const currentUserId = ref<string | null>(null)
+  const editForm = ref<EditUserFormData>({
+    firstname: '',
+    middlename: '',
+    lastname: '',
+    position: 'employee',
+    role: '',
+    status: 'active',
+    officeId: '',
+  })
+
+  /** Active offices, plus the user's current office if it is inactive (so saving never drops it). */
+  const editOfficeOptions = computed(() => {
+    const currentId = editingProfile.value?.officeId
+    return officeStore.offices.filter((o) => o.isActive || o.id === currentId)
+  })
+
+  /** Admins can't change their own role or status, so they can't lock themselves out. */
+  const isEditingSelf = computed(
+    () => !!editingProfile.value && editingProfile.value.id === currentUserId.value,
+  )
+
+  const openEditUser = async (profile: ProfileRecord) => {
+    editingProfile.value = profile
+    editForm.value = {
+      firstname: profile.firstname,
+      middlename: profile.middlename || '',
+      lastname: profile.lastname,
+      position: profile.position,
+      role: profile.role ?? '',
+      status: profile.status,
+      officeId: profile.officeId || '',
+    }
+    editError.value = ''
+    isEditUserOpen.value = true
+
+    if (officeStore.offices.length === 0) {
+      void officeStore.fetchOffices()
+    }
+    if (currentUserId.value === null) {
+      const user = await authService.getCurrentUser()
+      currentUserId.value = user?.id ?? null
+    }
+  }
+
+  /** Picking a position fills in its usual role; the admin can still change the role afterwards. */
+  const onEditPositionChange = () => {
+    if (isEditingSelf.value) return
+    editForm.value.role = getDefaultRoleForPosition(editForm.value.position) ?? ''
+  }
+
+  const resetEditUser = () => {
+    isEditUserOpen.value = false
+    editingProfile.value = null
+    editError.value = ''
+  }
+
+  /** Cancel / dismiss — ignored while saving. */
+  const closeEditUser = () => {
+    if (isSavingEdit.value) return
+    resetEditUser()
+  }
+
+  const handleEditUser = async () => {
+    if (!editingProfile.value) return
+    editError.value = ''
+
+    if (!editForm.value.firstname.trim()) {
+      editError.value = 'First name is required'
+      return
+    }
+    if (!editForm.value.lastname.trim()) {
+      editError.value = 'Last name is required'
+      return
+    }
+
+    // Never send a change to your own role or status.
+    const payload: EditUserFormData = isEditingSelf.value
+      ? {
+          ...editForm.value,
+          role: editingProfile.value.role ?? '',
+          status: editingProfile.value.status,
+        }
+      : editForm.value
+
+    isSavingEdit.value = true
+    try {
+      const result = await userManagementService.updateUser(editingProfile.value.id, payload)
+      if (!result.success) {
+        editError.value = result.error || 'Failed to update user'
+        return
+      }
+
+      const fullName = `${payload.firstname} ${payload.lastname}`.trim()
+      resetEditUser()
+      showFeedback(`User ${fullName} was updated successfully.`, 'success')
+      void fetchProfiles()
+    } catch (err) {
+      editError.value = err instanceof Error ? err.message : 'An unexpected error occurred'
+    } finally {
+      isSavingEdit.value = false
+    }
+  }
+
   // ─── Delete State & Actions ───
   const profileToDelete = ref<ProfileRecord | null>(null)
   const isDeleteDialogOpen = ref<boolean>(false)
@@ -378,6 +489,17 @@ export function useUserManagement() {
     openAddUser,
     closeAddUser,
     handleAddUser,
+    isEditUserOpen,
+    editingProfile,
+    isSavingEdit,
+    editError,
+    editForm,
+    isEditingSelf,
+    editOfficeOptions,
+    openEditUser,
+    onEditPositionChange,
+    closeEditUser,
+    handleEditUser,
     exportCsv,
   }
 }

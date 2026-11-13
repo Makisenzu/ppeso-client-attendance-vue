@@ -7,6 +7,7 @@ import {
   Eye,
   Filter,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -54,6 +55,13 @@ import {
   formatStatusLabel,
   getStatusBadgeClass,
 } from '@/helpers/peso/userManagementHelper'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 
 const {
   profiles,
@@ -96,8 +104,22 @@ const {
   openAddUser,
   closeAddUser,
   handleAddUser,
+  isEditUserOpen,
+  editingProfile,
+  isSavingEdit,
+  editError,
+  editForm,
+  isEditingSelf,
+  editOfficeOptions,
+  openEditUser,
+  onEditPositionChange,
+  closeEditUser,
+  handleEditUser,
   exportCsv,
 } = useUserManagement()
+
+const editSelectClass =
+  'w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs md:text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60'
 </script>
 
 <template>
@@ -412,6 +434,17 @@ const {
                       </Button>
                       <Button
                         variant="ghost"
+                        size="sm"
+                        class="h-8 gap-1.5 text-xs cursor-pointer"
+                        :title="`Edit ${profile.fullName}`"
+                        :aria-label="`Edit ${profile.fullName}`"
+                        @click="openEditUser(profile)"
+                      >
+                        <Pencil class="h-3.5 w-3.5" />
+                        <span class="hidden sm:inline">Edit</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
                         size="icon"
                         class="h-8 w-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                         title="Delete user profile"
@@ -620,13 +653,138 @@ const {
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter class="gap-2">
           <Button variant="outline" size="sm" class="text-xs cursor-pointer" @click="closeDetails">
             Close
+          </Button>
+          <Button
+            size="sm"
+            class="gap-1.5 text-xs cursor-pointer"
+            @click="() => { if (selectedProfile) { const p = selectedProfile; closeDetails(); openEditUser(p) } }"
+          >
+            <Pencil class="h-3.5 w-3.5" />
+            <span>Edit User</span>
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <!-- ─── Edit User Sheet ─── -->
+    <Sheet :open="isEditUserOpen" @update:open="(val: boolean) => { if (!val) closeEditUser() }">
+      <SheetContent class="flex h-full flex-col p-0 sm:max-w-lg">
+        <SheetHeader class="shrink-0 px-6 pt-6 pb-2">
+          <SheetTitle>Edit User</SheetTitle>
+          <SheetDescription class="text-xs">
+            {{ editingProfile?.fullName }}<template v-if="isEditingSelf"> · your account</template>
+          </SheetDescription>
+        </SheetHeader>
+
+        <form class="contents" @submit.prevent="handleEditUser">
+          <div class="grid flex-1 grid-cols-1 content-start gap-5 overflow-y-auto px-6 py-4">
+            <!-- Name -->
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div class="space-y-1.5">
+                <label for="edit-firstname" class="text-xs font-medium text-foreground">
+                  First Name <span class="text-destructive">*</span>
+                </label>
+                <Input id="edit-firstname" v-model="editForm.firstname" class="h-9 text-base md:text-xs" :disabled="isSavingEdit" />
+              </div>
+              <div class="space-y-1.5">
+                <label for="edit-lastname" class="text-xs font-medium text-foreground">
+                  Last Name <span class="text-destructive">*</span>
+                </label>
+                <Input id="edit-lastname" v-model="editForm.lastname" class="h-9 text-base md:text-xs" :disabled="isSavingEdit" />
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="edit-middlename" class="text-xs font-medium text-foreground">Middle Name</label>
+              <Input id="edit-middlename" v-model="editForm.middlename" class="h-9 text-base md:text-xs" :disabled="isSavingEdit" />
+            </div>
+
+            <!-- Position & Role -->
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div class="space-y-1.5">
+                <label for="edit-position" class="text-xs font-medium text-foreground">
+                  Position <span class="text-destructive">*</span>
+                </label>
+                <select
+                  id="edit-position"
+                  v-model="editForm.position"
+                  :class="editSelectClass"
+                  :disabled="isSavingEdit"
+                  @change="onEditPositionChange"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="employee">Employee</option>
+                  <option value="gip">GIP</option>
+                  <option value="tupad">TUPAD</option>
+                  <option value="client">Client</option>
+                </select>
+              </div>
+              <div class="space-y-1.5">
+                <label for="edit-role" class="text-xs font-medium text-foreground">Role</label>
+                <select
+                  id="edit-role"
+                  v-model="editForm.role"
+                  :class="editSelectClass"
+                  :disabled="isSavingEdit || isEditingSelf"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="beneficiary">Beneficiary</option>
+                  <option value="">No role</option>
+                </select>
+              </div>
+            </div>
+            <p class="-mt-3 text-[11px] text-muted-foreground">
+              {{ isEditingSelf ? "You can't change your own role or status." : 'Role sets what the user can open.' }}
+            </p>
+
+            <!-- Office & Status -->
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div class="space-y-1.5">
+                <label for="edit-office" class="text-xs font-medium text-foreground">Assigned Office</label>
+                <select id="edit-office" v-model="editForm.officeId" :class="editSelectClass" :disabled="isSavingEdit">
+                  <option value="">No Office Assigned</option>
+                  <option v-for="office in editOfficeOptions" :key="office.id" :value="office.id">
+                    {{ office.name }}<template v-if="office.code"> ({{ office.code }})</template><template v-if="!office.isActive"> — inactive</template>
+                  </option>
+                </select>
+              </div>
+              <div class="space-y-1.5">
+                <label for="edit-status" class="text-xs font-medium text-foreground">Status</label>
+                <select
+                  id="edit-status"
+                  v-model="editForm.status"
+                  :class="editSelectClass"
+                  :disabled="isSavingEdit || isEditingSelf"
+                >
+                  <option value="active">Active</option>
+                  <option value="pending">Pending</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="editError" class="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+              <ShieldAlert class="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <p class="text-xs text-destructive">{{ editError }}</p>
+            </div>
+          </div>
+
+          <div class="flex shrink-0 justify-end gap-3 border-t border-border px-6 py-4">
+            <Button type="button" variant="outline" size="sm" class="text-xs cursor-pointer" :disabled="isSavingEdit" @click="closeEditUser">
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" class="gap-1.5 text-xs cursor-pointer" :disabled="isSavingEdit">
+              <Loader2 v-if="isSavingEdit" class="h-3.5 w-3.5 animate-spin" />
+              <span>{{ isSavingEdit ? 'Saving...' : 'Save Changes' }}</span>
+            </Button>
+          </div>
+        </form>
+      </SheetContent>
+    </Sheet>
 
     <!-- ─── Add User Modal ─── -->
     <Dialog :open="isAddUserOpen" @update:open="(val: boolean) => { if (!val) closeAddUser() }">

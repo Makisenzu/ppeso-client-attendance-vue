@@ -1,4 +1,31 @@
-import type { ProfileRecord, ProfileStatus } from '@/types/peso/userManagement'
+import type {
+  ProfilePosition,
+  ProfileRecord,
+  ProfileRole,
+  ProfileStatus,
+} from '@/types/peso/userManagement'
+
+/**
+ * Default role for a position: only Admin gets admin access; Employee / GIP / TUPAD are
+ * beneficiaries; Client has no role. Supervisors are set by hand in Edit User.
+ */
+export function getDefaultRoleForPosition(position: ProfilePosition): ProfileRole | null {
+  switch (position) {
+    case 'admin':
+      return 'admin'
+    case 'employee':
+    case 'gip':
+    case 'tupad':
+      return 'beneficiary'
+    default:
+      return null
+  }
+}
+
+export function formatRoleLabel(role?: ProfileRole | null): string {
+  if (!role) return 'No role'
+  return role.charAt(0).toUpperCase() + role.slice(1)
+}
 
 export function getStatusBadgeClass(status?: ProfileStatus | string | null): string {
   switch (status?.toLowerCase()) {

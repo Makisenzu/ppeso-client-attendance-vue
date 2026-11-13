@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase'
-import type { ProfileRecord, UserFormData } from '@/types/peso/userManagement'
+import type { EditUserFormData, ProfileRecord, UserFormData } from '@/types/peso/userManagement'
+import { getDefaultRoleForPosition } from '@/helpers/peso/userManagementHelper'
 
 export const userManagementService = {
   async getProfiles(): Promise<ProfileRecord[]> {
@@ -60,6 +61,7 @@ export const userManagementService = {
             lastname: p.lastname,
             fullName: fullName || 'Unknown',
             position: p.position,
+            role: p.role ?? null,
             status: p.status,
             passcode: p.passcode,
             officeId: p.office_id || null,
@@ -90,6 +92,7 @@ export const userManagementService = {
           lastname: p.lastname,
           fullName: fullName || 'Unknown',
           position: p.position,
+          role: p.role ?? null,
           status: p.status,
           passcode: p.passcode,
           officeId: p.office_id || null,
@@ -110,12 +113,7 @@ export const userManagementService = {
       const officeId = formData.officeId?.trim() || null
 
       // Determine role based on position: only the Admin position gets admin access.
-      const role =
-        formData.position === 'admin'
-          ? 'admin'
-          : formData.position === 'employee' || formData.position === 'gip' || formData.position === 'tupad'
-            ? 'beneficiary'
-            : null
+      const role = getDefaultRoleForPosition(formData.position)
 
       // 1. Save the current admin session before signUp
       const { data: sessionData } = await supabase.auth.getSession()
@@ -186,6 +184,43 @@ export const userManagementService = {
       return { success: true }
     } catch (err) {
       console.error('Failed to create user:', err)
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'An unexpected error occurred',
+      }
+    }
+  },
+
+  /**
+   * Updates a profile as the signed-in admin. RLS + trg_guard_profile_update only let admins
+   * change role, status, office and position. Email / password live in Supabase Auth.
+   */
+  async updateUser(id: string, formData: EditUserFormData): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          firstname: formData.firstname.trim(),
+          middlename: formData.middlename.trim() || null,
+          lastname: formData.lastname.trim(),
+          position: formData.position,
+          role: formData.role || null,
+          status: formData.status,
+          office_id: formData.officeId || null,
+        })
+        .eq('id', id)
+        .select('id')
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+      if (!data || data.length === 0) {
+        return { success: false, error: 'This user could not be updated. It may have been deleted.' }
+      }
+
+      return { success: true }
+    } catch (err) {
+      console.error('Failed to update user:', err)
       return {
         success: false,
         error: err instanceof Error ? err.message : 'An unexpected error occurred',
