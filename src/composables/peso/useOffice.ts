@@ -228,12 +228,17 @@ export function useOffice() {
     loadDirectories()
   }
 
-  const closeAddEdit = () => {
-    if (isSubmitting.value) return
+  const resetAddEdit = () => {
     isAddEditOpen.value = false
     isDirectoryPickerOpen.value = false
     formErrors.value = {}
     editingId.value = null
+  }
+
+  /** Cancel / dismiss — ignored while a save is in progress. */
+  const closeAddEdit = () => {
+    if (isSubmitting.value) return
+    resetAddEdit()
   }
 
   const handleSubmit = async (): Promise<boolean> => {
@@ -264,7 +269,8 @@ export function useOffice() {
         showFeedback(`Office "${formData.value.name}" created successfully.`, 'success')
       }
 
-      closeAddEdit()
+      // Close directly: closeAddEdit() is a no-op while isSubmitting is still true.
+      resetAddEdit()
       return true
     } catch (err: any) {
       showFeedback(err?.message || 'An unexpected error occurred', 'error')
@@ -291,10 +297,15 @@ export function useOffice() {
     isDeleteDialogOpen.value = true
   }
 
-  const closeDeleteDialog = () => {
-    if (isDeleting.value) return
+  const resetDeleteDialog = () => {
     isDeleteDialogOpen.value = false
     officeToDelete.value = null
+  }
+
+  /** Cancel / dismiss — ignored while a delete is in progress. */
+  const closeDeleteDialog = () => {
+    if (isDeleting.value) return
+    resetDeleteDialog()
   }
 
   const confirmDelete = async (): Promise<boolean> => {
@@ -314,7 +325,8 @@ export function useOffice() {
         closeView()
       }
 
-      closeDeleteDialog()
+      // Close directly: closeDeleteDialog() is a no-op while isDeleting is still true.
+      resetDeleteDialog()
       showFeedback(`Office "${officeName}" was successfully deleted.`, 'success')
       return true
     } catch (err: any) {
