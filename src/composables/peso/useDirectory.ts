@@ -1,8 +1,9 @@
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { directoryService } from '@/services/peso/directoryService'
 import { useOfficeStore } from '@/stores/officeStore'
 import { getPageRange } from '@/helpers/common/paginationHelper'
 import type { DirectoryFormData, DirectoryRecord } from '@/types/peso/directory'
+import { useToastAlert } from '@/composables/common/useToastAlert'
 
 type StatusFilter = 'ALL' | 'active' | 'inactive'
 
@@ -28,21 +29,10 @@ export function useDirectory() {
   const currentPage = ref(1)
   const pageSize = ref(10)
 
-  // ─── Feedback Banner ───
-  const feedbackMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-  let feedbackTimer: ReturnType<typeof setTimeout> | null = null
-
+  // ─── Feedback: toast in the top-right corner (useToastAlert) ───
+  const toast = useToastAlert()
   const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-    feedbackMessage.value = { type, text }
-    feedbackTimer = setTimeout(() => {
-      feedbackMessage.value = null
-    }, 4000)
-  }
-
-  const dismissFeedback = () => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-    feedbackMessage.value = null
+    toast.show(text, type)
   }
 
   const fetchDirectories = async () => {
@@ -299,9 +289,6 @@ export function useDirectory() {
     fetchDirectories()
   })
 
-  onUnmounted(() => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-  })
 
   // ─── Display helpers for the template ───
   const pageRange = computed(() =>
@@ -330,8 +317,6 @@ export function useDirectory() {
     nextPage,
     resetFilters,
     fetchDirectories,
-    feedbackMessage,
-    dismissFeedback,
     selectedCount,
     isAllPageSelected,
     isPagePartiallySelected,

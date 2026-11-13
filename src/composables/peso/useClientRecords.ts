@@ -11,6 +11,7 @@ import {
   computeClientRecordStats,
   exportClientRecordsToCsv,
 } from '@/helpers/peso/clientRecordHelper'
+import { useToastAlert } from '@/composables/common/useToastAlert'
 
 export function useClientRecords() {
   const records = ref<ClientRecordItem[]>([])
@@ -226,18 +227,10 @@ export function useClientRecords() {
     }
   }
 
-  // Feedback / Notification banner
-  const feedbackMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-
+  // ─── Feedback: toast in the top-right corner (useToastAlert) ───
+  const toast = useToastAlert()
   const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
-    feedbackMessage.value = { type, text }
-    setTimeout(() => {
-      feedbackMessage.value = null
-    }, 4000)
-  }
-
-  const dismissFeedback = () => {
-    feedbackMessage.value = null
+    toast.show(text, type)
   }
 
   const handleAddClient = async (payload: WalkinAttendanceInsert) => {
@@ -340,8 +333,6 @@ export function useClientRecords() {
     recordToDelete,
     isDeleteDialogOpen,
     isDeleting,
-    feedbackMessage,
-    dismissFeedback,
     openDeleteDialog,
     closeDeleteDialog,
     confirmDelete,

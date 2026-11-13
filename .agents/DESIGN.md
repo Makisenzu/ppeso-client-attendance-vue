@@ -389,16 +389,22 @@ Bulk action bar:
 
 ---
 
-## 12. Feedback & Notifications
+## 12. Feedback & Notifications — Toasts, Top-Right
 
-There is no toast library yet. Screens use the composable's **feedback banner**: `feedbackMessage` +
-`showFeedback(text, type)` (auto-dismiss after 4s) rendered above the table, success in green-tinted and errors in
-`bg-destructive/10 text-destructive border-destructive/20`.
+Every create / update / delete result shows as a **toast in the top-right corner** — never as a banner on the page.
+
+- **Composable:** `useToastAlert()` (`src/composables/common/useToastAlert.ts`) — `success(text)`, `error(text)`,
+  `show(text, type)`. One app-wide stack; toasts auto-dismiss after 4s, max 4 visible, each closable.
+- **Component:** `ToastAlert.vue` (`src/components/common/`), mounted **once** in `App.vue` and teleported to `<body>`
+  (`fixed top-4 right-4`, full width on phones). Success uses the emerald tones, errors `destructive`. Errors are
+  `role="alert"`, successes `role="status"`.
+- Page composables keep a local `showFeedback(text, type)` that calls `toast.show`; components never render feedback.
 
 > [!IMPORTANT]
-> 1. Reuse the banner pattern; don't add `window.alert()` / `window.confirm()`.
-> 2. If a toast is introduced, add shadcn `sonner` through the CLI behind one shared composable (`useToastAlert`) and
->    use only that composable from screens.
+> 1. **Toasts are for the outcome of an action** (saved, deleted, failed). Form validation stays **inline** under the
+>    field, and an error that keeps a dialog open (e.g. a duplicate code) stays **inside the dialog**.
+> 2. Don't add `window.alert()` / `window.confirm()` or page-level banners.
+> 3. Keep messages to one short sentence (§14.4).
 
 ---
 
@@ -473,7 +479,7 @@ Shared pieces: `useLayoutHeader` / `useThemeToggle` (layouts), `paginationHelper
 | Button submitting  | Disabled + `Loader2` spinning + gerund label ("Deleting...") |
 | Empty result       | `Empty` / `TableEmpty` with one sentence and optional "Reset filters" / "Refresh" |
 | Destructive action | Confirmation `Dialog` naming the consequence — never `window.confirm()` |
-| Success / error    | Feedback banner (§12) |
+| Success / error    | Toast in the top-right (§12, `useToastAlert`) |
 
 ### 14.4 Microcopy — Short and On-Point
 
@@ -494,7 +500,7 @@ No restating the title, no filler ("Here you can…"), no implementation details
 | Icon on every label, heading and button             | Icons only where they add meaning (§6) |
 | Colored badge for non-status metadata               | Badges for status / position values only |
 | Custom-built modal component                        | Compose `Dialog` / `Sheet` inline |
-| `window.confirm()` / `window.alert()`               | Confirmation `Dialog`, feedback banner |
+| `window.confirm()` / `window.alert()`               | Confirmation `Dialog`, toast (§12) |
 | Raw `bg-emerald-500/10` in a component              | Badge class from a helper, token-based (§2) |
 | `<style scoped>` for one-off styling                | Tailwind utilities |
 | Sideways-scrolling page on a phone                  | Scroll the table inside its card; stack toolbars |

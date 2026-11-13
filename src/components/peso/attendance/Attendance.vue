@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import {
-  AlertTriangle,
   Building2,
   Calendar,
   CalendarX2,
-  CheckCircle2,
   Clock,
   Download,
   Eye,
@@ -80,8 +78,6 @@ const {
   recordToDelete,
   isDeleteDialogOpen,
   isDeleting,
-  feedbackMessage,
-  dismissFeedback,
   openDeleteDialog,
   closeDeleteDialog,
   confirmDelete,
@@ -168,22 +164,6 @@ const checkboxClass =
           <span>Refresh</span>
         </Button>
       </div>
-    </div>
-
-    <!-- ─── Toast / Notification Alert Banner ─── -->
-    <div
-      v-if="feedbackMessage"
-      class="flex items-center justify-between gap-3 p-3.5 rounded-lg text-xs border transition-all animate-in fade-in"
-      :class="feedbackMessage.type === 'success' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : 'bg-destructive/10 text-destructive border-destructive/20'"
-    >
-      <div class="flex items-center gap-2">
-        <CheckCircle2 v-if="feedbackMessage.type === 'success'" class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-        <AlertTriangle v-else class="h-4 w-4 shrink-0" />
-        <span class="font-medium">{{ feedbackMessage.text }}</span>
-      </div>
-      <button @click="dismissFeedback" class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer">
-        <X class="h-3.5 w-3.5" />
-      </button>
     </div>
 
     <!-- ─── Metric Cards Grid ─── -->

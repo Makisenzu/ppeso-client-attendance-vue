@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { holidayService } from '@/services/peso/holidayService'
 import {
   buildMonthGrid,
@@ -10,6 +10,7 @@ import {
 } from '@/helpers/peso/holidayHelper'
 import { formatDisplayDate } from '@/helpers/common/dateFormatHelper'
 import type { CalendarDayCell, HolidayFormData, HolidayRecord } from '@/types/peso/holiday'
+import { useToastAlert } from '@/composables/common/useToastAlert'
 
 const DELETE_PREVIEW_LIMIT = 50
 
@@ -22,21 +23,10 @@ export function useHolidayCalendar() {
   const isLoading = ref(false)
   const loadError = ref<string | null>(null)
 
-  // ─── Feedback banner ───
-  const feedbackMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-  let feedbackTimer: ReturnType<typeof setTimeout> | null = null
-
+  // ─── Feedback: toast in the top-right corner (useToastAlert) ───
+  const toast = useToastAlert()
   const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-    feedbackMessage.value = { type, text }
-    feedbackTimer = setTimeout(() => {
-      feedbackMessage.value = null
-    }, 4000)
-  }
-
-  const dismissFeedback = () => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-    feedbackMessage.value = null
+    toast.show(text, type)
   }
 
   const fetchHolidays = async () => {
@@ -272,16 +262,11 @@ export function useHolidayCalendar() {
     fetchHolidays()
   })
 
-  onUnmounted(() => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-  })
 
   return {
     isLoading,
     loadError,
     fetchHolidays,
-    feedbackMessage,
-    dismissFeedback,
     viewYear,
     monthTitle,
     weekdayLabels,

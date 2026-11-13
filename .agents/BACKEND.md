@@ -245,8 +245,8 @@ export function useSomething() {
 > 2. Use `storeToRefs()` for store state and destructure store actions directly.
 > 3. **Always clean up** in `onUnmounted`: realtime channels, `setTimeout` / debounce timers, `BroadcastChannel`s.
 > 4. Composable names follow the `useXxx` pattern.
-> 5. User feedback uses the composable's `feedbackMessage` banner pattern (`showFeedback(text, 'success' | 'error')`,
->    auto-dismiss after 4s) until a shared toast composable exists. See DESIGN.md §12.
+> 5. User feedback goes through `useToastAlert()` (a local `showFeedback(text, type)` wrapper is fine) — toasts
+>    show top-right. See DESIGN.md §12.
 
 ---
 
@@ -343,7 +343,7 @@ rtk npm run types:gen
 ```
 Service layer:     throw new Error(error.message || 'Human-readable fallback')
     ↑
-Composable layer:  try/catch → showFeedback(message, 'error'); always reset loading flags in finally
+Composable layer:  try/catch → toast (useToastAlert) on failure; always reset loading flags in finally
     ↑
 Component layer:   renders loading / empty / feedback states from composable refs
 ```

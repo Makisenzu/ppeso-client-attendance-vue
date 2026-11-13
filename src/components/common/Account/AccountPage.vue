@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle, CheckCircle2, Eye, EyeOff, Loader2, RefreshCw, UserRound, X } from '@lucide/vue'
+import { Eye, EyeOff, Loader2, RefreshCw, UserRound } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,8 +16,6 @@ const {
   isLoading,
   loadError,
   fetchAccount,
-  feedbackMessage,
-  dismissFeedback,
   summary,
   nameForm,
   nameErrors,
@@ -42,32 +40,6 @@ const {
     <div class="space-y-1">
       <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">My Account</h1>
       <p class="text-sm text-muted-foreground">Your profile, kiosk passcode and password.</p>
-    </div>
-
-    <!-- ─── Feedback Banner ─── -->
-    <div
-      v-if="feedbackMessage"
-      class="flex items-center justify-between gap-3 rounded-lg border p-3.5 text-xs animate-in fade-in"
-      :class="
-        feedbackMessage.type === 'success'
-          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
-          : 'bg-destructive/10 text-destructive border-destructive/20'
-      "
-      role="status"
-    >
-      <div class="flex items-center gap-2">
-        <CheckCircle2 v-if="feedbackMessage.type === 'success'" class="h-4 w-4 shrink-0" />
-        <AlertTriangle v-else class="h-4 w-4 shrink-0" />
-        <span class="font-medium">{{ feedbackMessage.text }}</span>
-      </div>
-      <button
-        type="button"
-        class="rounded p-1 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-        aria-label="Dismiss message"
-        @click="dismissFeedback"
-      >
-        <X class="h-3.5 w-3.5" />
-      </button>
     </div>
 
     <!-- ─── Loading ─── -->

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import {
-  AlertTriangle,
   BookUser,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -47,8 +45,6 @@ const {
   nextPage,
   resetFilters,
   fetchDirectories,
-  feedbackMessage,
-  dismissFeedback,
   selectedCount,
   isAllPageSelected,
   isPagePartiallySelected,
@@ -88,31 +84,6 @@ const checkboxClass =
 
 <template>
   <div class="flex flex-col gap-4">
-    <!-- ─── Feedback Banner ─── -->
-    <div
-      v-if="feedbackMessage"
-      class="flex items-center justify-between gap-3 rounded-lg border p-3.5 text-xs animate-in fade-in"
-      :class="
-        feedbackMessage.type === 'success'
-          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
-          : 'bg-destructive/10 text-destructive border-destructive/20'
-      "
-    >
-      <div class="flex items-center gap-2">
-        <CheckCircle2 v-if="feedbackMessage.type === 'success'" class="h-4 w-4 shrink-0" />
-        <AlertTriangle v-else class="h-4 w-4 shrink-0" />
-        <span class="font-medium">{{ feedbackMessage.text }}</span>
-      </div>
-      <button
-        type="button"
-        class="rounded p-1 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-        aria-label="Dismiss message"
-        @click="dismissFeedback"
-      >
-        <X class="h-3.5 w-3.5" />
-      </button>
-    </div>
-
     <Card class="border shadow-xs">
       <CardHeader class="pb-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

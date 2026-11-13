@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { accountService } from '@/services/common/accountService'
 import {
   formatAccountFullName,
@@ -11,6 +11,7 @@ import {
 } from '@/helpers/common/accountHelper'
 import { formatDisplayDate } from '@/helpers/common/dateFormatHelper'
 import type { ChangePasswordFormData, MyAccount, MyNameFormData } from '@/types/common/account'
+import { useToastAlert } from '@/composables/common/useToastAlert'
 
 /** Account page for every role: view the account, edit own name, change password. */
 export function useAccount() {
@@ -18,21 +19,10 @@ export function useAccount() {
   const isLoading = ref(false)
   const loadError = ref<string | null>(null)
 
-  // ─── Feedback banner ───
-  const feedbackMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-  let feedbackTimer: ReturnType<typeof setTimeout> | null = null
-
+  // ─── Feedback: toast in the top-right corner (useToastAlert) ───
+  const toast = useToastAlert()
   const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-    feedbackMessage.value = { type, text }
-    feedbackTimer = setTimeout(() => {
-      feedbackMessage.value = null
-    }, 4000)
-  }
-
-  const dismissFeedback = () => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-    feedbackMessage.value = null
+    toast.show(text, type)
   }
 
   // ─── Name form ───
@@ -154,16 +144,11 @@ export function useAccount() {
     fetchAccount()
   })
 
-  onUnmounted(() => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-  })
 
   return {
     isLoading,
     loadError,
     fetchAccount,
-    feedbackMessage,
-    dismissFeedback,
     summary,
     nameForm,
     nameErrors,

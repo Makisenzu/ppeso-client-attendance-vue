@@ -13,6 +13,7 @@ import {
   recordMatchesDate,
   recordMatchesStatus,
 } from '@/helpers/peso/attendanceHelper'
+import { useToastAlert } from '@/composables/common/useToastAlert'
 
 export function useAttendance() {
   const attendances = ref<AttendanceRecord[]>([])
@@ -292,17 +293,10 @@ export function useAttendance() {
   const recordToDelete = ref<AttendanceRecord | null>(null)
   const isDeleteDialogOpen = ref<boolean>(false)
   const isDeleting = ref<boolean>(false)
-  const feedbackMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-
+  // ─── Feedback: toast in the top-right corner (useToastAlert) ───
+  const toast = useToastAlert()
   const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
-    feedbackMessage.value = { type, text }
-    setTimeout(() => {
-      feedbackMessage.value = null
-    }, 4000)
-  }
-
-  const dismissFeedback = () => {
-    feedbackMessage.value = null
+    toast.show(text, type)
   }
 
   const openDeleteDialog = (record: AttendanceRecord) => {
@@ -529,8 +523,6 @@ export function useAttendance() {
     recordToDelete,
     isDeleteDialogOpen,
     isDeleting,
-    feedbackMessage,
-    dismissFeedback,
     openDeleteDialog,
     closeDeleteDialog,
     confirmDelete,

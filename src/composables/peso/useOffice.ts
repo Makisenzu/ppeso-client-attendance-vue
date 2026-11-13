@@ -6,6 +6,7 @@ import { directoryService } from '@/services/peso/directoryService'
 import type { OfficeFormData, OfficeRecord } from '@/types/peso/office'
 import type { DirectoryOption } from '@/types/peso/directory'
 import { exportOfficesToCsv, validateOfficeForm } from '@/helpers/peso/officeHelper'
+import { useToastAlert } from '@/composables/common/useToastAlert'
 
 export type OfficeTab = 'offices' | 'directory'
 
@@ -99,21 +100,10 @@ export function useOffice() {
   const officeToDelete = ref<OfficeRecord | null>(null)
   const isDeleting = ref<boolean>(false)
 
-  // Feedback banner
-  const feedbackMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-  let feedbackTimer: ReturnType<typeof setTimeout> | null = null
-
+  // ─── Feedback: toast in the top-right corner (useToastAlert) ───
+  const toast = useToastAlert()
   const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-    feedbackMessage.value = { type, text }
-    feedbackTimer = setTimeout(() => {
-      feedbackMessage.value = null
-    }, 4000)
-  }
-
-  const dismissFeedback = () => {
-    if (feedbackTimer) clearTimeout(feedbackTimer)
-    feedbackMessage.value = null
+    toast.show(text, type)
   }
 
   // ─── Computed Filtered Records ───
@@ -410,8 +400,6 @@ export function useOffice() {
     isDeleteDialogOpen,
     officeToDelete,
     isDeleting,
-    feedbackMessage,
-    dismissFeedback,
     setPage,
     prevPage,
     nextPage,

@@ -17,6 +17,7 @@ import {
 } from '@/helpers/peso/userManagementHelper'
 import { getPageRange, getVisiblePages } from '@/helpers/common/paginationHelper'
 import { useOfficeStore } from '@/stores/officeStore'
+import { useToastAlert } from '@/composables/common/useToastAlert'
 
 export function useUserManagement() {
   const officeStore = useOfficeStore()
@@ -391,17 +392,10 @@ export function useUserManagement() {
   const profileToDelete = ref<ProfileRecord | null>(null)
   const isDeleteDialogOpen = ref<boolean>(false)
   const isDeleting = ref<boolean>(false)
-  const feedbackMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-
+  // ─── Feedback: toast in the top-right corner (useToastAlert) ───
+  const toast = useToastAlert()
   const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
-    feedbackMessage.value = { type, text }
-    setTimeout(() => {
-      feedbackMessage.value = null
-    }, 4000)
-  }
-
-  const dismissFeedback = () => {
-    feedbackMessage.value = null
+    toast.show(text, type)
   }
 
   const openDeleteDialog = (profile: ProfileRecord) => {
@@ -510,8 +504,6 @@ export function useUserManagement() {
     profileToDelete,
     isDeleteDialogOpen,
     isDeleting,
-    feedbackMessage,
-    dismissFeedback,
     openDeleteDialog,
     closeDeleteDialog,
     confirmDelete,
