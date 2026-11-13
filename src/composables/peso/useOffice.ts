@@ -1,4 +1,5 @@
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useOfficeStore } from '@/stores/officeStore'
 import { directoryService } from '@/services/peso/directoryService'
 import type { OfficeFormData, OfficeRecord } from '@/types/peso/office'
@@ -7,6 +8,7 @@ import { exportOfficesToCsv, validateOfficeForm } from '@/helpers/peso/officeHel
 
 export function useOffice() {
   const officeStore = useOfficeStore()
+  const router = useRouter()
 
   // ─── Filter & Search State ───
   const searchQuery = ref<string>('')
@@ -87,10 +89,6 @@ export function useOffice() {
   const clearDirectory = () => {
     formData.value = { ...formData.value, directoryId: null }
   }
-
-  // View Details Modal
-  const isViewOpen = ref<boolean>(false)
-  const selectedOffice = ref<OfficeRecord | null>(null)
 
   // Delete Modal
   const isDeleteDialogOpen = ref<boolean>(false)
@@ -280,15 +278,9 @@ export function useOffice() {
     }
   }
 
-  // ─── View Actions ───
+  // ─── View: opens the Office Details page (GIP beneficiaries table) ───
   const openView = (office: OfficeRecord) => {
-    selectedOffice.value = office
-    isViewOpen.value = true
-  }
-
-  const closeView = () => {
-    isViewOpen.value = false
-    selectedOffice.value = null
+    router.push({ name: 'office-details', params: { id: office.id } })
   }
 
   // ─── Delete Actions ───
@@ -319,10 +311,6 @@ export function useOffice() {
       if (!res.success) {
         showFeedback(res.error || 'Failed to delete office', 'error')
         return false
-      }
-
-      if (selectedOffice.value?.id === id) {
-        closeView()
       }
 
       // Close directly: closeDeleteDialog() is a no-op while isDeleting is still true.
@@ -393,8 +381,6 @@ export function useOffice() {
     loadDirectories,
     selectDirectory,
     clearDirectory,
-    isViewOpen,
-    selectedOffice,
     isDeleteDialogOpen,
     officeToDelete,
     isDeleting,
@@ -411,7 +397,6 @@ export function useOffice() {
     closeAddEdit,
     handleSubmit,
     openView,
-    closeView,
     openDeleteDialog,
     closeDeleteDialog,
     confirmDelete,

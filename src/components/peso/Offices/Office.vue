@@ -81,8 +81,6 @@ const {
   isDirectoryTaken,
   loadDirectories,
   selectDirectory,
-  isViewOpen,
-  selectedOffice,
   isDeleteDialogOpen,
   officeToDelete,
   isDeleting,
@@ -98,7 +96,6 @@ const {
   closeAddEdit,
   handleSubmit,
   openView,
-  closeView,
   openDeleteDialog,
   closeDeleteDialog,
   confirmDelete,
@@ -817,137 +814,6 @@ const setTab = (tab: OfficeTab) => {
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
-
-    <!-- ─── 2. View Office Details Dialog ─── -->
-    <Dialog :open="isViewOpen" @update:open="(val: boolean) => (!val ? closeView() : null)">
-      <DialogContent class="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle class="flex items-center gap-2 text-base font-semibold">
-            <span>Office Details</span>
-          </DialogTitle>
-          <DialogDescription class="text-xs">
-            Detailed information and assigned personnel summary.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div v-if="selectedOffice" class="space-y-5 py-2">
-          <!-- Overview Banner -->
-          <div class="flex items-start justify-between p-3.5 rounded-lg border bg-muted/20">
-            <div class="space-y-1 min-w-0">
-              <h3 class="text-sm font-semibold text-foreground truncate">
-                {{ selectedOffice.name }}
-              </h3>
-              <div class="flex items-center gap-2 flex-wrap text-xs font-mono text-muted-foreground">
-                <span v-if="selectedOffice.code" class="bg-muted px-2 py-0.5 rounded font-semibold text-foreground">
-                  {{ selectedOffice.code }}
-                </span>
-                <span>ID: {{ selectedOffice.id.slice(0, 8) }}...</span>
-              </div>
-              <p class="text-xs text-muted-foreground">
-                Office Head:
-                <span class="font-medium text-foreground">{{ selectedOffice.officeHead || '—' }}</span>
-              </p>
-            </div>
-            <Badge
-              variant="outline"
-              :class="[
-                getStatusBadgeClass(selectedOffice.isActive),
-                'text-[11px] font-mono capitalize px-2 py-0.5 h-5 font-medium',
-              ]"
-            >
-              {{ formatStatusLabel(selectedOffice.isActive) }}
-            </Badge>
-          </div>
-
-          <!-- Metadata Grid -->
-          <div class="grid grid-cols-2 gap-3 text-xs">
-            <div class="p-3 rounded-md border bg-card/40 space-y-1">
-              <p class="text-muted-foreground text-[11px]">Total Beneficiaries</p>
-              <p class="font-semibold text-foreground font-mono text-base">
-                {{ selectedOffice.totalBeneficiaries }}
-              </p>
-            </div>
-            <div class="p-3 rounded-md border bg-card/40 space-y-1">
-              <p class="text-muted-foreground text-[11px]">Created Date</p>
-              <p class="font-semibold text-foreground font-mono">
-                {{ formatDateDisplay(selectedOffice.createdAt) }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Beneficiaries List Section -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <h4 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Assigned Beneficiaries ({{ selectedOffice.beneficiaries?.length || 0 }})
-              </h4>
-            </div>
-
-            <div
-              v-if="selectedOffice.beneficiaries && selectedOffice.beneficiaries.length > 0"
-              class="max-h-52 overflow-y-auto rounded-md border divide-y text-xs"
-            >
-              <div
-                v-for="b in selectedOffice.beneficiaries"
-                :key="b.id"
-                class="p-2.5 flex items-center justify-between hover:bg-muted/20"
-              >
-                <div class="space-y-0.5 min-w-0">
-                  <p class="font-medium text-foreground truncate">{{ b.fullName }}</p>
-                  <p class="text-[11px] text-muted-foreground font-mono uppercase">
-                    {{ b.position }}
-                  </p>
-                </div>
-                <Badge
-                  variant="outline"
-                  class="text-[10px] uppercase font-mono px-1.5 py-0 h-4"
-                  :class="
-                    b.status === 'active'
-                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
-                      : 'bg-muted text-muted-foreground border-transparent'
-                  "
-                >
-                  {{ b.status }}
-                </Badge>
-              </div>
-            </div>
-            <div
-              v-else
-              class="p-4 rounded-md border border-dashed text-center text-xs text-muted-foreground"
-            >
-              No beneficiaries currently assigned to this office.
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter class="gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            class="text-xs cursor-pointer"
-            @click="closeView"
-          >
-            Close
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            class="gap-1.5 text-xs cursor-pointer"
-            @click="
-              () => {
-                if (selectedOffice) {
-                  const o = selectedOffice
-                  closeView()
-                  openEdit(o)
-                }
-              }
-            "
-          >
-            <span>Edit Office</span>
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
 

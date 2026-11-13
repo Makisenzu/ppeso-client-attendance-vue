@@ -3,6 +3,8 @@ import type {
   OfficeRecord,
   OfficeFormData,
   OfficeBeneficiary,
+  OfficeGipRecord,
+  OfficeSummary,
 } from '@/types/peso/office'
 
 /** Turns unique-constraint violations into a message the admin can act on. */
@@ -19,6 +21,48 @@ function toOfficeErrorMessage(error: { code?: string; message: string }): string
 }
 
 export const officeService = {
+  /** One office with its head (from public.directories), for the Office Details page. */
+  async getOfficeById(id: string): Promise<OfficeSummary | null> {
+    const { data, error } = await supabase
+      .from('offices')
+      .select('id, name, code, is_active, created_at, directory:directories ( office_head )')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (error) throw new Error(error.message || 'Failed to load the office.')
+    if (!data) return null
+
+    const directory = Array.isArray(data.directory) ? data.directory[0] : data.directory
+    return {
+      id: data.id,
+      name: data.name,
+      code: data.code,
+      officeHead: directory?.office_head ?? null,
+      isActive: data.is_active !== false,
+      createdAt: data.created_at,
+    }
+  },
+
+  /** All GIP beneficiaries (position = 'gip') assigned to an office. */
+  async getOfficeGips(officeId: string): Promise<OfficeGipRecord[]> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, firstname, middlename, lastname, status, created_at')
+      .eq('office_id', officeId)
+      .eq('position', 'gip')
+      .order('lastname', { ascending: true })
+      .order('firstname', { ascending: true })
+
+    if (error) throw new Error(error.message || 'Failed to load the GIP list.')
+
+    return (data ?? []).map((p) => ({
+      id: p.id,
+      fullName: [p.firstname, p.middlename, p.lastname].filter(Boolean).join(' ').trim() || 'Unknown',
+      status: p.status,
+      createdAt: p.created_at,
+    }))
+  },
+
   async getOffices(): Promise<OfficeRecord[]> {
     try {
       const { data, error } = await supabase

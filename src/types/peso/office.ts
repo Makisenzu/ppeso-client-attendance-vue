@@ -27,6 +27,24 @@ export interface OfficeRecord {
   updatedAt: string | null
 }
 
+/** One office for the Office Details page. */
+export interface OfficeSummary {
+  id: string
+  name: string
+  code: string | null
+  officeHead: string | null
+  isActive: boolean
+  createdAt: string | null
+}
+
+/** A GIP beneficiary assigned to an office (Office Details table). */
+export interface OfficeGipRecord {
+  id: string
+  fullName: string
+  status: Database['public']['Enums']['profile_status']
+  createdAt: string
+}
+
 export interface OfficeFormData {
   id?: string
   directoryId: string | null
