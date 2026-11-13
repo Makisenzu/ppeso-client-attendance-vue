@@ -78,28 +78,8 @@ const handleSignup = async () => {
       throw new Error('Failed to create user account')
     }
 
-    // Generate a 6-digit passcode
-    const passcode = Math.floor(100000 + Math.random() * 900000).toString()
-
-    // Create or update profile in the public.profiles table
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert(
-        {
-          id: data.user.id,
-          firstname: firstName.value,
-          middlename: middleName.value || null,
-          lastname: lastName.value,
-          position: defaultPosition,
-          passcode: passcode,
-          status: 'active',
-        },
-        { onConflict: 'id' },
-      )
-
-    if (profileError) {
-      throw new Error(`Database error saving new user • ${profileError.message}`)
-    }
+    // The profile row (incl. a unique passcode) is created by the
+    // on_auth_user_created database trigger from the metadata above.
 
     // Auto-login after successful signup
     const { error: signInError } = await supabase.auth.signInWithPassword({

@@ -145,37 +145,42 @@ export const userManagementService = {
         return { success: false, error: 'Failed to create user account' }
       }
 
-      // 3. Generate a 6-digit passcode
-      const passcode = Math.floor(100000 + Math.random() * 900000).toString()
+      // 3. Restore the admin session first. signUp may have switched the client
+      //    to the new user, and RLS only lets an admin set role/office/status.
+      if (adminSession) {
+        const { error: restoreError } = await supabase.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token,
+        })
 
-      // 4. Upsert into public.profiles (matching Signup.vue pattern)
-      const { error: profileError } = await supabase
+        if (restoreError) {
+          return { success: false, error: `Failed to restore admin session: ${restoreError.message}` }
+        }
+      }
+
+      // 4. The on_auth_user_created trigger already inserted the profile row
+      //    (with a unique passcode). Apply the admin-controlled fields as admin.
+      const { data: updatedProfile, error: profileError } = await supabase
         .from('profiles')
-        .upsert(
-          {
-            id: data.user.id,
-            firstname: formData.firstname,
-            middlename: formData.middlename || null,
-            lastname: formData.lastname,
-            position: formData.position,
-            passcode: passcode,
-            status: 'active',
-            office_id: officeId,
-            role,
-          },
-          { onConflict: 'id' },
-        )
+        .update({
+          firstname: formData.firstname,
+          middlename: formData.middlename || null,
+          lastname: formData.lastname,
+          position: formData.position,
+          status: 'active',
+          office_id: officeId,
+          role,
+        })
+        .eq('id', data.user.id)
+        .select('id')
+        .maybeSingle()
 
       if (profileError) {
         return { success: false, error: `Profile creation failed: ${profileError.message}` }
       }
 
-      // 5. Restore the admin session so the admin stays logged in
-      if (adminSession) {
-        await supabase.auth.setSession({
-          access_token: adminSession.access_token,
-          refresh_token: adminSession.refresh_token,
-        })
+      if (!updatedProfile) {
+        return { success: false, error: 'Profile creation failed: profile row not found or not permitted.' }
       }
 
       return { success: true }
