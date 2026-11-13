@@ -1,16 +1,25 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import { Moon, Sun } from '@lucide/vue'
-import { useThemeToggle } from '@/composables/common/useLayoutHeader'
+import { useAuthLayout } from '@/composables/common/useLayoutHeader'
 
-const { isDark, toggleTheme } = useThemeToggle()
+const { isDark, toggleTheme, isForcedDark } = useAuthLayout()
 </script>
 
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-linear-to-br from-slate-100 via-slate-50 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 text-foreground transition-colors duration-200">
+  <!-- `dark` on the root switches every token below it to the dark palette (pages with meta.forceDark). -->
+  <div
+    class="relative min-h-screen overflow-hidden bg-linear-to-br text-foreground transition-colors duration-200"
+    :class="
+      isForcedDark
+        ? 'dark from-slate-950 via-slate-950 to-black'
+        : 'from-slate-100 via-slate-50 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800'
+    "
+  >
     <div class="absolute inset-0 bg-black/5 dark:bg-black/20" />
 
     <button
+      v-if="!isForcedDark"
       @click="toggleTheme"
       class="absolute right-4 top-4 z-20 flex size-8 items-center justify-center rounded-md bg-slate-200/80 text-slate-700 hover:bg-slate-300 hover:text-slate-900 dark:bg-white/10 dark:text-white/80 backdrop-blur dark:hover:bg-white/20 dark:hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       title="Toggle color theme"
@@ -19,11 +28,7 @@ const { isDark, toggleTheme } = useThemeToggle()
     </button>
 
     <div class="relative z-10 flex min-h-screen items-center justify-center p-6">
-      <RouterView v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </RouterView>
+      <RouterView />
     </div>
   </div>
 </template>

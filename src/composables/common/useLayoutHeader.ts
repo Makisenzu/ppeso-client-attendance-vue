@@ -14,6 +14,18 @@ export function useThemeToggle() {
   return { mode, isDark, toggleTheme }
 }
 
+/**
+ * Auth layout (login / signup): theme toggle, unless the page sets `meta.forceDark`,
+ * in which case the page is always dark and the toggle is hidden.
+ */
+export function useAuthLayout() {
+  const route = useRoute()
+  const theme = useThemeToggle()
+  const isForcedDark = computed(() => route.meta.forceDark === true)
+
+  return { ...theme, isForcedDark }
+}
+
 export interface LayoutHeaderOptions {
   /** Route name to label when the route has none. */
   fallbackRouteName: string

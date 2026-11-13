@@ -286,6 +286,8 @@ Page header pattern (inside a screen): `<h1 class="text-2xl font-bold tracking-t
 > [!IMPORTANT]
 > 1. **Every component must work in dark mode** — use tokens; add `dark:` overrides only when a token can't express it.
 > 2. **Test both modes** for every new component.
+> 3. **Dark-only pages** set `meta: { forceDark: true }` on their route (the login page, to match its MagicRings
+>    background). `AuthLayout` (via `useAuthLayout`) then adds `dark` to its root and hides the theme toggle.
 
 ---
 
@@ -294,16 +296,15 @@ Page header pattern (inside a screen): `<h1 class="text-2xl font-bold tracking-t
 | Library            | Usage |
 | ------------------ | ----- |
 | `tw-animate-css`   | Enter/exit utilities used by shadcn-vue primitives |
-| Vue `<transition>` | Route transitions in `App.vue` (`name="fade"`, `mode="out-in"`) |
+| Vue `<transition>` | Element enter / leave inside a page (not around layout `<RouterView>`s, see below) |
 
-> [!WARNING]
-> `App.vue` uses `<transition name="fade">` but `style.css` defines no `.fade-*` classes, so route changes don't animate.
-> If you want the fade, add to `style.css`:
-> ```css
-> .fade-enter-active, .fade-leave-active { transition: opacity 0.18s ease; }
-> .fade-enter-from, .fade-leave-to { opacity: 0; }
-> ```
-> Respect `prefers-reduced-motion` for any new animation. **Do not add new animation libraries.**
+> [!CAUTION]
+> **No route transitions.** `App.vue` and `AuthLayout.vue` render a plain `<RouterView />`. They used to wrap it in
+> `<transition name="fade" mode="out-in">` (one inside the other), which never animated (no `.fade-*` CSS existed)
+> and left the dashboard **blank after login until a refresh**: with out-in, the next layout waits for the old one
+> to finish leaving, and the nested transition re-rendering inside the leaving layout stalled it.
+> Don't put `mode="out-in"` transitions around layout-level `<RouterView>`s again. Respect `prefers-reduced-motion`
+> for any new animation. **Do not add new animation libraries.**
 
 ---
 
@@ -423,6 +424,10 @@ In the **template**, bind to names: no multi-statement handlers (`@click="() => 
 `.filter()`, `.map()`, `new Date()` or percentage / page-range arithmetic. Expose a computed or function from the
 composable instead (e.g. `pageRange.start`, `bulkDeletePreview`, `editFromDetails`). Simple display formatting
 (`count.toLocaleString()`, a ternary label) is fine. Template refs use `useTemplateRef('name')` inside the composable.
+**Exception — vendored components:** `src/components/vuebits/` holds third-party visual effects copied from
+Vue Bits (e.g. `MagicRings.vue`, needs `three`). Like `ui/`, don't edit them; configure them through props from a
+composable, load them with `defineAsyncComponent` (keeps three.js out of the main bundle), and skip them when
+`prefers-reduced-motion` is set. Use them on public pages only (see §15).
 Shared pieces: `useLayoutHeader` / `useThemeToggle` (layouts), `paginationHelper` (`getPageRange`, `getVisiblePages`,
 `toPercentage`), `useSearchSelect` (`SearchSelect.vue`).
 

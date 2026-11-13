@@ -17,6 +17,8 @@ export const loginRoutes: RouteRecordRaw[] = [
         path: 'login',
         name: 'login',
         component: LoginView,
+        // Dark only, to match the MagicRings background.
+        meta: { forceDark: true },
       },
       {
         path: 'signup',
