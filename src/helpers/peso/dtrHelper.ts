@@ -300,19 +300,13 @@ export function generateStandaloneDtrHtml(
       }
     }
 
-    // Determine diagonal slash coordinate calculation
-    // From day after activeEndDay to totalDaysInMonth (or 30/31)
-    const hasDiagonalSlash = data.activeEndDay < data.totalDaysInMonth
-    const slashStartDay = data.activeEndDay + 1
-    const slashEndDay = data.totalDaysInMonth
-
-    // Calculate percentage offset for SVG diagonal line
-    // The table header is 2 rows tall. Total rows = 2 + data.totalDaysInMonth
-    const totalTableRows = 2 + data.totalDaysInMonth
-    const startRowIndex = 2 + (slashStartDay - 1)
-    const endRowIndex = 2 + slashEndDay
-    const topPct = ((startRowIndex / totalTableRows) * 100).toFixed(2)
-    const bottomPct = ((endRowIndex / totalTableRows) * 100).toFixed(2)
+    // Diagonal slashes crossing out the days before and after the DTR period
+    const slashSegments = calculateDiagonalSlashes(
+      data.activeStartDay,
+      data.activeEndDay,
+      data.totalDaysInMonth,
+      data.rows.length
+    )
 
     return `
       <div class="dtr-slip">
@@ -373,10 +367,15 @@ export function generateStandaloneDtrHtml(
           </table>
 
           ${
-            hasDiagonalSlash
+            slashSegments.length > 0
               ? `
           <svg class="dtr-diagonal-slash" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <line x1="12" y1="${topPct}" x2="99" y2="${bottomPct}" stroke="black" stroke-width="0.8" />
+            ${slashSegments
+              .map(
+                (segment) =>
+                  `<line x1="12" y1="${segment.y1}" x2="99" y2="${segment.y2}" stroke="black" stroke-width="0.8" />`
+              )
+              .join('')}
           </svg>
           `
               : ''
@@ -758,27 +757,47 @@ export function getDtrPresetDateRange(
   return getDefaultDtrDateRange(baseDate)
 }
 
+export interface DtrSlashSegment {
+  /** Top of the first crossed-out row, as a % of the table height. */
+  y1: number
+  /** Bottom of the last crossed-out row, as a % of the table height. */
+  y2: number
+}
+
 /**
- * Calculates diagonal slash Y coordinates for inactive days in Civil Service Form 48 table
+ * Calculates the diagonal slashes that cross out days outside the DTR period in a
+ * Civil Service Form 48 table: one for the days before `activeStartDay` (e.g. 1–15
+ * when printing 16–30) and one for the days after `activeEndDay` (e.g. 16–30 when
+ * printing 1–15). The table header counts as 2 rows.
  */
-export function calculateDiagonalSlash(
+export function calculateDiagonalSlashes(
+  activeStartDay: number,
   activeEndDay: number,
   totalDaysInMonth: number,
   rowCount: number
-): { hasSlash: boolean; coords: { y1: number; y2: number } } {
-  const hasSlash = activeEndDay < totalDaysInMonth && rowCount > 0
-  if (!hasSlash) {
-    return { hasSlash: false, coords: { y1: 0, y2: 0 } }
+): DtrSlashSegment[] {
+  if (rowCount <= 0 || totalDaysInMonth <= 0) return []
+
+  const headerRows = 2
+  const totalRows = headerRows + totalDaysInMonth
+  const toPct = (rowIndex: number) => Number(((rowIndex / totalRows) * 100).toFixed(2))
+
+  // Days firstDay..lastDay (1-based, inclusive) → top of firstDay's row to bottom of lastDay's row
+  const segmentFor = (firstDay: number, lastDay: number): DtrSlashSegment => ({
+    y1: toPct(headerRows + firstDay - 1),
+    y2: toPct(headerRows + lastDay),
+  })
+
+  const segments: DtrSlashSegment[] = []
+  const start = Math.max(1, activeStartDay)
+  const end = Math.min(totalDaysInMonth, activeEndDay)
+
+  if (start > 1) {
+    segments.push(segmentFor(1, Math.min(start - 1, totalDaysInMonth)))
+  }
+  if (end < totalDaysInMonth) {
+    segments.push(segmentFor(Math.max(end + 1, 1), totalDaysInMonth))
   }
 
-  const totalRows = 2 + totalDaysInMonth
-  const startRow = 2 + activeEndDay
-  const endRow = 2 + totalDaysInMonth
-  const y1 = Number(((startRow / totalRows) * 100).toFixed(2))
-  const y2 = Number(((endRow / totalRows) * 100).toFixed(2))
-
-  return {
-    hasSlash: true,
-    coords: { y1, y2 },
-  }
+  return segments
 }

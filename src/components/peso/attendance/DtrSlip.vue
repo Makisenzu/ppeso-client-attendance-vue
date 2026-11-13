@@ -11,6 +11,7 @@ const props = withDefaults(
     supervisorName?: string
     supervisorTitle?: string
     rows?: DtrDayRow[]
+    activeStartDay?: number
     activeEndDay?: number
     totalDaysInMonth?: number
     isDuplicateBlankName?: boolean
@@ -23,13 +24,14 @@ const props = withDefaults(
     supervisorName: 'PAULINE J. ANG',
     supervisorTitle: 'PGDH / PESO Manager',
     rows: () => [],
+    activeStartDay: 1,
     activeEndDay: 31,
     totalDaysInMonth: 31,
     isDuplicateBlankName: false,
   }
 )
 
-const { hasDiagonalSlash, slashYCoords } = useDtrSlip(props)
+const { slashSegments } = useDtrSlip(props)
 </script>
 
 <template>
@@ -121,18 +123,20 @@ const { hasDiagonalSlash, slashYCoords } = useDtrSlip(props)
         </tbody>
       </table>
 
-      <!-- Authentic Diagonal Slash for Inactive Rows -->
+      <!-- Authentic Diagonal Slashes for days outside the DTR period (before start / after end) -->
       <svg
-        v-if="hasDiagonalSlash"
+        v-if="slashSegments.length > 0"
         class="dtr-diagonal-slash"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
         <line
+          v-for="(segment, index) in slashSegments"
+          :key="index"
           x1="12"
-          :y1="slashYCoords.y1"
+          :y1="segment.y1"
           x2="99"
-          :y2="slashYCoords.y2"
+          :y2="segment.y2"
           stroke="#000"
           stroke-width="0.8"
         />
