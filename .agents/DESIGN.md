@@ -112,8 +112,8 @@ All colors are CSS custom properties in `oklch()` in [`src/style.css`](../src/st
 > Every date shown in the UI reads **MM/DD/YYYY** (`11/13/2026`); with time **MM/DD/YYYY h:mm AM/PM**
 > (`11/13/2026 2:05 PM`). This is the users' preference.
 >
-> 1. Create and use one shared helper `src/helpers/common/dateFormatHelper.ts` (`formatDisplayDate`, `formatDisplayDateTime`)
->    the first time you touch date display. **Existing helpers still render `Nov 13, 2026`** via
+> 1. Use the shared helper `src/helpers/common/dateFormatHelper.ts` (`formatDisplayDate`, `formatDisplayDateTime`)
+>    (first used by the Directory tab). **Older helpers still render `Nov 13, 2026`** via
 >    `toLocaleDateString('en-US', { month: 'short' })` — `formatDateDisplay` in `attendanceHelper.ts`, `officeHelper.ts`
 >    and `userManagementHelper.ts`. Migrate them to the shared helper instead of adding a fourth copy.
 > 2. **Never** use month names or other orders for a date in new UI. Times alone (`8:02 AM`), relative times and month
@@ -383,7 +383,7 @@ Bulk action bar:
 > 7. Checkbox clicks must not trigger row navigation (`@click.stop` if rows are clickable).
 > 8. Only tables whose records must never be deleted are exempt — state the exemption in a comment.
 >
-> **Still to bring into compliance:** Client Records, Offices, User Management.
+> **Also compliant:** the Directory tab (`DirectoryTab.vue` + `useDirectory.ts`). **Still to bring into compliance:** Client Records, Offices tab, User Management.
 
 ---
 

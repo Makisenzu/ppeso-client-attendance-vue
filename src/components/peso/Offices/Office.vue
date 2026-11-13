@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import DirectoryTab from './DirectoryTab.vue'
 import {
   AlertTriangle,
   Building2,
@@ -102,6 +105,24 @@ const {
   exportCsv,
   refreshOffices,
 } = useOffice()
+
+// ─── Tabs (kept in the URL as ?tab=directory so a reload stays on the same tab) ───
+type OfficeTab = 'offices' | 'directory'
+
+const tabs: { key: OfficeTab; label: string }[] = [
+  { key: 'offices', label: 'Offices' },
+  { key: 'directory', label: 'Directory' },
+]
+
+const route = useRoute()
+const router = useRouter()
+
+const activeTab = computed<OfficeTab>(() => (route.query.tab === 'directory' ? 'directory' : 'offices'))
+
+const setTab = (tab: OfficeTab) => {
+  if (tab === activeTab.value) return
+  router.replace({ query: { ...route.query, tab: tab === 'offices' ? undefined : tab } })
+}
 </script>
 
 <template>
@@ -113,12 +134,12 @@ const {
           Office Management
         </h1>
         <p class="text-sm text-muted-foreground">
-          Manage partner offices, departmental codes, and beneficiary assignments.
+          Manage offices and their directory.
         </p>
       </div>
 
-      <!-- Quick Action Buttons -->
-      <div class="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+      <!-- Quick Action Buttons (Offices tab) -->
+      <div v-if="activeTab === 'offices'" class="flex items-center gap-2 self-start sm:self-auto flex-wrap">
         <Button
           variant="default"
           size="sm"
@@ -150,6 +171,50 @@ const {
       </div>
     </div>
 
+    <!-- ─── Tabs ─── -->
+    <div
+      role="tablist"
+      aria-label="Office management sections"
+      class="inline-flex w-full self-start rounded-lg border bg-muted/40 p-1 sm:w-auto"
+    >
+      <button
+        v-for="tab in tabs"
+        :id="`office-tab-${tab.key}`"
+        :key="tab.key"
+        type="button"
+        role="tab"
+        :aria-selected="activeTab === tab.key"
+        :aria-controls="`office-panel-${tab.key}`"
+        class="flex-1 rounded-md px-4 py-1.5 text-xs font-medium transition-colors cursor-pointer sm:flex-none"
+        :class="
+          activeTab === tab.key
+            ? 'bg-background text-foreground shadow-xs'
+            : 'text-muted-foreground hover:text-foreground'
+        "
+        @click="setTab(tab.key)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <!-- ─── Directory Tab ─── -->
+    <div
+      v-if="activeTab === 'directory'"
+      id="office-panel-directory"
+      role="tabpanel"
+      aria-labelledby="office-tab-directory"
+    >
+      <DirectoryTab />
+    </div>
+
+    <!-- ─── Offices Tab ─── -->
+    <div
+      v-else
+      id="office-panel-offices"
+      role="tabpanel"
+      aria-labelledby="office-tab-offices"
+      class="flex flex-col gap-6"
+    >
     <!-- ─── Toast / Notification Alert Banner ─── -->
     <div
       v-if="feedbackMessage"
@@ -280,7 +345,7 @@ const {
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle class="text-lg font-semibold flex items-center gap-2">
-              Offices Directory
+              Offices
             </CardTitle>
             <CardDescription class="text-xs">
               Showing {{ filteredOffices.length }} of {{ offices.length }} total offices
@@ -565,6 +630,8 @@ const {
         </div>
       </CardContent>
     </Card>
+    </div>
+    <!-- ─── /Offices Tab ─── -->
 
     <!-- ─── 1. Add / Edit Office Dialog ─── -->
     <Dialog :open="isAddEditOpen" @update:open="(val: boolean) => (!val ? closeAddEdit() : null)">
