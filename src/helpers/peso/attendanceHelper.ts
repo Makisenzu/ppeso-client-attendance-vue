@@ -110,6 +110,8 @@ export function formatPunchStatusLabel(status?: PunchStatus | string | null): st
 
 export function getPositionBadgeClass(pos?: string | null): string {
   switch (pos?.toLowerCase()) {
+    case 'admin':
+      return 'bg-foreground/10 text-foreground border-foreground/20'
     case 'employee':
       return 'bg-primary/10 text-primary border-primary/20'
     case 'gip':

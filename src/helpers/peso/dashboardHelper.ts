@@ -205,6 +205,7 @@ export function computePersonnelByPosition(
   profiles: ProfileRecord[]
 ): PersonnelByPosition {
   const posMap: Record<string, number> = {
+    admin: 0,
     employee: 0,
     gip: 0,
     tupad: 0,
@@ -221,8 +222,8 @@ export function computePersonnelByPosition(
   }
 
   return {
-    labels: ['Employee', 'GIP', 'TUPAD', 'Client'],
-    data: [posMap.employee, posMap.gip, posMap.tupad, posMap.client],
+    labels: ['Admin', 'Employee', 'GIP', 'TUPAD', 'Client'],
+    data: [posMap.admin, posMap.employee, posMap.gip, posMap.tupad, posMap.client],
   }
 }
 

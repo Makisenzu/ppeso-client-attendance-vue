@@ -696,6 +696,7 @@ const {
               class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               :disabled="isSubmitting"
             >
+              <option value="admin">Admin</option>
               <option value="employee">Employee</option>
               <option value="gip">GIP</option>
               <option value="tupad">TUPAD</option>

@@ -46,6 +46,7 @@
 | ------------ | ------------- | ------------------------ |
 | `id`         | `uuid`        | PK, `gen_random_uuid()`  |
 | `code`       | `text`        | UNIQUE, nullable         |
+| `directory_id` | `uuid`       | FK → `directories(id)` ON DELETE SET NULL; unique when set. The office head shown in the app comes from here |
 | `name`       | `text`        | NOT NULL                 |
 | `is_active`  | `boolean`     | default `true`           |
 | `created_at` | `timestamptz` | default `now()`          |
@@ -87,11 +88,12 @@ One row per auth user. Created by the `on_auth_user_created` trigger — never i
 | Enum               | Values                                   |
 | ------------------ | ---------------------------------------- |
 | `profile_roles`    | `admin`, `beneficiary`, `supervisor`     |
-| `profile_position` | `employee`, `gip`, `tupad`, `client`     |
+| `profile_position` | `employee`, `gip`, `tupad`, `client`, `admin` |
 | `profile_status`   | `active`, `inactive`, `pending`          |
 
-Role ↔ position convention used by `userManagementService.createUser`: `employee` → `admin`, `gip` / `tupad` →
-`beneficiary`, `client` → no role. Supervisors are promoted by an admin.
+Role ↔ position convention used by `userManagementService.createUser`: **`admin` → `admin`** (the only position with
+admin access), `employee` / `gip` / `tupad` → `beneficiary`, `client` → no role. Supervisors are promoted by an admin.
+Migration `20261113000600` moved every existing admin account to the `admin` position.
 
 ---
 
@@ -233,6 +235,9 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261113000100_rls_policies.sql` | Drops all old policies; `private` helpers; grants; RLS policies; profile guard trigger; function privileges |
 | `20261113000200_directories.sql` | `public.directories` table + RLS (signed-in read, admin write) |
 | `20261113000300_directories_normalize_status.sql` | Normalises `directories.status` case before the CHECK runs |
+| `20261113000400_offices_directory_link.sql` | `offices.directory_id` → `directories` (one office per directory entry) |
+| `20261113000500_profile_position_admin.sql` | Adds `admin` to `profile_position` |
+| `20261113000600_admins_to_admin_position.sql` | Sets `position = admin` for every `role = admin` account |
 
 ### Workflow
 

@@ -2,6 +2,11 @@ import type { RouteRecordRaw } from 'vue-router'
 
 import PesoLayout from '@/layouts/PesoLayout.vue'
 
+/**
+ * Admin area. Admins can open only these pages — the ones in PesoSidebar
+ * (Dashboard, Attendance/kiosk, Daily Time Record, Client Records, Offices,
+ * User Management) plus Generate DTR. Unknown /dashboard URLs go to the dashboard.
+ */
 export const pesoRoutes: RouteRecordRaw[] = [
   {
     path: '/dashboard',
@@ -14,9 +19,9 @@ export const pesoRoutes: RouteRecordRaw[] = [
         component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
       },
       {
-        path: 'employees',
-        name: 'employees',
-        component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
+        path: 'kiosk',
+        name: 'kiosk',
+        component: () => import('@/components/peso/UserKiosk/AttendanceKiosk.vue'),
       },
       {
         path: 'attendance',
@@ -30,11 +35,6 @@ export const pesoRoutes: RouteRecordRaw[] = [
         meta: { title: 'Generate DTR' },
       },
       {
-        path: 'management',
-        name: 'management',
-        component: () => import('@/components/peso/UserManagement/UserManagement.vue'),
-      },
-      {
         path: 'records',
         name: 'records',
         component: () => import('@/components/peso/ClientRecords/ClientRecords.vue'),
@@ -45,24 +45,13 @@ export const pesoRoutes: RouteRecordRaw[] = [
         component: () => import('@/components/peso/Offices/Office.vue'),
       },
       {
-        path: 'payroll',
-        name: 'payroll',
-        component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
+        path: 'management',
+        name: 'management',
+        component: () => import('@/components/peso/UserManagement/UserManagement.vue'),
       },
       {
-        path: 'notification',
-        name: 'notification',
-        component: () => import('@/components/peso/Notification/Notification.vue'),
-      },
-      {
-        path: 'settings',
-        name: 'settings',
-        component: () => import('@/components/peso/Dashboard/PesoDashboard.vue'),
-      },
-      {
-        path: 'kiosk',
-        name: 'kiosk',
-        component: () => import('@/components/peso/UserKiosk/AttendanceKiosk.vue'),
+        path: ':pathMatch(.*)*',
+        redirect: { name: 'dashboard' },
       },
     ],
   },

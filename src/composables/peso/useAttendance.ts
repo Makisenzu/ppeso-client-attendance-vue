@@ -44,7 +44,7 @@ export function useAttendance() {
 
   // ─── Available Positions for Filter ───
   const availablePositions = computed<string[]>(() => {
-    const defaultPositions = ['EMPLOYEE', 'GIP', 'TUPAD', 'CLIENT']
+    const defaultPositions = ['ADMIN', 'EMPLOYEE', 'GIP', 'TUPAD', 'CLIENT']
     const set = new Set<string>(defaultPositions)
     for (const r of attendances.value) {
       if (r.position) set.add(r.position.toUpperCase())

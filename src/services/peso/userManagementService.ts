@@ -109,12 +109,12 @@ export const userManagementService = {
     try {
       const officeId = formData.officeId?.trim() || null
 
-      // Determine role based on position
+      // Determine role based on position: only the Admin position gets admin access.
       const role =
-        formData.position === 'gip' || formData.position === 'tupad'
-          ? 'beneficiary'
-          : formData.position === 'employee'
-            ? 'admin'
+        formData.position === 'admin'
+          ? 'admin'
+          : formData.position === 'employee' || formData.position === 'gip' || formData.position === 'tupad'
+            ? 'beneficiary'
             : null
 
       // 1. Save the current admin session before signUp

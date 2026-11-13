@@ -325,6 +325,7 @@ const personnelPositionChartData = computed(() => {
         label: 'Personnel Count',
         data: pos.data,
         backgroundColor: [
+          '#64748b', // Admin - Slate
           '#3b82f6', // Employee - Blue
           '#8b5cf6', // GIP - Violet
           '#f59e0b', // TUPAD - Amber
