@@ -1,0 +1,279 @@
+# PPESO CLIENT ATTENDANCE — Database Agent
+
+> **Purpose**: This document is the authoritative reference for the PPESO Client Attendance database architecture.
+> Any AI agent writing queries, creating types, or modifying schema-related code MUST follow these rules.
+
+---
+
+## 1. Database Overview
+
+| Property            | Value                                                                  |
+| ------------------- | ---------------------------------------------------------------------- |
+| **Provider**        | Supabase (managed PostgreSQL 17)                                        |
+| **Project**         | `ppeso-client-attendance` — ref `otulzqszdvyzebetiqkn` (ap-southeast-1) |
+| **Schemas**         | 2 app schemas: `public`, `core` (+ `private` for RLS helpers, not exposed) |
+| **Type Generation** | `npm run types:gen`                                                     |
+| **Type File**       | [`src/types/database.types.ts`](../src/types/database.types.ts) (DO NOT EDIT) |
+| **Migrations**      | [`supabase/migrations/`](../supabase/migrations) — source of truth for schema + RLS |
+| **Security**        | RLS enabled on every table; `anon` has no table access                  |
+
+---
+
+## 2. Schema Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                     PostgreSQL Instance                       │
+│                                                               │
+│  ┌──────────────────┐   ┌──────────────────────┐   ┌────────┐ │
+│  │      public       │   │         core          │   │private │ │
+│  │  identity & org   │   │ attendance & visits   │   │  RLS   │ │
+│  │  profiles         │◄──│  attendances          │   │helpers │ │
+│  │  offices          │   │  walkin_attendances   │   │(no API)│ │
+│  └──────────────────┘   └──────────────────────┘   └────────┘ │
+│            ▲                                                  │
+│       auth.users (Supabase Auth, 1:1 with profiles)           │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3. Schema: `public` — Identity & Organisation
+
+### `offices`
+
+| Column       | Type          | Constraints              |
+| ------------ | ------------- | ------------------------ |
+| `id`         | `uuid`        | PK, `gen_random_uuid()`  |
+| `code`       | `text`        | UNIQUE, nullable         |
+| `name`       | `text`        | NOT NULL                 |
+| `is_active`  | `boolean`     | default `true`           |
+| `created_at` | `timestamptz` | default `now()`          |
+| `updated_at` | `timestamptz` | default `now()` (set by the app on update) |
+
+### `profiles`
+
+One row per auth user. Created by the `on_auth_user_created` trigger — never inserted by the client.
+
+| Column       | Type               | Constraints                                         |
+| ------------ | ------------------ | --------------------------------------------------- |
+| `id`         | `uuid`             | PK, FK → `auth.users(id)` ON DELETE CASCADE          |
+| `firstname`  | `text`             | NOT NULL                                            |
+| `middlename` | `text`             | nullable                                            |
+| `lastname`   | `text`             | NOT NULL                                            |
+| `passcode`   | `text`             | NOT NULL, UNIQUE — 6-digit kiosk code, auto-generated |
+| `status`     | `profile_status`   | NOT NULL, default `'active'`                         |
+| `position`   | `profile_position` | NOT NULL                                            |
+| `role`       | `profile_roles`    | nullable, default `'beneficiary'`                    |
+| `office_id`  | `uuid`             | FK → `offices(id)` ON DELETE SET NULL; indexed       |
+| `created_at` | `timestamptz`      | NOT NULL, default `now()`                            |
+| `updated_at` | `timestamptz`      | set by `trg_guard_profile_update`                    |
+
+### Public Enums
+
+| Enum               | Values                                   |
+| ------------------ | ---------------------------------------- |
+| `profile_roles`    | `admin`, `beneficiary`, `supervisor`     |
+| `profile_position` | `employee`, `gip`, `tupad`, `client`     |
+| `profile_status`   | `active`, `inactive`, `pending`          |
+
+Role ↔ position convention used by `userManagementService.createUser`: `employee` → `admin`, `gip` / `tupad` →
+`beneficiary`, `client` → no role. Supervisors are promoted by an admin.
+
+---
+
+## 4. Schema: `core` — Attendance & Walk-in Clients
+
+### `attendances`
+
+One row per profile per day (`unique_daily_attendance`).
+
+| Column            | Type           | Constraints                                       |
+| ----------------- | -------------- | ------------------------------------------------- |
+| `id`              | `uuid`         | PK                                                |
+| `profile_id`      | `uuid`         | NOT NULL, FK → `public.profiles(id)` ON DELETE CASCADE |
+| `attendance_date` | `date`         | NOT NULL, default `current_date`; indexed          |
+| `am_check_in` / `am_check_out` / `pm_check_in` / `pm_check_out` | `timestamptz` | nullable |
+| `am_in_status` / `am_out_status` / `pm_in_status` / `pm_out_status` | `punch_status` | nullable |
+| `created_at`      | `timestamptz`  | NOT NULL, default `now()`                          |
+
+Constraint: `UNIQUE (profile_id, attendance_date)`.
+
+### `walkin_attendances`
+
+Walk-in client log (not linked to an account).
+
+| Column           | Type               | Constraints                         |
+| ---------------- | ------------------ | ----------------------------------- |
+| `id`             | `uuid`             | PK                                  |
+| `firstname` / `lastname` | `text`     | NOT NULL                            |
+| `middlename`     | `text`             | nullable                            |
+| `gender`         | `gender_type`      | NOT NULL, default `'not specified'` |
+| `contact_number` | `text`             | nullable                            |
+| `province` / `geographic` (municipality) / `barangay` / `purok` | `text` | NOT NULL |
+| `purpose`        | `service_required` | NOT NULL, default `'others'`; indexed |
+| `check_in`       | `timestamptz`      | NOT NULL, default `now()`; indexed DESC |
+| `check_out`      | `timestamptz`      | nullable                            |
+| `created_at`     | `timestamptz`      | NOT NULL, default `now()`           |
+
+### Core Enums
+
+| Enum               | Values                                                        |
+| ------------------ | ------------------------------------------------------------- |
+| `punch_status`     | `ontime`, `late`, `early_out`, `absent`                       |
+| `gender_type`      | `male`, `female`, `not specified`                             |
+| `service_required` | `gip`, `spes`, `job_start`, `ofw`, `cea`, `skills`, `others`  |
+
+---
+
+## 5. Functions, Triggers & Scheduled Jobs
+
+| Object | Kind | What it does |
+| ------ | ---- | ------------ |
+| `public.handle_new_user()` | `AFTER INSERT ON auth.users` (`on_auth_user_created`), DEFINER | Creates the `profiles` row from signup metadata. **Never reads `role` from metadata.** |
+| `public.set_profile_passcode()` | `BEFORE INSERT ON profiles`, DEFINER | Generates a unique 6-digit passcode when none is given |
+| `public.guard_profile_update()` | `BEFORE UPDATE ON profiles` (`trg_guard_profile_update`), DEFINER | Non-admin API callers may change only their own name fields; sets `updated_at` |
+| `core.calculate_punch_status()` | `BEFORE INSERT OR UPDATE ON attendances` | 5-minute cooldown between punches (`'Already Recorded'`); fills statuses left null |
+| `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles |
+| `private.user_role()`, `user_office_id()`, `is_admin()`, `is_supervisor()`, `supervises(uuid)` | DEFINER, `private` schema | RLS helpers (SECURITY.md §4.3) |
+
+| pg_cron job | Schedule | Command |
+| ----------- | -------- | ------- |
+| `auto-flag-daily-absences` | `0 18 * * 1-5` (18:00 UTC = 02:00 PHT next day, Mon–Fri UTC) | `SELECT core.flag_daily_absences(CURRENT_DATE);` |
+
+> [!IMPORTANT]
+> Every function is `SET search_path = ''` and schema-qualifies every name. None of them is executable by `anon` or
+> `authenticated` through the API (except the `private` helpers, which PostgREST does not expose).
+
+---
+
+## 6. Row Level Security Summary
+
+Full rules in SECURITY.md §4. Policy names are prefixed with the table (`"attendances: admin insert"`).
+
+| Table                     | SELECT                                                  | INSERT / UPDATE / DELETE |
+| ------------------------- | ------------------------------------------------------- | ------------------------ |
+| `public.profiles`         | own row · admin all · supervisor same office            | insert: admin · update: own (names only) or admin · delete: admin, not self |
+| `public.offices`          | any signed-in user                                      | admin                    |
+| `core.attendances`        | own rows · admin all · supervisor same office           | admin                    |
+| `core.walkin_attendances` | admin, supervisor                                       | admin                    |
+
+---
+
+## 7. Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    AUTH_USERS ||--|| PROFILES : "1:1 (trigger-created)"
+    OFFICES ||--o{ PROFILES : "assigned to"
+    PROFILES ||--o{ ATTENDANCES : "one per day"
+    WALKIN_ATTENDANCES {
+        uuid id
+        text name
+        service_required purpose
+    }
+```
+
+`walkin_attendances` stands alone: walk-in clients have no account.
+
+---
+
+## 8. Type Generation & Usage
+
+```bash
+rtk npm run types:gen
+```
+
+```typescript
+import type { Database } from '@/types/database.types'
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
+type OfficeRow = Database['public']['Tables']['offices']['Row']
+type AttendanceRow = Database['core']['Tables']['attendances']['Row']
+type AttendanceUpdate = Database['core']['Tables']['attendances']['Update']
+type WalkinInsert = Database['core']['Tables']['walkin_attendances']['Insert']
+
+type ProfileRole = Database['public']['Enums']['profile_roles']
+type PunchStatus = Database['core']['Enums']['punch_status']
+
+// Client-only computed fields use intersections
+type AttendanceRecord = AttendanceRow & { fullName: string; officeName: string | null }
+
+// Partial projections use Pick
+type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' | 'status'>
+```
+
+> [!CAUTION]
+> 1. **NEVER manually edit `database.types.ts`.**
+> 2. **NEVER hand-write DB column types** — derive from `Database[...]`.
+> 3. Enum option lists in helpers (e.g. `PURPOSE_OPTIONS`) must cover every value of the enum.
+> 4. After schema changes, always run `npm run types:gen`.
+
+---
+
+## 9. Database Migrations
+
+| File | Purpose |
+| ---- | ------- |
+| `20261113000000_baseline_schema.sql` | Idempotent capture of the existing schema: enums, 4 tables, constraints, indexes, triggers, functions |
+| `20261113000100_rls_policies.sql` | Drops all old policies; `private` helpers; grants; RLS policies; profile guard trigger; function privileges |
+
+### Workflow
+
+```bash
+# 1. Link once per machine (the CLI cache in supabase/.temp is not committed)
+rtk npx supabase link --project-ref otulzqszdvyzebetiqkn
+
+# 2. Write supabase/migrations/<yyyymmddHHMMSS>_<snake_name>.sql
+
+# 3. Preview, then apply
+rtk npx supabase db push --linked --dry-run
+rtk npx supabase db push --linked
+
+# 4. Regenerate types
+rtk npm run types:gen
+```
+
+Read-only inspection without Docker: `rtk npx supabase db query --linked "select ..."`.
+
+### Rules
+
+> [!CAUTION]
+> 1. **Every schema, RLS, grant, trigger or function change is a new migration.** Never change the database from the
+>    dashboard SQL editor without capturing it in a migration.
+> 2. **Never edit or delete an applied migration** — write a new one.
+> 3. **Migrations must be safe on live data**: `create ... if not exists`, `create or replace`, `drop policy if exists`.
+>    Never `drop table` / `truncate` a table that holds records without explicit user approval.
+> 4. **Every new table** ships in the same migration with: `enable row level security`, policies for each command,
+>    `revoke all ... from anon`, explicit `grant select, insert, update, delete ... to authenticated`, and indexes for
+>    its foreign keys and filter columns.
+> 5. **Every new function** is `SET search_path = ''`; `SECURITY DEFINER` only when it must bypass RLS, and then
+>    `revoke execute ... from public, anon, authenticated` unless the API must call it.
+> 6. Pushing to the live project is outward-facing: dry-run first and tell the user what will change.
+> 7. Verify RLS after a push by impersonating each role inside a rolled-back transaction:
+>    ```sql
+>    begin;
+>    select set_config('request.jwt.claims', '{"sub":"<profile-id>","role":"authenticated"}', true);
+>    set local role authenticated;
+>    select count(*) from core.attendances;
+>    rollback;
+>    ```
+
+---
+
+## 10. Known Schema Quirks
+
+> [!WARNING]
+> 1. **Split schemas**: identity tables are in `public`, attendance tables in `core`. Services that fall back to
+>    `public.attendances` / `public.walkin_attendances` target tables that do not exist (BACKEND.md §4).
+> 2. **`walkin_attendances.geographic`** holds the city/municipality name — not coordinates.
+> 3. **Time zone**: the database runs in UTC. `core.calculate_punch_status()` compares `::time` in UTC, so its fallback
+>    statuses (only used when the client sends `null`) are 8 hours off for Philippine time. The kiosk computes the status
+>    client-side (`kioskhelper.calculatePunchStatus`) and sends it, so the trigger normally doesn't decide.
+> 4. **`attendance_date`** defaults to `current_date` in UTC; the kiosk always sends the local (PHT) date explicitly.
+>    Always pass `attendance_date` from `getLocalDateString()` — never rely on the default.
+> 5. **pg_cron runs in UTC** — `0 18 * * 1-5` fires at 02:00 PHT the next morning and flags the working day that just
+>    ended (`CURRENT_DATE` in UTC is still that day). Mon–Fri PHT days are covered.
+> 6. **`profiles.role` is nullable** (`client` position accounts have none); the router sends a null role to `/login`.
+> 7. **`core.attendances` is not in the `supabase_realtime` publication** (BACKEND.md §9).
+> 8. **Deleting a profile** cascades to its attendance rows but does **not** delete the `auth.users` account.
