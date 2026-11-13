@@ -16,6 +16,10 @@ export interface OfficeRecord {
   id: string
   name: string
   code: string | null
+  /** Directory entry this office was created from. */
+  directoryId: string | null
+  /** Chief / office head, read live from public.directories. */
+  officeHead: string | null
   isActive: boolean
   totalBeneficiaries: number
   beneficiaries?: OfficeBeneficiary[]
@@ -25,6 +29,7 @@ export interface OfficeRecord {
 
 export interface OfficeFormData {
   id?: string
+  directoryId: string | null
   name: string
   code: string
   isActive: boolean

@@ -5,6 +5,19 @@ import type {
   OfficeBeneficiary,
 } from '@/types/peso/office'
 
+/** Turns unique-constraint violations into a message the admin can act on. */
+function toOfficeErrorMessage(error: { code?: string; message: string }): string {
+  if (error.code === '23505') {
+    if (error.message.includes('directory_id')) {
+      return 'An office has already been added for this directory entry.'
+    }
+    if (error.message.includes('code')) {
+      return 'Another office already uses this office code.'
+    }
+  }
+  return error.message
+}
+
 export const officeService = {
   async getOffices(): Promise<OfficeRecord[]> {
     try {
@@ -14,9 +27,13 @@ export const officeService = {
           id,
           name,
           code,
+          directory_id,
           is_active,
           created_at,
           updated_at,
+          directory:directories (
+            office_head
+          ),
           profiles:profiles (
             id,
             firstname,
@@ -46,6 +63,8 @@ export const officeService = {
           id: o.id,
           name: o.name,
           code: o.code,
+          directoryId: o.directory_id,
+          officeHead: null,
           isActive: o.is_active !== false,
           totalBeneficiaries: 0,
           beneficiaries: [],
@@ -72,10 +91,14 @@ export const officeService = {
           }
         })
 
+        const directory = Array.isArray(o.directory) ? o.directory[0] : o.directory
+
         return {
           id: o.id,
           name: o.name,
           code: o.code,
+          directoryId: o.directory_id ?? null,
+          officeHead: directory?.office_head ?? null,
           isActive: o.is_active !== false,
           totalBeneficiaries: beneficiaries.length,
           beneficiaries,
@@ -94,6 +117,7 @@ export const officeService = {
       const { data, error } = await supabase
         .from('offices')
         .insert({
+          directory_id: formData.directoryId,
           name: formData.name.trim(),
           code: formData.code.trim().toUpperCase() || null,
           is_active: formData.isActive,
@@ -102,13 +126,15 @@ export const officeService = {
         .single()
 
       if (error) {
-        return { success: false, error: error.message }
+        return { success: false, error: toOfficeErrorMessage(error) }
       }
 
       const newRecord: OfficeRecord = {
         id: data.id,
         name: data.name,
         code: data.code,
+        directoryId: data.directory_id,
+        officeHead: null,
         isActive: data.is_active !== false,
         totalBeneficiaries: 0,
         beneficiaries: [],
@@ -131,6 +157,7 @@ export const officeService = {
       const { error } = await supabase
         .from('offices')
         .update({
+          directory_id: formData.directoryId,
           name: formData.name.trim(),
           code: formData.code.trim().toUpperCase() || null,
           is_active: formData.isActive,
@@ -139,7 +166,7 @@ export const officeService = {
         .eq('id', id)
 
       if (error) {
-        return { success: false, error: error.message }
+        return { success: false, error: toOfficeErrorMessage(error) }
       }
 
       return { success: true }

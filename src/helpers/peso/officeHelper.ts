@@ -31,8 +31,15 @@ export function formatDateDisplay(dateStr?: string | null): string {
   return dateStr
 }
 
-export function validateOfficeForm(formData: OfficeFormData): { isValid: boolean; errors: Record<string, string> } {
+export function validateOfficeForm(
+  formData: OfficeFormData,
+  options: { requireDirectory?: boolean } = {},
+): { isValid: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {}
+
+  if (options.requireDirectory && !formData.directoryId) {
+    errors.directoryId = 'Select an office from the directory'
+  }
 
   if (!formData.name || !formData.name.trim()) {
     errors.name = 'Office Name is required'
@@ -55,6 +62,7 @@ export function exportOfficesToCsv(records: OfficeRecord[]): void {
     'Office ID',
     'Office Name',
     'Code',
+    'Office Head',
     'Total Beneficiaries',
     'Status',
     'Created At',
@@ -65,6 +73,7 @@ export function exportOfficesToCsv(records: OfficeRecord[]): void {
     `"${r.id}"`,
     `"${r.name.replace(/"/g, '""')}"`,
     `"${(r.code || '').replace(/"/g, '""')}"`,
+    `"${(r.officeHead || '').replace(/"/g, '""')}"`,
     `"${r.totalBeneficiaries}"`,
     `"${r.isActive ? 'Active' : 'Inactive'}"`,
     `"${formatDateDisplay(r.createdAt)}"`,

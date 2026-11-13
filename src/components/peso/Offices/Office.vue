@@ -2,7 +2,9 @@
 import {
   AlertTriangle,
   Building2,
+  Check,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -67,6 +69,15 @@ const {
   isSubmitting,
   formErrors,
   formData,
+  isLoadingDirectories,
+  directoryLoadError,
+  directorySearch,
+  isDirectoryPickerOpen,
+  selectedDirectory,
+  filteredDirectories,
+  isDirectoryTaken,
+  loadDirectories,
+  selectDirectory,
   isViewOpen,
   selectedOffice,
   isDeleteDialogOpen,
@@ -318,6 +329,7 @@ const {
               <TableRow>
                 <TableHead class="min-w-52 text-xs font-semibold">Office Name</TableHead>
                 <TableHead class="min-w-28 text-xs font-semibold">Office Code</TableHead>
+                <TableHead class="min-w-44 text-xs font-semibold">Office Head</TableHead>
                 <TableHead class="min-w-36 text-xs font-semibold">
                   Total Beneficiaries
                 </TableHead>
@@ -331,7 +343,7 @@ const {
               <!-- Loading State -->
               <template v-if="isLoading">
                 <TableRow>
-                  <TableCell colspan="5" class="h-44 text-center text-muted-foreground">
+                  <TableCell colspan="6" class="h-44 text-center text-muted-foreground">
                     <div class="flex flex-col items-center justify-center gap-2 py-6">
                       <Loader2 class="h-8 w-8 animate-spin text-primary" />
                       <p class="text-xs text-muted-foreground">Loading offices data...</p>
@@ -372,7 +384,17 @@ const {
                     <span v-else class="text-xs text-muted-foreground font-mono">—</span>
                   </TableCell>
 
-                  <!-- 3. Total Beneficiaries -->
+                  <!-- 3. Office Head (from public.directories) -->
+                  <TableCell class="py-3">
+                    <span v-if="office.officeHead" class="text-xs sm:text-sm text-foreground">
+                      {{ office.officeHead }}
+                    </span>
+                    <span v-else class="text-xs text-muted-foreground">
+                      {{ office.directoryId ? 'No head listed' : 'Not linked' }}
+                    </span>
+                  </TableCell>
+
+                  <!-- 4. Total Beneficiaries -->
                   <TableCell class="py-3">
                     <div class="flex items-center gap-1.5">
                       <Badge
@@ -450,7 +472,7 @@ const {
               <!-- Empty State -->
               <template v-else>
                 <TableRow>
-                  <TableCell colspan="5" class="p-8">
+                  <TableCell colspan="6" class="p-8">
                     <Empty class="border-0">
                       <EmptyHeader>
                         <EmptyMedia variant="icon">
@@ -554,48 +576,138 @@ const {
           <DialogDescription class="text-xs">
             {{
               isEditMode
-                ? 'Update office details and departmental code.'
-                : 'Register a new office location for beneficiary assignment.'
+                ? 'Update the office or link it to the directory.'
+                : 'Pick an office from the directory.'
             }}
           </DialogDescription>
         </DialogHeader>
 
         <form @submit.prevent="handleSubmit" class="space-y-4 py-2">
-          <!-- Office Name -->
+          <!-- Office from Directory (public.directories) -->
           <div class="space-y-1.5">
             <label class="text-xs font-medium text-foreground">
-              Office Name <span class="text-destructive">*</span>
+              Office <span v-if="!isEditMode" class="text-destructive">*</span>
             </label>
-            <Input
-              v-model="formData.name"
-              placeholder="e.g. PESO Main Office, DOLE Provincial Field Office"
-              class="text-xs h-9"
-              :class="formErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''"
-              required
-            />
-            <p v-if="formErrors.name" class="text-[11px] text-destructive">
-              {{ formErrors.name }}
+
+            <div class="relative">
+              <button
+                type="button"
+                class="flex w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-left text-xs transition-colors hover:bg-muted/30 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                :class="formErrors.directoryId ? 'border-destructive' : 'border-input'"
+                :disabled="isLoadingDirectories"
+                :aria-expanded="isDirectoryPickerOpen"
+                @click="isDirectoryPickerOpen = !isDirectoryPickerOpen"
+              >
+                <span v-if="selectedDirectory" class="min-w-0 truncate font-medium text-foreground">
+                  {{ selectedDirectory.officeName }}
+                </span>
+                <span v-else class="text-muted-foreground">
+                  {{ isLoadingDirectories ? 'Loading directory...' : 'Select an office from the directory' }}
+                </span>
+                <Loader2 v-if="isLoadingDirectories" class="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+                <ChevronDown v-else class="h-4 w-4 shrink-0 text-muted-foreground" />
+              </button>
+
+              <div
+                v-if="isDirectoryPickerOpen"
+                class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in zoom-in-95"
+              >
+                <div class="border-b bg-muted/20 p-2">
+                  <div class="relative">
+                    <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      v-model="directorySearch"
+                      placeholder="Search office, code or head..."
+                      class="h-8 bg-background pl-8 text-base md:text-xs"
+                      auto-focus
+                    />
+                  </div>
+                </div>
+
+                <div class="max-h-60 divide-y divide-border/40 overflow-y-auto">
+                  <button
+                    v-for="directory in filteredDirectories"
+                    :key="directory.id"
+                    type="button"
+                    class="flex w-full items-start justify-between gap-2 p-2.5 text-left text-xs transition-colors"
+                    :class="isDirectoryTaken(directory) ? 'cursor-not-allowed opacity-50' : 'hover:bg-muted/50 cursor-pointer'"
+                    :disabled="isDirectoryTaken(directory)"
+                    @click="selectDirectory(directory)"
+                  >
+                    <div class="min-w-0">
+                      <div class="truncate font-medium text-foreground">
+                        {{ directory.officeName }}
+                        <span v-if="directory.officeCode" class="font-mono text-muted-foreground">· {{ directory.officeCode }}</span>
+                      </div>
+                      <div class="truncate text-[11px] text-muted-foreground">
+                        {{ isDirectoryTaken(directory) ? 'Already added' : directory.officeHead || 'No head listed' }}
+                      </div>
+                    </div>
+                    <Check v-if="formData.directoryId === directory.id" class="h-4 w-4 shrink-0 text-primary" />
+                  </button>
+                  <div v-if="filteredDirectories.length === 0" class="p-3 text-center text-xs text-muted-foreground">
+                    No matching offices in the directory.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p v-if="formErrors.directoryId" class="text-[11px] text-destructive">
+              {{ formErrors.directoryId }}
+            </p>
+            <p v-if="directoryLoadError" class="text-[11px] text-destructive">
+              {{ directoryLoadError }}
+              <button type="button" class="font-medium underline cursor-pointer" @click="loadDirectories">Retry</button>
             </p>
           </div>
 
-          <!-- Code -->
-          <div class="space-y-1.5">
-            <label class="text-xs font-medium text-foreground">
-              Office Code
-            </label>
-            <Input
-              v-model="formData.code"
-              placeholder="e.g. PESO-HQ, DOLE-01"
-              class="text-xs h-9 font-mono uppercase"
-              :class="formErrors.code ? 'border-destructive focus-visible:ring-destructive' : ''"
-            />
-            <p v-if="formErrors.code" class="text-[11px] text-destructive">
-              {{ formErrors.code }}
-            </p>
-            <p class="text-[11px] text-muted-foreground">
-              Optional shorthand code for identification in reports.
-            </p>
+          <!-- Selected office details, chief included -->
+          <div v-if="selectedDirectory" class="grid grid-cols-1 gap-3 rounded-lg border bg-muted/20 p-3.5 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <span class="text-[11px] text-muted-foreground">Office Head</span>
+              <p class="text-sm font-semibold text-foreground">
+                {{ selectedDirectory.officeHead || 'No head listed in the directory' }}
+              </p>
+            </div>
+            <div>
+              <span class="text-[11px] text-muted-foreground">Office Name</span>
+              <p class="text-xs font-medium text-foreground">{{ formData.name }}</p>
+            </div>
+            <div>
+              <span class="text-[11px] text-muted-foreground">Office Code</span>
+              <p class="font-mono text-xs font-medium text-foreground">{{ formData.code || '—' }}</p>
+            </div>
           </div>
+
+          <!-- Older offices not linked to the directory keep their own name and code -->
+          <template v-else-if="isEditMode">
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-foreground">
+                Office Name <span class="text-destructive">*</span>
+              </label>
+              <Input
+                v-model="formData.name"
+                class="text-xs h-9"
+                :class="formErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''"
+                required
+              />
+              <p v-if="formErrors.name" class="text-[11px] text-destructive">
+                {{ formErrors.name }}
+              </p>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-foreground">Office Code</label>
+              <Input
+                v-model="formData.code"
+                class="text-xs h-9 font-mono uppercase"
+                :class="formErrors.code ? 'border-destructive focus-visible:ring-destructive' : ''"
+              />
+              <p v-if="formErrors.code" class="text-[11px] text-destructive">
+                {{ formErrors.code }}
+              </p>
+            </div>
+          </template>
 
           <!-- Status -->
           <div class="flex items-center justify-between rounded-lg border p-3 shadow-xs bg-muted/10">
@@ -666,6 +778,10 @@ const {
                 </span>
                 <span>ID: {{ selectedOffice.id.slice(0, 8) }}...</span>
               </div>
+              <p class="text-xs text-muted-foreground">
+                Office Head:
+                <span class="font-medium text-foreground">{{ selectedOffice.officeHead || '—' }}</span>
+              </p>
             </div>
             <Badge
               variant="outline"

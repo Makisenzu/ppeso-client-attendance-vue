@@ -1,6 +1,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useOfficeStore } from '@/stores/officeStore'
+import { directoryService } from '@/services/peso/directoryService'
 import type { OfficeFormData, OfficeRecord } from '@/types/peso/office'
+import type { DirectoryOption } from '@/types/peso/directory'
 import { exportOfficesToCsv, validateOfficeForm } from '@/helpers/peso/officeHelper'
 
 export function useOffice() {
@@ -22,10 +24,69 @@ export function useOffice() {
   const formErrors = ref<Record<string, string>>({})
 
   const formData = ref<OfficeFormData>({
+    directoryId: null,
     name: '',
     code: '',
     isActive: true,
   })
+
+  // ─── Directory Picker (public.directories) ───
+  const directories = ref<DirectoryOption[]>([])
+  const isLoadingDirectories = ref<boolean>(false)
+  const directoryLoadError = ref<string | null>(null)
+  const directorySearch = ref<string>('')
+  const isDirectoryPickerOpen = ref<boolean>(false)
+
+  const selectedDirectory = computed<DirectoryOption | null>(() => {
+    if (!formData.value.directoryId) return null
+    return directories.value.find((d) => d.id === formData.value.directoryId) || null
+  })
+
+  const filteredDirectories = computed<DirectoryOption[]>(() => {
+    const q = directorySearch.value.trim().toLowerCase()
+    if (!q) return directories.value
+    return directories.value.filter(
+      (d) =>
+        d.officeName.toLowerCase().includes(q) ||
+        (d.officeCode || '').toLowerCase().includes(q) ||
+        (d.officeHead || '').toLowerCase().includes(q),
+    )
+  })
+
+  /** An entry is taken when another office (not the one being edited) was created from it. */
+  const isDirectoryTaken = (directory: DirectoryOption) =>
+    !!directory.linkedOfficeId && directory.linkedOfficeId !== editingId.value
+
+  const loadDirectories = async () => {
+    isLoadingDirectories.value = true
+    directoryLoadError.value = null
+    try {
+      directories.value = await directoryService.getActiveDirectories()
+    } catch (err) {
+      console.error('Failed to load directories:', err)
+      directoryLoadError.value = 'Failed to load the office directory. Please try again.'
+    } finally {
+      isLoadingDirectories.value = false
+    }
+  }
+
+  const selectDirectory = (directory: DirectoryOption) => {
+    if (isDirectoryTaken(directory)) return
+    formData.value = {
+      ...formData.value,
+      directoryId: directory.id,
+      name: directory.officeName,
+      code: directory.officeCode || '',
+    }
+    delete formErrors.value.directoryId
+    delete formErrors.value.name
+    isDirectoryPickerOpen.value = false
+    directorySearch.value = ''
+  }
+
+  const clearDirectory = () => {
+    formData.value = { ...formData.value, directoryId: null }
+  }
 
   // View Details Modal
   const isViewOpen = ref<boolean>(false)
@@ -63,9 +124,10 @@ export function useOffice() {
       if (q) {
         const nameMatch = office.name.toLowerCase().includes(q)
         const codeMatch = office.code ? office.code.toLowerCase().includes(q) : false
+        const headMatch = office.officeHead ? office.officeHead.toLowerCase().includes(q) : false
         const idMatch = office.id.toLowerCase().includes(q)
 
-        if (!nameMatch && !codeMatch && !idMatch) {
+        if (!nameMatch && !codeMatch && !headMatch && !idMatch) {
           return false
         }
       }
@@ -137,12 +199,16 @@ export function useOffice() {
     isEditMode.value = false
     editingId.value = null
     formData.value = {
+      directoryId: null,
       name: '',
       code: '',
       isActive: true,
     }
     formErrors.value = {}
+    directorySearch.value = ''
+    isDirectoryPickerOpen.value = false
     isAddEditOpen.value = true
+    loadDirectories()
   }
 
   const openEdit = (office: OfficeRecord) => {
@@ -150,23 +216,29 @@ export function useOffice() {
     editingId.value = office.id
     formData.value = {
       id: office.id,
+      directoryId: office.directoryId,
       name: office.name,
       code: office.code || '',
       isActive: office.isActive,
     }
     formErrors.value = {}
+    directorySearch.value = ''
+    isDirectoryPickerOpen.value = false
     isAddEditOpen.value = true
+    loadDirectories()
   }
 
   const closeAddEdit = () => {
     if (isSubmitting.value) return
     isAddEditOpen.value = false
+    isDirectoryPickerOpen.value = false
     formErrors.value = {}
     editingId.value = null
   }
 
   const handleSubmit = async (): Promise<boolean> => {
-    const validation = validateOfficeForm(formData.value)
+    // New offices must come from the directory; older offices may stay unlinked when edited.
+    const validation = validateOfficeForm(formData.value, { requireDirectory: !isEditMode.value })
     if (!validation.isValid) {
       formErrors.value = validation.errors
       return false
@@ -298,6 +370,17 @@ export function useOffice() {
     isSubmitting,
     formErrors,
     formData,
+    directories,
+    isLoadingDirectories,
+    directoryLoadError,
+    directorySearch,
+    isDirectoryPickerOpen,
+    selectedDirectory,
+    filteredDirectories,
+    isDirectoryTaken,
+    loadDirectories,
+    selectDirectory,
+    clearDirectory,
     isViewOpen,
     selectedOffice,
     isDeleteDialogOpen,
