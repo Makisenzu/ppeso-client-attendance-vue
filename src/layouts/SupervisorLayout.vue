@@ -1,26 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
 import SupervisorSidebar from '@/components/sidebars/SupervisorSidebar.vue'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import { useColorMode } from '@vueuse/core'
 import { Moon, Sun } from '@lucide/vue'
+import { useLayoutHeader } from '@/composables/common/useLayoutHeader'
 
-const mode = useColorMode()
-const route = useRoute()
-
-const currentLabel = computed(() => {
-  const name = String(route.name || 'supervisor-dashboard')
-  return name
-    .replace('supervisor-', '')
-    .split('-')
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(' ')
-})
-
-function toggleTheme() {
-  mode.value = mode.value === 'dark' ? 'light' : 'dark'
-}
+const { isDark, toggleTheme, currentLabel } = useLayoutHeader({ fallbackRouteName: 'supervisor-dashboard', stripPrefix: 'supervisor-' })
 </script>
 
 <template>
@@ -45,7 +29,7 @@ function toggleTheme() {
             class="ml-auto flex size-8 items-center justify-center rounded-md bg-transparent text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             title="Toggle color theme"
           >
-            <component :is="mode === 'dark' ? Sun : Moon" class="size-4 shrink-0" />
+            <component :is="isDark ? Sun : Moon" class="size-4 shrink-0" />
           </button>
         </header>
 

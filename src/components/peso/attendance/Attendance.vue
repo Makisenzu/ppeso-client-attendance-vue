@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import {
   AlertTriangle,
   Building2,
@@ -110,17 +109,19 @@ const {
   openBulkDeleteDialog,
   closeBulkDeleteDialog,
   confirmBulkDelete,
+  pageRange,
+  showFirstPageButton,
+  showLeadingEllipsis,
+  showTrailingEllipsis,
+  showLastPageButton,
+  bulkDeletePreview,
+  bulkDeleteOverflow,
+  openDtrPage,
+  generateDtrFromDetails,
 } = useAttendance()
 
 const checkboxClass =
   'h-4 w-4 cursor-pointer rounded border-input accent-primary align-middle disabled:cursor-not-allowed disabled:opacity-50'
-
-// ─── Civil Service Form 48 DTR — opens the Generate DTR page ───
-const router = useRouter()
-
-const openDtrPage = (profileId?: string | null) => {
-  router.push({ name: 'attendance-dtr', query: profileId ? { profileId } : {} })
-}
 </script>
 
 <template>
@@ -815,8 +816,8 @@ const openDtrPage = (profileId?: string | null) => {
         <!-- ─── Table Pagination Footer ─── -->
         <div v-if="filteredAttendances.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 border-t text-xs text-muted-foreground bg-muted/10">
           <div>
-            Showing <span class="font-medium text-foreground">{{ filteredAttendances.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }}</span>
-            to <span class="font-medium text-foreground">{{ Math.min(currentPage * pageSize, filteredAttendances.length) }}</span>
+            Showing <span class="font-medium text-foreground">{{ pageRange.start }}</span>
+            to <span class="font-medium text-foreground">{{ pageRange.end }}</span>
             of <span class="font-medium text-foreground">{{ filteredAttendances.length }}</span> records
           </div>
 
@@ -846,7 +847,7 @@ const openDtrPage = (profileId?: string | null) => {
             </Button>
             <div class="flex items-center gap-1">
               <Button
-                v-if="visiblePages.length > 0 && visiblePages[0] > 1"
+                v-if="showFirstPageButton"
                 size="sm"
                 variant="outline"
                 class="h-7 w-7 p-0 text-xs cursor-pointer"
@@ -854,7 +855,7 @@ const openDtrPage = (profileId?: string | null) => {
               >
                 1
               </Button>
-              <span v-if="visiblePages.length > 0 && visiblePages[0] > 2" class="text-xs px-0.5">...</span>
+              <span v-if="showLeadingEllipsis" class="text-xs px-0.5">...</span>
 
               <Button
                 v-for="p in visiblePages"
@@ -867,9 +868,9 @@ const openDtrPage = (profileId?: string | null) => {
                 {{ p }}
               </Button>
 
-              <span v-if="visiblePages.length > 0 && visiblePages[visiblePages.length - 1] < totalPages - 1" class="text-xs px-0.5">...</span>
+              <span v-if="showTrailingEllipsis" class="text-xs px-0.5">...</span>
               <Button
-                v-if="visiblePages.length > 0 && visiblePages[visiblePages.length - 1] < totalPages"
+                v-if="showLastPageButton"
                 size="sm"
                 variant="outline"
                 class="h-7 w-7 p-0 text-xs cursor-pointer"
@@ -1049,7 +1050,7 @@ const openDtrPage = (profileId?: string | null) => {
             variant="outline"
             size="sm"
             class="text-xs cursor-pointer gap-1.5 w-full sm:w-auto"
-            @click="(() => { const pid = selectedRecord?.profileId; closeDetails(); openDtrPage(pid); })()"
+            @click="generateDtrFromDetails"
           >
             <span>Generate DTR Form 48</span>
           </Button>
@@ -1153,15 +1154,15 @@ const openDtrPage = (profileId?: string | null) => {
 
         <div class="max-h-56 overflow-y-auto rounded-lg border bg-muted/30 text-xs divide-y">
           <div
-            v-for="record in selectedRecords.slice(0, 50)"
+            v-for="record in bulkDeletePreview"
             :key="record.id"
             class="flex items-center justify-between gap-3 px-3.5 py-2"
           >
             <span class="font-semibold text-foreground truncate">{{ record.fullName }}</span>
             <span class="font-mono text-muted-foreground shrink-0">{{ formatDateDisplay(record.attendanceDate) }}</span>
           </div>
-          <div v-if="selectedRecords.length > 50" class="px-3.5 py-2 text-muted-foreground">
-            …and {{ selectedRecords.length - 50 }} more
+          <div v-if="bulkDeleteOverflow > 0" class="px-3.5 py-2 text-muted-foreground">
+            …and {{ bulkDeleteOverflow }} more
           </div>
         </div>
 

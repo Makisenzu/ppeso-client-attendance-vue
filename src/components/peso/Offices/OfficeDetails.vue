@@ -32,6 +32,7 @@ const {
   resetFilters,
   loadOffice,
   goBack,
+  pageRange,
 } = useOfficeDetails()
 
 /*
@@ -172,7 +173,7 @@ const COLUMN_COUNT = 4
               <template v-else-if="paginatedGips.length > 0">
                 <TableRow v-for="(gip, index) in paginatedGips" :key="gip.id" class="hover:bg-muted/30">
                   <TableCell class="py-3 pl-4 font-mono text-xs text-muted-foreground">
-                    {{ (currentPage - 1) * pageSize + index + 1 }}
+                    {{ pageRange.start + index }}
                   </TableCell>
                   <TableCell class="py-3">
                     <div class="flex items-center gap-2.5">
@@ -239,7 +240,7 @@ const COLUMN_COUNT = 4
               <option :value="50">50</option>
             </select>
             <span>
-              {{ (currentPage - 1) * pageSize + 1 }}–{{ Math.min(currentPage * pageSize, filteredGips.length) }}
+              {{ pageRange.start }}–{{ pageRange.end }}
               of {{ filteredGips.length }}
             </span>
           </div>

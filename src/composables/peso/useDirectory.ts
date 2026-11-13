@@ -1,6 +1,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { directoryService } from '@/services/peso/directoryService'
 import { useOfficeStore } from '@/stores/officeStore'
+import { getPageRange } from '@/helpers/common/paginationHelper'
 import type { DirectoryFormData, DirectoryRecord } from '@/types/peso/directory'
 
 type StatusFilter = 'ALL' | 'active' | 'inactive'
@@ -302,7 +303,18 @@ export function useDirectory() {
     if (feedbackTimer) clearTimeout(feedbackTimer)
   })
 
+  // ─── Display helpers for the template ───
+  const pageRange = computed(() =>
+    getPageRange(currentPage.value, pageSize.value, filteredDirectories.value.length),
+  )
+  const DELETE_PREVIEW_LIMIT = 50
+  const deletePreview = computed(() => recordsToDelete.value.slice(0, DELETE_PREVIEW_LIMIT))
+  const deleteOverflow = computed(() => Math.max(0, recordsToDelete.value.length - DELETE_PREVIEW_LIMIT))
+
   return {
+    pageRange,
+    deletePreview,
+    deleteOverflow,
     directories,
     filteredDirectories,
     paginatedDirectories,

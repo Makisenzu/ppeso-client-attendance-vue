@@ -1,35 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import {
-  AlertCircle,
-  CalendarDays,
-  CheckCircle2,
-  X,
-} from '@lucide/vue'
+import { AlertCircle, CalendarDays, CheckCircle2, X } from '@lucide/vue'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAttendanceKiosk } from '@/composables/peso/useKiosk'
-import {
-  formatFullName,
-  formatPunchTypeLabel,
-} from '@/helpers/peso/kioskhelper'
 
-const { store, currentTime, currentDate, currentPeriod } = useAttendanceKiosk()
-
-const resultTimeDisplay = computed(() => {
-  if (!store.lastResult?.timestamp) return ''
-  try {
-    const d = new Date(store.lastResult.timestamp)
-    return d.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-    })
-  } catch {
-    return store.lastResult.timestamp
-  }
-})
+const {
+  store,
+  currentTime,
+  currentDate,
+  currentPeriod,
+  resultPunchLabel,
+  resultEmployeeName,
+  resultTimeDisplay,
+  dismissError,
+} = useAttendanceKiosk()
 </script>
 
 
@@ -65,8 +49,8 @@ const resultTimeDisplay = computed(() => {
       <div class="flex-1 text-sm text-left">
         <p class="font-semibold text-amber-900 dark:text-amber-200">Already Recorded</p>
         <p class="text-xs text-amber-700/90 dark:text-amber-300/90 mt-0.5">
-          {{ store.lastResult.punchType ? formatPunchTypeLabel(store.lastResult.punchType) : 'Attendance' }} was already recorded
-          <span v-if="store.lastResult.profile">for {{ formatFullName(store.lastResult.profile) }}</span>
+          {{ resultPunchLabel }} was already recorded
+          <span v-if="resultEmployeeName">for {{ resultEmployeeName }}</span>
           at <span class="font-mono font-medium text-foreground">{{ resultTimeDisplay }}</span>. Please wait 5 minutes before punching again.
         </p>
       </div>
@@ -87,11 +71,11 @@ const resultTimeDisplay = computed(() => {
       <CheckCircle2 class="size-5 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
       <div class="flex-1 text-sm text-left">
         <p class="font-semibold text-emerald-900 dark:text-emerald-200">
-          {{ store.lastResult.punchType ? formatPunchTypeLabel(store.lastResult.punchType) : 'Attendance' }} Recorded
+          {{ resultPunchLabel }} Recorded
         </p>
         <p class="text-xs text-emerald-700/90 dark:text-emerald-300/90 mt-0.5">
           Recorded successfully
-          <span v-if="store.lastResult.profile">for <span class="font-semibold text-foreground">{{ formatFullName(store.lastResult.profile) }}</span></span>
+          <span v-if="resultEmployeeName">for <span class="font-semibold text-foreground">{{ resultEmployeeName }}</span></span>
           at <span class="font-mono font-medium text-foreground">{{ resultTimeDisplay }}</span>.
         </p>
       </div>
@@ -117,7 +101,7 @@ const resultTimeDisplay = computed(() => {
       <button
         type="button"
         class="p-1 text-destructive/80 hover:text-destructive transition-colors cursor-pointer"
-        @click="store.error = null"
+        @click="dismissError"
       >
         <X class="size-4" />
       </button>

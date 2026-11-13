@@ -1,39 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthForm } from '../composables/useAuthForm'
-import { supabase } from '../services/supabase'
-import { useAuthStore, getDashboardByRole } from '../stores/authStore'
-import Button from '../components/ui/button/Button.vue'
-import Input from '../components/ui/input/Input.vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useLogin } from '@/composables/common/useLogin'
 
-const router = useRouter()
-const authStore = useAuthStore()
-const email = ref('')
-const password = ref('')
-const { error, loading, runAuthAction, validateRequiredFields } = useAuthForm()
-
-const handleLogin = async () => {
-  if (!validateRequiredFields([email.value, password.value])) {
-    return
-  }
-
-  await runAuthAction(async () => {
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.value,
-      password: password.value
-    })
-
-    if (signInError) {
-      throw new Error(signInError.message)
-    }
-
-    await authStore.fetchUserRole()
-
-    const routeName = getDashboardByRole(authStore.userRole)
-    await router.push({ name: routeName })
-  })
-}
+const { email, password, error, loading, handleLogin } = useLogin()
 </script>
 
 
@@ -102,10 +72,3 @@ const handleLogin = async () => {
   </div>
 </template>
 
-<style scoped>
-/* Smooth transitions for loading state */
-:deep(input:disabled) {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>

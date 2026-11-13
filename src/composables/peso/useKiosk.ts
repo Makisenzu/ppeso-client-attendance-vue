@@ -1,5 +1,6 @@
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useAttendanceStore } from '@/stores/kioskStore'
+import { formatFullName, formatPunchTypeLabel } from '@/helpers/peso/kioskhelper'
 
 export const useAttendanceKiosk = () => {
   const store = useAttendanceStore()
@@ -66,10 +67,40 @@ export const useAttendanceKiosk = () => {
     store.cleanupRealtime()
   })
 
+  // ─── Last punch result, formatted for display ───
+  const resultPunchLabel = computed(() =>
+    store.lastResult?.punchType ? formatPunchTypeLabel(store.lastResult.punchType) : 'Attendance',
+  )
+
+  const resultEmployeeName = computed(() =>
+    store.lastResult?.profile ? formatFullName(store.lastResult.profile) : '',
+  )
+
+  const resultTimeDisplay = computed(() => {
+    const timestamp = store.lastResult?.timestamp
+    if (!timestamp) return ''
+    const date = new Date(timestamp)
+    if (isNaN(date.getTime())) return timestamp
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    })
+  })
+
+  const dismissError = () => {
+    store.error = null
+  }
+
   return {
     store,
     currentTime,
     currentDate,
     currentPeriod,
+    resultPunchLabel,
+    resultEmployeeName,
+    resultTimeDisplay,
+    dismissError,
   }
 }

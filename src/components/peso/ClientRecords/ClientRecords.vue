@@ -93,6 +93,9 @@ const {
   handleAddClient,
   handleCheckOut,
   exportCsv,
+  pageRange,
+  malePercentage,
+  femalePercentage,
 } = useClientRecords()
 </script>
 
@@ -212,7 +215,7 @@ const {
               {{ statsSummary.male.toLocaleString() }}
             </p>
             <p class="text-[11px] text-muted-foreground truncate">
-              {{ statsSummary.total > 0 ? Math.round((statsSummary.male / statsSummary.total) * 100) : 0 }}% of total
+              {{ malePercentage }}% of total
             </p>
           </div>
         </CardContent>
@@ -231,7 +234,7 @@ const {
               {{ statsSummary.female.toLocaleString() }}
             </p>
             <p class="text-[11px] text-muted-foreground truncate">
-              {{ statsSummary.total > 0 ? Math.round((statsSummary.female / statsSummary.total) * 100) : 0 }}% of total
+              {{ femalePercentage }}% of total
             </p>
           </div>
         </CardContent>
@@ -516,11 +519,11 @@ const {
         <div>
           Showing
           <span class="font-semibold text-foreground">
-            {{ filteredRecords.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }}
+            {{ pageRange.start }}
           </span>
           to
           <span class="font-semibold text-foreground">
-            {{ Math.min(currentPage * pageSize, filteredRecords.length) }}
+            {{ pageRange.end }}
           </span>
           of
           <span class="font-semibold text-foreground">{{ filteredRecords.length }}</span>

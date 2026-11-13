@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import { Moon, Sun } from '@lucide/vue'
-import { useColorMode } from '@vueuse/core'
+import { useThemeToggle } from '@/composables/common/useLayoutHeader'
 
-const mode = useColorMode()
-
-function toggleTheme() {
-  mode.value = mode.value === 'dark' ? 'light' : 'dark'
-}
+const { isDark, toggleTheme } = useThemeToggle()
 </script>
 
 <template>
@@ -19,7 +15,7 @@ function toggleTheme() {
       class="absolute right-4 top-4 z-20 flex size-8 items-center justify-center rounded-md bg-slate-200/80 text-slate-700 hover:bg-slate-300 hover:text-slate-900 dark:bg-white/10 dark:text-white/80 backdrop-blur dark:hover:bg-white/20 dark:hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       title="Toggle color theme"
     >
-      <component :is="mode === 'dark' ? Sun : Moon" class="size-4 shrink-0" />
+      <component :is="isDark ? Sun : Moon" class="size-4 shrink-0" />
     </button>
 
     <div class="relative z-10 flex min-h-screen items-center justify-center p-6">

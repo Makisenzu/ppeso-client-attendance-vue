@@ -35,14 +35,8 @@ const {
   goBack,
   selectEmployee,
   clearFetchError,
+  presets,
 } = useDtrGenerator()
-
-const presets = [
-  { key: 'firstHalf', label: '1st Half (1-15)' },
-  { key: 'secondHalf', label: '2nd Half (16-End)' },
-  { key: 'wholeMonth', label: 'Full Month' },
-  { key: 'toCurrentDay', label: 'Month to Date' },
-] as const
 </script>
 
 <template>

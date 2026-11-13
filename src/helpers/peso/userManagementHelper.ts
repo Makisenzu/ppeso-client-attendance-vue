@@ -4,6 +4,43 @@ import type {
   ProfileRole,
   ProfileStatus,
 } from '@/types/peso/userManagement'
+import type { OfficeRecord } from '@/types/peso/office'
+import type { SearchSelectOption } from '@/types/common/searchSelect'
+
+// ─── SearchSelect options for the Add / Edit User forms ───
+export const POSITION_OPTIONS: SearchSelectOption[] = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'employee', label: 'Employee' },
+  { value: 'gip', label: 'GIP' },
+  { value: 'tupad', label: 'TUPAD' },
+  { value: 'client', label: 'Client' },
+]
+
+export const ROLE_OPTIONS: SearchSelectOption[] = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'supervisor', label: 'Supervisor' },
+  { value: 'beneficiary', label: 'Beneficiary' },
+  { value: '', label: 'No role' },
+]
+
+export const STATUS_OPTIONS: SearchSelectOption[] = [
+  { value: 'active', label: 'Active' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'inactive', label: 'Inactive' },
+]
+
+/** "No Office Assigned" plus each office as "Name (CODE)", with its head (and "Inactive") underneath. */
+export function toOfficeSelectOptions(offices: OfficeRecord[]): SearchSelectOption[] {
+  return [
+    { value: '', label: 'No Office Assigned' },
+    ...offices.map((office) => ({
+      value: office.id,
+      label: office.code ? `${office.name} (${office.code})` : office.name,
+      description:
+        [office.officeHead, office.isActive ? null : 'Inactive'].filter(Boolean).join(' · ') || undefined,
+    })),
+  ]
+}
 
 /**
  * Default role for a position: only Admin gets admin access; Employee / GIP / TUPAD are

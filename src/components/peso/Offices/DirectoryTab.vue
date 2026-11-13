@@ -75,6 +75,9 @@ const {
   openBulkDeleteDialog,
   closeDeleteDialog,
   confirmDelete,
+  pageRange,
+  deletePreview,
+  deleteOverflow,
 } = useDirectory()
 
 const COLUMN_COUNT = 7
@@ -368,7 +371,7 @@ const checkboxClass =
               <option :value="50">50</option>
             </select>
             <span>
-              {{ (currentPage - 1) * pageSize + 1 }}–{{ Math.min(currentPage * pageSize, filteredDirectories.length) }}
+              {{ pageRange.start }}–{{ pageRange.end }}
               of {{ filteredDirectories.length }}
             </span>
           </div>
@@ -501,15 +504,15 @@ const checkboxClass =
 
         <div class="max-h-56 divide-y overflow-y-auto rounded-lg border bg-muted/30 text-xs">
           <div
-            v-for="entry in recordsToDelete.slice(0, 50)"
+            v-for="entry in deletePreview"
             :key="entry.id"
             class="flex items-center justify-between gap-3 px-3.5 py-2"
           >
             <span class="truncate font-semibold text-foreground">{{ entry.officeName }}</span>
             <span class="shrink-0 font-mono text-muted-foreground">{{ entry.officeCode || '—' }}</span>
           </div>
-          <div v-if="recordsToDelete.length > 50" class="px-3.5 py-2 text-muted-foreground">
-            …and {{ recordsToDelete.length - 50 }} more
+          <div v-if="deleteOverflow > 0" class="px-3.5 py-2 text-muted-foreground">
+            …and {{ deleteOverflow }} more
           </div>
         </div>
 

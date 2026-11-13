@@ -401,6 +401,33 @@ There is no toast library yet. Screens use the composable's **feedback banner**:
 
 ---
 
+## 12.1 Vue Files Contain Rendering Only — MANDATORY
+
+A `.vue` file renders. Its `<script setup>` only:
+
+- imports components, icons and **one** page composable (plus child components);
+- declares `defineProps` / `defineEmits` / `defineModel` and passes them to the composable;
+- destructures what the template needs;
+- may hold **class-name constants** (e.g. `checkboxClass`) and a `COLUMN_COUNT` for `colspan`.
+
+Everything else lives outside the component:
+
+| Kind of code | Where it goes |
+| ------------ | ------------- |
+| State, `computed`, `watch`, lifecycle hooks, event handlers, router calls | Composable (`src/composables/<role>/useXxx.ts`) |
+| Option lists, chart options, data builders, formatting, maths | Helper (`src/helpers/...`, pure functions) |
+| Supabase / HTTP calls | Service (`src/services/...`) |
+| Library setup (e.g. Chart.js registration) | `src/lib/` |
+
+In the **template**, bind to names: no multi-statement handlers (`@click="() => { ... }"`), no `Math.*`, `.slice()`,
+`.filter()`, `.map()`, `new Date()` or percentage / page-range arithmetic. Expose a computed or function from the
+composable instead (e.g. `pageRange.start`, `bulkDeletePreview`, `editFromDetails`). Simple display formatting
+(`count.toLocaleString()`, a ternary label) is fine. Template refs use `useTemplateRef('name')` inside the composable.
+Shared pieces: `useLayoutHeader` / `useThemeToggle` (layouts), `paginationHelper` (`getPageRange`, `getVisiblePages`,
+`toPercentage`), `useSearchSelect` (`SearchSelect.vue`).
+
+---
+
 ## 13. Styling Rules — Summary
 
 > [!CAUTION]

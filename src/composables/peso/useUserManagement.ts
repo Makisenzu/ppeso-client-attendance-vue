@@ -7,7 +7,15 @@ import type {
 } from '@/types/peso/userManagement'
 import { userManagementService } from '@/services/peso/userManagementService'
 import { authService } from '@/services/common/authService'
-import { exportProfilesToCsv, getDefaultRoleForPosition } from '@/helpers/peso/userManagementHelper'
+import {
+  exportProfilesToCsv,
+  getDefaultRoleForPosition,
+  POSITION_OPTIONS,
+  ROLE_OPTIONS,
+  STATUS_OPTIONS,
+  toOfficeSelectOptions,
+} from '@/helpers/peso/userManagementHelper'
+import { getPageRange, getVisiblePages } from '@/helpers/common/paginationHelper'
 import { useOfficeStore } from '@/stores/officeStore'
 
 export function useUserManagement() {
@@ -447,7 +455,37 @@ export function useUserManagement() {
     }
   })
 
+  // ─── Display helpers for the template ───
+  const pageRange = computed(() =>
+    getPageRange(currentPage.value, pageSize.value, filteredProfiles.value.length),
+  )
+  const visiblePages = computed(() => getVisiblePages(currentPage.value, totalPages.value))
+  const hasHiddenPages = computed(() => totalPages.value > visiblePages.value.length)
+
+  const positionOptions = POSITION_OPTIONS
+  const roleOptions = ROLE_OPTIONS
+  const statusOptions = STATUS_OPTIONS
+  const addOfficeSelectOptions = computed(() => toOfficeSelectOptions(activeOffices.value))
+  const editOfficeSelectOptions = computed(() => toOfficeSelectOptions(editOfficeOptions.value))
+
+  /** "Edit User" in the Details dialog: close it and open the edit panel for that user. */
+  const editFromDetails = () => {
+    const profile = selectedProfile.value
+    if (!profile) return
+    closeDetails()
+    openEditUser(profile)
+  }
+
   return {
+    pageRange,
+    visiblePages,
+    hasHiddenPages,
+    positionOptions,
+    roleOptions,
+    statusOptions,
+    addOfficeSelectOptions,
+    editOfficeSelectOptions,
+    editFromDetails,
     profiles,
     filteredProfiles,
     paginatedProfiles,

@@ -1,46 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import {
-  CalendarDays,
-  PieChart as PieChartIcon,
-  RefreshCw,
-  Users,
-} from '@lucide/vue'
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Filler,
-  type ChartOptions,
-} from 'chart.js'
+import { CalendarDays, PieChart as PieChartIcon, RefreshCw, Users } from '@lucide/vue'
 import { Bar, Doughnut, Line, Pie } from 'vue-chartjs'
-
-import { useDashboard } from '@/composables/peso/useDashboard'
+import { useDashboardCharts } from '@/composables/peso/useDashboardCharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-
-// Register ChartJS modules
-ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Filler
-)
 
 const {
   isLoading,
@@ -50,315 +15,24 @@ const {
   totalAttendanceLogs,
   activePersonnelCount,
   onTimeRate,
+  onTimeRateBarWidth,
   attendanceStatusDistribution,
   clientPurposeDistribution,
   genderDistribution,
-  weeklyAttendanceTrend,
-  weeklyClientTrend,
-  personnelByPosition,
-} = useDashboard()
-
-// ─── Common Chart Options ───
-const commonPlugins = {
-  legend: {
-    position: 'bottom' as const,
-    labels: {
-      usePointStyle: true,
-      boxWidth: 8,
-      padding: 14,
-      font: {
-        family: 'Roboto, sans-serif',
-        size: 11,
-      },
-      color: '#64748b',
-    },
-  },
-  tooltip: {
-    backgroundColor: '#0f172a',
-    titleColor: '#f8fafc',
-    bodyColor: '#f8fafc',
-    borderColor: '#334155',
-    borderWidth: 1,
-    padding: 10,
-    cornerRadius: 8,
-    boxPadding: 4,
-  },
-}
-
-const doughnutOptions: ChartOptions<'doughnut'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    ...commonPlugins,
-    legend: {
-      display: false,
-    },
-  },
-  cutout: '62%',
-}
-
-const pieOptions: ChartOptions<'pie'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    ...commonPlugins,
-    legend: {
-      display: false,
-    },
-  },
-}
-
-const lineChartOptions: ChartOptions<'line'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    ...commonPlugins,
-    legend: {
-      display: false,
-    },
-  },
-  scales: {
-    x: {
-      grid: {
-        display: false,
-      },
-      ticks: {
-        font: { size: 11, family: 'Roboto, sans-serif' },
-        color: '#64748b',
-      },
-    },
-    y: {
-      beginAtZero: true,
-      grid: {
-        color: 'rgba(148, 163, 184, 0.12)',
-      },
-      ticks: {
-        precision: 0,
-        font: { size: 11, family: 'Roboto, sans-serif' },
-        color: '#64748b',
-      },
-    },
-  },
-}
-
-const barChartOptions: ChartOptions<'bar'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    ...commonPlugins,
-    legend: {
-      display: false,
-    },
-  },
-  scales: {
-    x: {
-      grid: {
-        display: false,
-      },
-      ticks: {
-        font: { size: 11, family: 'Roboto, sans-serif' },
-        color: '#64748b',
-      },
-    },
-    y: {
-      beginAtZero: true,
-      grid: {
-        color: 'rgba(148, 163, 184, 0.12)',
-      },
-      ticks: {
-        precision: 0,
-        font: { size: 11, family: 'Roboto, sans-serif' },
-        color: '#64748b',
-      },
-    },
-  },
-}
-
-// ─── Chart Data Configurations ───
-
-// 1. Attendance Status Breakdown
-const attendanceStatusChartData = computed(() => {
-  const dist = attendanceStatusDistribution.value
-  return {
-    labels: ['On-time', 'Late', 'Early Out', 'Absent'],
-    datasets: [
-      {
-        data: [dist.ontime, dist.late, dist.earlyOut, dist.absent],
-        backgroundColor: [
-          '#10b981', // Emerald - On-time
-          '#f59e0b', // Amber - Late
-          '#f43f5e', // Rose - Early Out
-          '#64748b', // Slate - Absent
-        ],
-        hoverBackgroundColor: ['#059669', '#d97706', '#e11d48', '#475569'],
-        borderWidth: 2,
-        borderColor: 'rgba(15, 23, 42, 0.6)',
-      },
-    ],
-  }
-})
-
-// 2. Client Walk-in Purpose Distribution
-const PURPOSE_COLORS = [
-  '#3b82f6', // GIP - Blue
-  '#8b5cf6', // SPES - Violet
-  '#06b6d4', // JobStart - Cyan
-  '#f97316', // OFW - Orange
-  '#10b981', // CEA - Emerald
-  '#ec4899', // Skills - Pink
-  '#94a3b8', // Others - Slate
-]
-
-const purposePieChartRef = ref<any>(null)
-const hiddenPurposeIndices = ref<Set<number>>(new Set())
-
-const purposeLegendItems = computed(() => {
-  const dist = clientPurposeDistribution.value
-  const total = dist.data.reduce((acc, val) => acc + val, 0)
-  return dist.labels.map((label, idx) => {
-    const count = dist.data[idx] || 0
-    const pct = total > 0 ? Math.round((count / total) * 100) : 0
-    return {
-      index: idx,
-      label,
-      value: dist.values[idx],
-      count,
-      percentage: pct,
-      color: PURPOSE_COLORS[idx] || '#94a3b8',
-      hidden: hiddenPurposeIndices.value.has(idx),
-    }
-  })
-})
-
-function togglePurposeVisibility(index: number) {
-  const chartInstance = purposePieChartRef.value?.chart
-  if (chartInstance) {
-    chartInstance.toggleDataVisibility(index)
-    chartInstance.update()
-    if (hiddenPurposeIndices.value.has(index)) {
-      hiddenPurposeIndices.value.delete(index)
-    } else {
-      hiddenPurposeIndices.value.add(index)
-    }
-  }
-}
-
-const clientPurposeChartData = computed(() => {
-  const dist = clientPurposeDistribution.value
-  return {
-    labels: dist.labels,
-    datasets: [
-      {
-        data: dist.data,
-        backgroundColor: PURPOSE_COLORS,
-        hoverBackgroundColor: [
-          '#2563eb',
-          '#7c3aed',
-          '#0891b2',
-          '#ea580c',
-          '#059669',
-          '#db2777',
-          '#64748b',
-        ],
-        borderWidth: 2,
-        borderColor: 'rgba(15, 23, 42, 0.6)',
-      },
-    ],
-  }
-})
-
-// 3. Weekly Attendance Trend
-const weeklyAttendanceChartData = computed(() => {
-  const trend = weeklyAttendanceTrend.value
-  return {
-    labels: trend.labels,
-    datasets: [
-      {
-        label: 'Attendance Punches',
-        data: trend.data,
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.12)',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#3b82f6',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        fill: true,
-        tension: 0.35,
-      },
-    ],
-  }
-})
-
-// 4. Weekly Walk-in Client Trend
-const weeklyClientChartData = computed(() => {
-  const trend = weeklyClientTrend.value
-  return {
-    labels: trend.labels,
-    datasets: [
-      {
-        label: 'Walk-in Clients',
-        data: trend.data,
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.12)',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#10b981',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        fill: true,
-        tension: 0.35,
-      },
-    ],
-  }
-})
-
-// 5. Personnel by Position
-const personnelPositionChartData = computed(() => {
-  const pos = personnelByPosition.value
-  return {
-    labels: pos.labels,
-    datasets: [
-      {
-        label: 'Personnel Count',
-        data: pos.data,
-        backgroundColor: [
-          '#64748b', // Admin - Slate
-          '#3b82f6', // Employee - Blue
-          '#8b5cf6', // GIP - Violet
-          '#f59e0b', // TUPAD - Amber
-          '#14b8a6', // Client - Teal
-        ],
-        borderRadius: 6,
-        maxBarThickness: 42,
-      },
-    ],
-  }
-})
-
-// 6. Client Gender Demographics
-const genderChartData = computed(() => {
-  const g = genderDistribution.value
-  return {
-    labels: ['Male', 'Female', 'Not Specified'],
-    datasets: [
-      {
-        data: [g.male, g.female, g.notSpecified],
-        backgroundColor: ['#3b82f6', '#ec4899', '#94a3b8'],
-        hoverBackgroundColor: ['#2563eb', '#db2777', '#64748b'],
-        borderWidth: 2,
-        borderColor: 'rgba(15, 23, 42, 0.6)',
-      },
-    ],
-  }
-})
-
-// Helper to check if array has non-zero data
-function hasData(numbers: number[]): boolean {
-  return numbers.some((n) => n > 0)
-}
+  purposeLegendItems,
+  togglePurposeVisibility,
+  attendanceStatusChartData,
+  clientPurposeChartData,
+  weeklyAttendanceChartData,
+  weeklyClientChartData,
+  personnelPositionChartData,
+  genderChartData,
+  doughnutOptions,
+  pieOptions,
+  lineChartOptions,
+  barChartOptions,
+  hasData,
+} = useDashboardCharts()
 </script>
 
 <template>
@@ -483,7 +157,7 @@ function hasData(numbers: number[]): boolean {
                 <div
                   class="h-full rounded-full transition-all duration-500"
                   :class="onTimeRate >= 80 ? 'bg-emerald-500' : onTimeRate >= 60 ? 'bg-amber-500' : 'bg-rose-500'"
-                  :style="{ width: `${Math.min(onTimeRate, 100)}%` }"
+                  :style="{ width: onTimeRateBarWidth }"
                 ></div>
               </div>
               <span class="text-xs text-muted-foreground whitespace-nowrap">Punctuality</span>
@@ -601,7 +275,7 @@ function hasData(numbers: number[]): boolean {
               class="relative h-64 w-full flex items-center justify-center"
             >
               <Pie
-                ref="purposePieChartRef"
+                ref="purposePieChart"
                 :data="clientPurposeChartData"
                 :options="pieOptions"
               />

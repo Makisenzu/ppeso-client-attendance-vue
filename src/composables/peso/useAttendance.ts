@@ -1,4 +1,6 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { getPageRange } from '@/helpers/common/paginationHelper'
 import type { AttendanceRecord, AttendanceStatsSummary } from '@/types/peso/attendance'
 import { attendanceService } from '@/services/peso/attendanceService'
 import {
@@ -449,7 +451,48 @@ export function useAttendance() {
     }
   }
 
+  // ─── Pagination display ───
+  const pageRange = computed(() =>
+    getPageRange(currentPage.value, pageSize.value, filteredAttendances.value.length),
+  )
+  const firstVisiblePage = computed(() => visiblePages.value[0] ?? 1)
+  const lastVisiblePage = computed(() => visiblePages.value[visiblePages.value.length - 1] ?? 1)
+  const showFirstPageButton = computed(() => firstVisiblePage.value > 1)
+  const showLeadingEllipsis = computed(() => firstVisiblePage.value > 2)
+  const showTrailingEllipsis = computed(() => lastVisiblePage.value < totalPages.value - 1)
+  const showLastPageButton = computed(() => lastVisiblePage.value < totalPages.value)
+
+  // ─── Bulk delete preview (first 50 names in the confirmation) ───
+  const BULK_DELETE_PREVIEW_LIMIT = 50
+  const bulkDeletePreview = computed(() => selectedRecords.value.slice(0, BULK_DELETE_PREVIEW_LIMIT))
+  const bulkDeleteOverflow = computed(() =>
+    Math.max(0, selectedRecords.value.length - BULK_DELETE_PREVIEW_LIMIT),
+  )
+
+  // ─── Civil Service Form 48 DTR — opens the Generate DTR page ───
+  const router = useRouter()
+
+  const openDtrPage = (profileId?: string | null) => {
+    router.push({ name: 'attendance-dtr', query: profileId ? { profileId } : {} })
+  }
+
+  /** "Generate DTR" in the details dialog: close it and open the page for that person. */
+  const generateDtrFromDetails = () => {
+    const profileId = selectedRecord.value?.profileId
+    closeDetails()
+    openDtrPage(profileId)
+  }
+
   return {
+    pageRange,
+    showFirstPageButton,
+    showLeadingEllipsis,
+    showTrailingEllipsis,
+    showLastPageButton,
+    bulkDeletePreview,
+    bulkDeleteOverflow,
+    openDtrPage,
+    generateDtrFromDetails,
     selectedCount,
     selectedRecords,
     isAllPageSelected,

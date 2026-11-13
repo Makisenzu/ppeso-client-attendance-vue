@@ -1,13 +1,17 @@
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useOfficeStore } from '@/stores/officeStore'
+import { getPageRange } from '@/helpers/common/paginationHelper'
 import { directoryService } from '@/services/peso/directoryService'
 import type { OfficeFormData, OfficeRecord } from '@/types/peso/office'
 import type { DirectoryOption } from '@/types/peso/directory'
 import { exportOfficesToCsv, validateOfficeForm } from '@/helpers/peso/officeHelper'
 
+export type OfficeTab = 'offices' | 'directory'
+
 export function useOffice() {
   const officeStore = useOfficeStore()
+  const route = useRoute()
   const router = useRouter()
 
   // ─── Filter & Search State ───
@@ -349,11 +353,33 @@ export function useOffice() {
     await officeStore.fetchOffices()
   }
 
+  // ─── Pagination display ───
+  const pageRange = computed(() =>
+    getPageRange(currentPage.value, pageSize.value, filteredOffices.value.length),
+  )
+
+  // ─── Tabs (kept in the URL as ?tab=directory so a reload stays on the same tab) ───
+  const tabs: { key: OfficeTab; label: string }[] = [
+    { key: 'offices', label: 'Offices' },
+    { key: 'directory', label: 'Directory' },
+  ]
+
+  const activeTab = computed<OfficeTab>(() => (route.query.tab === 'directory' ? 'directory' : 'offices'))
+
+  const setTab = (tab: OfficeTab) => {
+    if (tab === activeTab.value) return
+    router.replace({ query: { ...route.query, tab: tab === 'offices' ? undefined : tab } })
+  }
+
   onMounted(() => {
     officeStore.fetchOffices()
   })
 
   return {
+    pageRange,
+    tabs,
+    activeTab,
+    setTab,
     offices: computed(() => officeStore.offices),
     filteredOffices,
     paginatedOffices,

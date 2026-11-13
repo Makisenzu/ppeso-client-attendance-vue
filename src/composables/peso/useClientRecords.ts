@@ -6,6 +6,7 @@ import type {
   WalkinAttendanceInsert,
 } from '@/types/peso/clientRecord'
 import { clientRecordService } from '@/services/peso/clientRecordService'
+import { getPageRange, toPercentage } from '@/helpers/common/paginationHelper'
 import {
   computeClientRecordStats,
   exportClientRecordsToCsv,
@@ -309,7 +310,17 @@ export function useClientRecords() {
     fetchRecords()
   })
 
+  // ─── Display helpers for the template ───
+  const pageRange = computed(() =>
+    getPageRange(currentPage.value, pageSize.value, filteredRecords.value.length),
+  )
+  const malePercentage = computed(() => toPercentage(statsSummary.value.male, statsSummary.value.total))
+  const femalePercentage = computed(() => toPercentage(statsSummary.value.female, statsSummary.value.total))
+
   return {
+    pageRange,
+    malePercentage,
+    femalePercentage,
     records,
     filteredRecords,
     paginatedRecords,

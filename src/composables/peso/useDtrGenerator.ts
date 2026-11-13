@@ -172,7 +172,16 @@ export function useDtrGenerator() {
     loadProfiles()
   })
 
+  /** Quick date-range buttons. */
+  const presets: { key: DtrPresetType; label: string }[] = [
+    { key: 'firstHalf', label: '1st Half (1-15)' },
+    { key: 'secondHalf', label: '2nd Half (16-End)' },
+    { key: 'wholeMonth', label: 'Full Month' },
+    { key: 'toCurrentDay', label: 'Month to Date' },
+  ]
+
   return {
+    presets,
     isLoadingProfiles,
     isGenerating,
     profiles,

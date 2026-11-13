@@ -1,100 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthForm } from '../composables/useAuthForm'
-import { supabase } from '../services/supabase'
-import type { Database } from '../types/database.types'
-import Button from '../components/ui/button/Button.vue'
-import Input from '../components/ui/input/Input.vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useSignup } from '@/composables/common/useSignup'
 
-const router = useRouter()
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const firstName = ref('')
-const middleName = ref('')
-const lastName = ref('')
-const { error, loading, runAuthAction, setError, validateRequiredFields } = useAuthForm()
-const defaultPosition: Database['public']['Enums']['profile_position'] = 'employee'
-
-const validateForm = (): boolean => {
-  if (!validateRequiredFields([email.value, password.value, confirmPassword.value, firstName.value, lastName.value])) {
-    return false
-  }
-
-  if (password.value !== confirmPassword.value) {
-    setError('Passwords do not match')
-    return false
-  }
-
-  if (password.value.length < 6) {
-    setError('Password must be at least 6 characters')
-    return false
-  }
-
-  return true
-}
-
-const handleSignup = async () => {
-  if (!validateForm()) {
-    return
-  }
-
-  await runAuthAction(async () => {
-    // Sign up without email confirmation required
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: email.value,
-      password: password.value,
-      options: {
-        data: {
-          firstname: firstName.value,
-          middlename: middleName.value || null,
-          lastname: lastName.value,
-          position: defaultPosition,
-        },
-      },
-    })
-
-    if (signUpError) {
-      const authError = signUpError as typeof signUpError & {
-        hint?: string
-        details?: string
-      }
-
-      const errorDetails = [
-        authError.message,
-        authError.status ? `Status: ${authError.status}` : '',
-        authError.code ? `Code: ${authError.code}` : '',
-        authError.hint ? `Hint: ${authError.hint}` : '',
-        authError.details ? `Details: ${authError.details}` : '',
-      ]
-        .filter(Boolean)
-        .join(' • ')
-
-      throw new Error(errorDetails)
-    }
-
-    if (!data.user) {
-      throw new Error('Failed to create user account')
-    }
-
-    // The profile row (incl. a unique passcode) is created by the
-    // on_auth_user_created database trigger from the metadata above.
-
-    // Auto-login after successful signup
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.value,
-      password: password.value,
-    })
-
-    if (signInError) {
-      throw new Error(`Sign-in after registration failed: ${signInError.message}`)
-    }
-
-    // Redirect to dashboard after successful signup and login
-    router.push({ name: 'dashboard' })
-  })
-}
+const {
+  email,
+  password,
+  confirmPassword,
+  firstName,
+  middleName,
+  lastName,
+  error,
+  loading,
+  handleSignup,
+} = useSignup()
 </script>
 
 <template>
@@ -218,10 +137,3 @@ const handleSignup = async () => {
   </div>
 </template>
 
-<style scoped>
-/* Smooth transitions for loading state */
-:deep(input:disabled) {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>

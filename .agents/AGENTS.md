@@ -194,7 +194,8 @@ Component (.vue) ──► Composable (useXxx) ──► [Store (xxxStore)] ─�
 > 5. **DO NOT query `core` tables without `.schema('core')`.** `public` tables (`profiles`, `offices`) use the default
 >    client. Never add new `public.attendances` fallbacks — that table does not exist (DATABASE.md §10).
 > 6. **DO NOT use Options API** in Vue components or new stores (`<script setup lang="ts">` only).
-> 7. **DO NOT bypass the layered architecture** (Component → Composable → [Store] → Service).
+> 7. **DO NOT bypass the layered architecture** (Component → Composable → [Store] → Service). `.vue` files contain
+>    rendering only: no logic in `<script setup>` or templates beyond composable wiring. See [`DESIGN.md`](DESIGN.md) §12.1.
 > 8. **DO NOT remove or weaken the `router.beforeEach` guard** in `src/router/index.ts`.
 > 9. **DO NOT store sensitive data** (passwords, passcodes, tokens) in Pinia state or `localStorage`.
 > 10. **DO NOT mix role-specific logic** across role folders (e.g., no admin code in `beneficiary/`).

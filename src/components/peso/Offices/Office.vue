@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import DirectoryTab from './DirectoryTab.vue'
 import {
   AlertTriangle,
@@ -65,7 +63,6 @@ const {
   searchQuery,
   selectedStatusFilter,
   currentPage,
-  pageSize,
   totalPages,
   isAddEditOpen,
   isEditMode,
@@ -101,25 +98,12 @@ const {
   confirmDelete,
   exportCsv,
   refreshOffices,
+  pageRange,
+  tabs,
+  activeTab,
+  setTab,
 } = useOffice()
 
-// ─── Tabs (kept in the URL as ?tab=directory so a reload stays on the same tab) ───
-type OfficeTab = 'offices' | 'directory'
-
-const tabs: { key: OfficeTab; label: string }[] = [
-  { key: 'offices', label: 'Offices' },
-  { key: 'directory', label: 'Directory' },
-]
-
-const route = useRoute()
-const router = useRouter()
-
-const activeTab = computed<OfficeTab>(() => (route.query.tab === 'directory' ? 'directory' : 'offices'))
-
-const setTab = (tab: OfficeTab) => {
-  if (tab === activeTab.value) return
-  router.replace({ query: { ...route.query, tab: tab === 'offices' ? undefined : tab } })
-}
 </script>
 
 <template>
@@ -586,11 +570,11 @@ const setTab = (tab: OfficeTab) => {
           <div>
             Showing
             <span class="font-medium text-foreground font-mono">
-              {{ (currentPage - 1) * pageSize + 1 }}
+              {{ pageRange.start }}
             </span>
             to
             <span class="font-medium text-foreground font-mono">
-              {{ Math.min(currentPage * pageSize, filteredOffices.length) }}
+              {{ pageRange.end }}
             </span>
             of
             <span class="font-medium text-foreground font-mono">

@@ -1,17 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
-import { onClickOutside } from '@vueuse/core'
+import { useTemplateRef } from 'vue'
 import { Check, ChevronDown, Search } from '@lucide/vue'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-
-export interface SearchSelectOption {
-  value: string
-  label: string
-  /** Second line under the label (e.g. an office head). */
-  description?: string
-  disabled?: boolean
-}
+import { useSearchSelect } from '@/composables/common/useSearchSelect'
+import type { SearchSelectOption } from '@/types/common/searchSelect'
 
 /**
  * Single-choice dropdown styled like the Add Office directory picker: a trigger button,
@@ -43,55 +36,13 @@ const props = withDefaults(
 const model = defineModel<string>({ default: '' })
 const emit = defineEmits<{ (e: 'change', value: string): void }>()
 
-const isOpen = ref(false)
-const search = ref('')
-const root = useTemplateRef<HTMLElement>('root')
-
-const selectedOption = computed(() => props.options.find((o) => o.value === model.value) ?? null)
-
-const filteredOptions = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  if (!props.searchable || !q) return props.options
-  return props.options.filter(
-    (o) => o.label.toLowerCase().includes(q) || (o.description || '').toLowerCase().includes(q),
-  )
-})
-
-const close = () => {
-  isOpen.value = false
-  search.value = ''
-}
-
-const toggle = () => {
-  if (props.disabled) return
-  if (isOpen.value) close()
-  else isOpen.value = true
-}
-
-const select = (option: SearchSelectOption) => {
-  if (option.disabled) return
-  const changed = option.value !== model.value
-  model.value = option.value
-  close()
-  if (changed) emit('change', option.value)
-}
-
-onClickOutside(root, () => {
-  if (isOpen.value) close()
-})
-
-watch(
-  () => props.disabled,
-  (disabled) => {
-    if (disabled) close()
-  },
-)
-
-// Focus the search box when the list opens.
-watch(isOpen, async (open) => {
-  if (!open || !props.searchable) return
-  await nextTick()
-  root.value?.querySelector<HTMLInputElement>('input')?.focus()
+const { isOpen, search, selectedOption, filteredOptions, close, toggle, select } = useSearchSelect({
+  options: () => props.options,
+  searchable: () => props.searchable,
+  disabled: () => props.disabled,
+  model,
+  root: useTemplateRef<HTMLElement>('root'),
+  onChange: (value) => emit('change', value),
 })
 </script>
 

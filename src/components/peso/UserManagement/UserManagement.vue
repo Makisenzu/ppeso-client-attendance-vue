@@ -55,8 +55,7 @@ import {
   formatStatusLabel,
   getStatusBadgeClass,
 } from '@/helpers/peso/userManagementHelper'
-import { computed } from 'vue'
-import SearchSelect, { type SearchSelectOption } from '@/components/common/SearchSelect.vue'
+import SearchSelect from '@/components/common/SearchSelect.vue'
 import {
   Sheet,
   SheetContent,
@@ -77,7 +76,6 @@ const {
   selectedPositionFilter,
   selectedStatusFilter,
   currentPage,
-  pageSize,
   selectedProfile,
   isDetailsOpen,
   isAddUserOpen,
@@ -112,44 +110,22 @@ const {
   editError,
   editForm,
   isEditingSelf,
-  editOfficeOptions,
   openEditUser,
   onEditPositionChange,
   closeEditUser,
   handleEditUser,
   exportCsv,
+  pageRange,
+  visiblePages,
+  hasHiddenPages,
+  positionOptions,
+  roleOptions,
+  statusOptions,
+  addOfficeSelectOptions,
+  editOfficeSelectOptions,
+  editFromDetails,
 } = useUserManagement()
 
-// ─── Edit User select options ───
-const positionOptions: SearchSelectOption[] = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'employee', label: 'Employee' },
-  { value: 'gip', label: 'GIP' },
-  { value: 'tupad', label: 'TUPAD' },
-  { value: 'client', label: 'Client' },
-]
-
-const roleOptions: SearchSelectOption[] = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'supervisor', label: 'Supervisor' },
-  { value: 'beneficiary', label: 'Beneficiary' },
-  { value: '', label: 'No role' },
-]
-
-const statusOptions: SearchSelectOption[] = [
-  { value: 'active', label: 'Active' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'inactive', label: 'Inactive' },
-]
-
-const editOfficeSelectOptions = computed<SearchSelectOption[]>(() => [
-  { value: '', label: 'No Office Assigned' },
-  ...editOfficeOptions.value.map((office) => ({
-    value: office.id,
-    label: office.code ? `${office.name} (${office.code})` : office.name,
-    description: [office.officeHead, office.isActive ? null : 'Inactive'].filter(Boolean).join(' · ') || undefined,
-  })),
-])
 </script>
 
 <template>
@@ -535,8 +511,8 @@ const editOfficeSelectOptions = computed<SearchSelectOption[]>(() => [
         <!-- ─── Pagination Footer ─── -->
         <div v-if="filteredProfiles.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t text-xs text-muted-foreground">
           <div>
-            Showing <span class="font-medium text-foreground">{{ filteredProfiles.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }}</span>
-            to <span class="font-medium text-foreground">{{ Math.min(currentPage * pageSize, filteredProfiles.length) }}</span>
+            Showing <span class="font-medium text-foreground">{{ pageRange.start }}</span>
+            to <span class="font-medium text-foreground">{{ pageRange.end }}</span>
             of <span class="font-medium text-foreground">{{ filteredProfiles.length }}</span> profiles
           </div>
 
@@ -552,7 +528,7 @@ const editOfficeSelectOptions = computed<SearchSelectOption[]>(() => [
             </Button>
             <div class="flex items-center gap-1">
               <Button
-                v-for="p in Math.min(totalPages, 5)"
+                v-for="p in visiblePages"
                 :key="p"
                 size="sm"
                 :variant="currentPage === p ? 'default' : 'outline'"
@@ -561,7 +537,7 @@ const editOfficeSelectOptions = computed<SearchSelectOption[]>(() => [
               >
                 {{ p }}
               </Button>
-              <span v-if="totalPages > 5" class="text-xs px-1">...</span>
+              <span v-if="hasHiddenPages" class="text-xs px-1">...</span>
             </div>
             <Button
               variant="outline"
@@ -690,7 +666,7 @@ const editOfficeSelectOptions = computed<SearchSelectOption[]>(() => [
           <Button
             size="sm"
             class="gap-1.5 text-xs cursor-pointer"
-            @click="() => { if (selectedProfile) { const p = selectedProfile; closeDetails(); openEditUser(p) } }"
+            @click="editFromDetails"
           >
             <Pencil class="h-3.5 w-3.5" />
             <span>Edit User</span>
@@ -869,18 +845,13 @@ const editOfficeSelectOptions = computed<SearchSelectOption[]>(() => [
             <label for="add-position" class="text-xs font-medium text-foreground">
               Position <span class="text-destructive">*</span>
             </label>
-            <select
+            <SearchSelect
               id="add-position"
               v-model="formData.position"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              :options="positionOptions"
+              :searchable="false"
               :disabled="isSubmitting"
-            >
-              <option value="admin">Admin</option>
-              <option value="employee">Employee</option>
-              <option value="gip">GIP</option>
-              <option value="tupad">TUPAD</option>
-              <option value="client">Client</option>
-            </select>
+            />
           </div>
 
           <!-- Assigned Office -->
@@ -892,22 +863,17 @@ const editOfficeSelectOptions = computed<SearchSelectOption[]>(() => [
               <Loader2 class="h-3.5 w-3.5 animate-spin" />
               <span>Loading offices...</span>
             </div>
-            <select
+            <SearchSelect
               v-else
               id="add-office"
-              v-model="formData.officeId"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              :model-value="formData.officeId ?? ''"
+              :options="addOfficeSelectOptions"
+              placeholder="Select an office"
+              search-placeholder="Search office, code or head..."
+              empty-text="No matching offices."
               :disabled="isSubmitting"
-            >
-              <option value="">No Office Assigned</option>
-              <option
-                v-for="office in activeOffices"
-                :key="office.id"
-                :value="office.id"
-              >
-                {{ office.name }}<template v-if="office.code"> ({{ office.code }})</template>
-              </option>
-            </select>
+              @update:model-value="(value: string) => (formData.officeId = value)"
+            />
             <p v-if="!isOfficesLoading && activeOffices.length === 0" class="text-[11px] text-muted-foreground">
               No active offices available. Create one in Office Management first.
             </p>

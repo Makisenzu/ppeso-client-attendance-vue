@@ -53,10 +53,10 @@ screen-local. Add a store only when two or more screens need the same reactive s
 | Composables → stores + services | **ALLOWED.** Composables are the orchestration glue layer. |
 
 > [!WARNING]
-> **Known violations (fix when touching these files, don't copy them):** `src/components/sidebars/PesoSidebar.vue`,
-> `src/pages/Login.vue` and `src/pages/Signup.vue` import the Supabase client directly; `src/stores/authStore.ts` and
+> **Known violations (fix when touching these files, don't copy them):** `src/stores/authStore.ts` and
 > `src/stores/kioskStore.ts` query Supabase instead of calling a service. Move the calls into `authService` /
-> `kioskService`.
+> `kioskService`. (Components no longer call Supabase: Login, Signup and PesoSidebar now go through
+> `useLogin`, `useSignup` and `usePesoSidebar`.)
 
 ---
 

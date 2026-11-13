@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { officeService } from '@/services/peso/officeService'
+import { getPageRange } from '@/helpers/common/paginationHelper'
 import type { OfficeGipRecord, OfficeSummary } from '@/types/peso/office'
 
 type StatusFilter = 'ALL' | OfficeGipRecord['status']
@@ -101,7 +102,12 @@ export function useOfficeDetails() {
     loadOffice()
   }, { immediate: true })
 
+  const pageRange = computed(() =>
+    getPageRange(currentPage.value, pageSize.value, filteredGips.value.length),
+  )
+
   return {
+    pageRange,
     office,
     gips,
     filteredGips,
