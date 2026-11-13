@@ -256,13 +256,11 @@ export function useUserManagement() {
         return
       }
 
-      submitSuccess.value = true
-
-      // Refresh list and close dialog after a brief delay
-      await fetchProfiles()
-      setTimeout(() => {
-        closeAddUser()
-      }, 1200)
+      // Close right away, confirm on the page, and refresh the list in the background.
+      const fullName = `${formData.value.firstname} ${formData.value.lastname}`.trim()
+      closeAddUser()
+      showFeedback(`User ${fullName || 'account'} was created successfully.`, 'success')
+      void fetchProfiles()
     } catch (err) {
       submitError.value = err instanceof Error ? err.message : 'An unexpected error occurred'
     } finally {
