@@ -96,7 +96,25 @@ const {
   openDetails,
   closeDetails,
   exportCsv,
+  selectedCount,
+  selectedRecords,
+  isAllPageSelected,
+  isPagePartiallySelected,
+  isAllFilteredSelected,
+  isSelected,
+  toggleSelect,
+  toggleSelectPage,
+  selectAllFiltered,
+  clearSelection,
+  isBulkDeleteDialogOpen,
+  isBulkDeleting,
+  openBulkDeleteDialog,
+  closeBulkDeleteDialog,
+  confirmBulkDelete,
 } = useAttendance()
+
+const checkboxClass =
+  'h-4 w-4 cursor-pointer rounded border-input accent-primary align-middle disabled:cursor-not-allowed disabled:opacity-50'
 
 // ─── Civil Service Form 48 DTR Modal ───
 const isDtrModalOpen = ref(false)
@@ -434,11 +452,59 @@ const openDtrModal = (profileId?: string | null) => {
       </CardHeader>
 
       <CardContent class="p-0">
+        <!-- ─── Bulk Selection Bar ─── -->
+        <div
+          v-if="selectedCount > 0"
+          class="flex flex-col gap-2 border-t bg-primary/5 px-4 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span class="font-semibold text-foreground">
+              {{ selectedCount }} record{{ selectedCount === 1 ? '' : 's' }} selected
+            </span>
+            <button
+              v-if="!isAllFilteredSelected"
+              type="button"
+              class="font-medium text-primary hover:underline cursor-pointer"
+              @click="selectAllFiltered"
+            >
+              Select all {{ filteredAttendances.length }} matching records
+            </button>
+            <button
+              type="button"
+              class="text-muted-foreground hover:text-foreground cursor-pointer"
+              @click="clearSelection"
+            >
+              Clear selection
+            </button>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            class="h-7 gap-1.5 text-xs cursor-pointer self-start sm:self-auto"
+            :disabled="isBulkDeleting"
+            @click="openBulkDeleteDialog"
+          >
+            <Trash2 class="h-3.5 w-3.5" />
+            <span>Delete selected</span>
+          </Button>
+        </div>
+
         <!-- ─── Table following core.attendances columns ─── -->
         <div class="relative overflow-x-auto border-t">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>
+                <TableHead class="w-10 pl-4">
+                  <input
+                    type="checkbox"
+                    :class="checkboxClass"
+                    :checked="isAllPageSelected"
+                    :indeterminate="isPagePartiallySelected"
+                    :disabled="isLoading || paginatedAttendances.length === 0"
+                    aria-label="Select all records on this page"
+                    @change="toggleSelectPage"
+                  />
+                </TableHead>
                 <TableHead class="min-w-44 text-xs font-semibold">Beneficiary</TableHead>
                 <TableHead class="min-w-36 text-xs font-semibold">Assigned Office</TableHead>
                 <TableHead class="min-w-28 text-xs font-semibold">Attendance Date</TableHead>
@@ -453,7 +519,7 @@ const openDtrModal = (profileId?: string | null) => {
               <!-- Loading State -->
               <template v-if="isLoading">
                 <TableRow>
-                  <TableCell colspan="8" class="h-44 text-center text-muted-foreground">
+                  <TableCell colspan="9" class="h-44 text-center text-muted-foreground">
                     <div class="flex flex-col items-center justify-center gap-2 py-6">
                       <Loader2 class="h-8 w-8 animate-spin text-primary" />
                       <p class="text-xs text-muted-foreground">Loading records of attendances...</p>
@@ -468,8 +534,26 @@ const openDtrModal = (profileId?: string | null) => {
                   v-for="record in paginatedAttendances"
                   :key="record.id"
                   class="transition-colors"
-                  :class="[isRecordAbsent(record) ? 'bg-destructive/3 hover:bg-destructive/8' : 'hover:bg-muted/30']"
+                  :class="[
+                    isSelected(record.id)
+                      ? 'bg-primary/5 hover:bg-primary/10'
+                      : isRecordAbsent(record)
+                        ? 'bg-destructive/3 hover:bg-destructive/8'
+                        : 'hover:bg-muted/30',
+                  ]"
+                  :data-state="isSelected(record.id) ? 'selected' : undefined"
                 >
+                  <!-- 0. Bulk selection -->
+                  <TableCell class="w-10 py-3 pl-4">
+                    <input
+                      type="checkbox"
+                      :class="checkboxClass"
+                      :checked="isSelected(record.id)"
+                      :aria-label="`Select attendance record for ${record.fullName}`"
+                      @change="toggleSelect(record.id)"
+                    />
+                  </TableCell>
+
                   <!-- 1. Beneficiary (profile_id) -->
                   <TableCell class="py-3">
                     <div class="flex items-center gap-2.5">
@@ -686,7 +770,7 @@ const openDtrModal = (profileId?: string | null) => {
               </template>
 
               <!-- Empty State using UI Empty Component -->
-              <TableEmpty v-else :colspan="8">
+              <TableEmpty v-else :colspan="9">
                 <Empty class="border-0 p-6 md:p-8">
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
@@ -1046,6 +1130,64 @@ const openDtrModal = (profileId?: string | null) => {
             <Loader2 v-if="isDeleting" class="h-3.5 w-3.5 animate-spin" />
             <Trash2 v-else class="h-3.5 w-3.5" />
             <span>{{ isDeleting ? 'Deleting...' : 'Delete Record' }}</span>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- ─── Bulk Delete Confirmation Dialog ─── -->
+    <Dialog :open="isBulkDeleteDialogOpen" @update:open="(val) => (!val ? closeBulkDeleteDialog() : null)">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <Trash2 class="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle class="text-base font-semibold text-foreground">
+                Delete {{ selectedRecords.length }} Attendance Record{{ selectedRecords.length === 1 ? '' : 's' }}
+              </DialogTitle>
+              <DialogDescription class="text-xs text-muted-foreground mt-0.5">
+                This action cannot be undone. The selected DTR logs will be permanently deleted.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div class="max-h-56 overflow-y-auto rounded-lg border bg-muted/30 text-xs divide-y">
+          <div
+            v-for="record in selectedRecords.slice(0, 50)"
+            :key="record.id"
+            class="flex items-center justify-between gap-3 px-3.5 py-2"
+          >
+            <span class="font-semibold text-foreground truncate">{{ record.fullName }}</span>
+            <span class="font-mono text-muted-foreground shrink-0">{{ formatDateDisplay(record.attendanceDate) }}</span>
+          </div>
+          <div v-if="selectedRecords.length > 50" class="px-3.5 py-2 text-muted-foreground">
+            …and {{ selectedRecords.length - 50 }} more
+          </div>
+        </div>
+
+        <DialogFooter class="gap-2 sm:gap-0 mt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            class="text-xs cursor-pointer"
+            :disabled="isBulkDeleting"
+            @click="closeBulkDeleteDialog"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            class="text-xs cursor-pointer gap-1.5"
+            :disabled="isBulkDeleting || selectedRecords.length === 0"
+            @click="confirmBulkDelete"
+          >
+            <Loader2 v-if="isBulkDeleting" class="h-3.5 w-3.5 animate-spin" />
+            <Trash2 v-else class="h-3.5 w-3.5" />
+            <span>{{ isBulkDeleting ? 'Deleting...' : `Delete ${selectedRecords.length} Record${selectedRecords.length === 1 ? '' : 's'}` }}</span>
           </Button>
         </DialogFooter>
       </DialogContent>

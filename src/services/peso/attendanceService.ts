@@ -260,6 +260,39 @@ export const attendanceService = {
   },
 
   /**
+   * Bulk delete attendance records from core.attendances in a single request.
+   * Returns the IDs that were actually deleted (RLS may silently skip rows).
+   */
+  async deleteAttendances(ids: string[]): Promise<string[]> {
+    if (ids.length === 0) return []
+
+    const deletedIds: string[] = []
+    // Chunk to keep the `in (...)` filter well under URL length limits.
+    const chunkSize = 100
+
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize)
+      const { data, error } = await supabase
+        .schema('core')
+        .from('attendances')
+        .delete()
+        .in('id', chunk)
+        .select('id')
+
+      if (error) {
+        console.error('Failed to bulk delete from core.attendances:', error)
+        if (deletedIds.length > 0) this.notifyAttendanceChange()
+        throw error
+      }
+
+      deletedIds.push(...(data ?? []).map((row) => row.id))
+    }
+
+    this.notifyAttendanceChange()
+    return deletedIds
+  },
+
+  /**
    * Fetch attendances for a specific profile within a date range (YYYY-MM-DD)
    */
   async getAttendancesByProfileAndDateRange(

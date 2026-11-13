@@ -338,7 +338,133 @@ export function useAttendance() {
     }
   }
 
+  // ─── Bulk Selection & Delete ───
+  const selectedIds = ref<Set<string>>(new Set())
+  const isBulkDeleteDialogOpen = ref<boolean>(false)
+  const isBulkDeleting = ref<boolean>(false)
+
+  const selectedCount = computed<number>(() => selectedIds.value.size)
+
+  const selectedRecords = computed<AttendanceRecord[]>(() =>
+    filteredAttendances.value.filter((r) => selectedIds.value.has(r.id)),
+  )
+
+  const isAllPageSelected = computed<boolean>(() =>
+    paginatedAttendances.value.length > 0 &&
+    paginatedAttendances.value.every((r) => selectedIds.value.has(r.id)),
+  )
+
+  const isPagePartiallySelected = computed<boolean>(() =>
+    !isAllPageSelected.value &&
+    paginatedAttendances.value.some((r) => selectedIds.value.has(r.id)),
+  )
+
+  const isAllFilteredSelected = computed<boolean>(() =>
+    filteredAttendances.value.length > 0 &&
+    selectedIds.value.size === filteredAttendances.value.length,
+  )
+
+  const isSelected = (id: string) => selectedIds.value.has(id)
+
+  const toggleSelect = (id: string) => {
+    const next = new Set(selectedIds.value)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    selectedIds.value = next
+  }
+
+  const toggleSelectPage = () => {
+    const next = new Set(selectedIds.value)
+    if (isAllPageSelected.value) {
+      paginatedAttendances.value.forEach((r) => next.delete(r.id))
+    } else {
+      paginatedAttendances.value.forEach((r) => next.add(r.id))
+    }
+    selectedIds.value = next
+  }
+
+  const selectAllFiltered = () => {
+    selectedIds.value = new Set(filteredAttendances.value.map((r) => r.id))
+  }
+
+  const clearSelection = () => {
+    selectedIds.value = new Set()
+  }
+
+  // Keep the selection limited to records that are still visible under the
+  // current filters, so a bulk delete never touches hidden rows.
+  watch(filteredAttendances, (records) => {
+    if (selectedIds.value.size === 0) return
+    const visible = new Set(records.map((r) => r.id))
+    const pruned = new Set([...selectedIds.value].filter((id) => visible.has(id)))
+    if (pruned.size !== selectedIds.value.size) selectedIds.value = pruned
+  })
+
+  const openBulkDeleteDialog = () => {
+    if (selectedCount.value === 0) return
+    isBulkDeleteDialogOpen.value = true
+  }
+
+  const closeBulkDeleteDialog = () => {
+    if (isBulkDeleting.value) return
+    isBulkDeleteDialogOpen.value = false
+  }
+
+  const confirmBulkDelete = async (): Promise<boolean> => {
+    const ids = selectedRecords.value.map((r) => r.id)
+    if (ids.length === 0) return false
+
+    isBulkDeleting.value = true
+    try {
+      const deletedIds = await attendanceService.deleteAttendances(ids)
+      const deleted = new Set(deletedIds)
+
+      attendances.value = attendances.value.filter((r) => !deleted.has(r.id))
+      if (selectedRecord.value && deleted.has(selectedRecord.value.id)) {
+        closeDetails()
+      }
+      clearSelection()
+      isBulkDeleteDialogOpen.value = false
+
+      const skipped = ids.length - deletedIds.length
+      if (skipped > 0) {
+        showFeedback(
+          `Deleted ${deletedIds.length} of ${ids.length} records. ${skipped} could not be deleted (they may have been removed already or you lack permission).`,
+          'error',
+        )
+      } else {
+        showFeedback(
+          `${deletedIds.length} attendance record${deletedIds.length === 1 ? '' : 's'} deleted successfully.`,
+          'success',
+        )
+      }
+      return true
+    } catch (err: any) {
+      console.error('Failed to bulk delete attendance records:', err)
+      showFeedback(err?.message || 'Failed to delete the selected records. Please try again.', 'error')
+      await fetchAttendances()
+      return false
+    } finally {
+      isBulkDeleting.value = false
+    }
+  }
+
   return {
+    selectedCount,
+    selectedRecords,
+    isAllPageSelected,
+    isPagePartiallySelected,
+    isAllFilteredSelected,
+    isSelected,
+    toggleSelect,
+    toggleSelectPage,
+    selectAllFiltered,
+    clearSelection,
+    isBulkDeleteDialogOpen,
+    isBulkDeleting,
+    openBulkDeleteDialog,
+    closeBulkDeleteDialog,
+    confirmBulkDelete,
     attendances,
     filteredAttendances,
     paginatedAttendances,
