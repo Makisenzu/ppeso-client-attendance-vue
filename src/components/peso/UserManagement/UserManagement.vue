@@ -55,6 +55,8 @@ import {
   formatStatusLabel,
   getStatusBadgeClass,
 } from '@/helpers/peso/userManagementHelper'
+import { computed } from 'vue'
+import SearchSelect, { type SearchSelectOption } from '@/components/common/SearchSelect.vue'
 import {
   Sheet,
   SheetContent,
@@ -118,8 +120,36 @@ const {
   exportCsv,
 } = useUserManagement()
 
-const editSelectClass =
-  'w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs md:text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60'
+// ─── Edit User select options ───
+const positionOptions: SearchSelectOption[] = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'employee', label: 'Employee' },
+  { value: 'gip', label: 'GIP' },
+  { value: 'tupad', label: 'TUPAD' },
+  { value: 'client', label: 'Client' },
+]
+
+const roleOptions: SearchSelectOption[] = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'supervisor', label: 'Supervisor' },
+  { value: 'beneficiary', label: 'Beneficiary' },
+  { value: '', label: 'No role' },
+]
+
+const statusOptions: SearchSelectOption[] = [
+  { value: 'active', label: 'Active' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'inactive', label: 'Inactive' },
+]
+
+const editOfficeSelectOptions = computed<SearchSelectOption[]>(() => [
+  { value: '', label: 'No Office Assigned' },
+  ...editOfficeOptions.value.map((office) => ({
+    value: office.id,
+    label: office.code ? `${office.name} (${office.code})` : office.name,
+    description: [office.officeHead, office.isActive ? null : 'Inactive'].filter(Boolean).join(' · ') || undefined,
+  })),
+])
 </script>
 
 <template>
@@ -708,33 +738,24 @@ const editSelectClass =
                 <label for="edit-position" class="text-xs font-medium text-foreground">
                   Position <span class="text-destructive">*</span>
                 </label>
-                <select
+                <SearchSelect
                   id="edit-position"
                   v-model="editForm.position"
-                  :class="editSelectClass"
+                  :options="positionOptions"
+                  :searchable="false"
                   :disabled="isSavingEdit"
                   @change="onEditPositionChange"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="employee">Employee</option>
-                  <option value="gip">GIP</option>
-                  <option value="tupad">TUPAD</option>
-                  <option value="client">Client</option>
-                </select>
+                />
               </div>
               <div class="space-y-1.5">
                 <label for="edit-role" class="text-xs font-medium text-foreground">Role</label>
-                <select
+                <SearchSelect
                   id="edit-role"
                   v-model="editForm.role"
-                  :class="editSelectClass"
+                  :options="roleOptions"
+                  :searchable="false"
                   :disabled="isSavingEdit || isEditingSelf"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="beneficiary">Beneficiary</option>
-                  <option value="">No role</option>
-                </select>
+                />
               </div>
             </div>
             <p class="-mt-3 text-[11px] text-muted-foreground">
@@ -745,25 +766,25 @@ const editSelectClass =
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div class="space-y-1.5">
                 <label for="edit-office" class="text-xs font-medium text-foreground">Assigned Office</label>
-                <select id="edit-office" v-model="editForm.officeId" :class="editSelectClass" :disabled="isSavingEdit">
-                  <option value="">No Office Assigned</option>
-                  <option v-for="office in editOfficeOptions" :key="office.id" :value="office.id">
-                    {{ office.name }}<template v-if="office.code"> ({{ office.code }})</template><template v-if="!office.isActive"> — inactive</template>
-                  </option>
-                </select>
+                <SearchSelect
+                  id="edit-office"
+                  v-model="editForm.officeId"
+                  :options="editOfficeSelectOptions"
+                  placeholder="Select an office"
+                  search-placeholder="Search office, code or head..."
+                  empty-text="No matching offices."
+                  :disabled="isSavingEdit"
+                />
               </div>
               <div class="space-y-1.5">
                 <label for="edit-status" class="text-xs font-medium text-foreground">Status</label>
-                <select
+                <SearchSelect
                   id="edit-status"
                   v-model="editForm.status"
-                  :class="editSelectClass"
+                  :options="statusOptions"
+                  :searchable="false"
                   :disabled="isSavingEdit || isEditingSelf"
-                >
-                  <option value="active">Active</option>
-                  <option value="pending">Pending</option>
-                  <option value="inactive">Inactive</option>
-                </select>
+                />
               </div>
             </div>
 

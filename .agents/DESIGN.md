@@ -179,6 +179,7 @@ Not installed yet (add with the CLI when first needed): `checkbox`, `alert-dialo
 | Tooltip                         | `Tooltip`                                | `InfoPopup.vue`  |
 | Loading placeholder             | `Skeleton`                               | `LoadingPlaceholder.vue` |
 | Empty state                     | `Empty` / `TableEmpty`                   | `NoDataFound.vue` |
+| Single-choice dropdown          | `SearchSelect` (`src/components/common/SearchSelect.vue`; `:searchable="false"` for short fixed lists) | native `<select>`, new picker copies |
 
 #### Add / Edit Forms — Dialog or Sheet?
 
