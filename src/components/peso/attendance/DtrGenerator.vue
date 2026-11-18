@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import DtrSlip from './DtrSlip.vue'
+import DtrPrintSheet from './DtrPrintSheet.vue'
 import { useDtrGenerator } from '@/composables/peso/useDtrGenerator'
 import { formatMonthHeader } from '@/helpers/peso/dtrHelper'
 import { getInitials } from '@/helpers/peso/attendanceHelper'
@@ -287,44 +287,7 @@ const {
 
         <CardContent class="print:p-0">
           <div v-if="generatedData" class="overflow-x-auto rounded-lg bg-muted/30 p-4 print:overflow-visible print:bg-transparent print:p-0">
-            <!-- ─── DTR print area (Civil Service Form 48) ─── -->
-            <div class="dtr-print-canvas print:m-0 print:p-0">
-              <div
-                :class="[
-                  'dtr-page-sheet mx-auto w-fit rounded border bg-white p-4 shadow-md print:m-0 print:border-none print:p-0 print:shadow-none',
-                  dualCopy ? 'flex justify-center gap-6' : 'flex justify-center',
-                ]"
-              >
-                <DtrSlip
-                  :employee-name="generatedData.employeeName"
-                  :month-display="generatedData.monthDisplay"
-                  :regular-hours="generatedData.regularHours"
-                  :saturday-hours="generatedData.saturdayHours"
-                  :supervisor-name="generatedData.supervisorName"
-                  :supervisor-title="generatedData.supervisorTitle"
-                  :rows="generatedData.rows"
-                  :active-start-day="generatedData.activeStartDay"
-                  :active-end-day="generatedData.activeEndDay"
-                  :total-days-in-month="generatedData.totalDaysInMonth"
-                  :is-duplicate-blank-name="false"
-                />
-
-                <DtrSlip
-                  v-if="dualCopy"
-                  :employee-name="generatedData.employeeName"
-                  :month-display="generatedData.monthDisplay"
-                  :regular-hours="generatedData.regularHours"
-                  :saturday-hours="generatedData.saturdayHours"
-                  :supervisor-name="generatedData.supervisorName"
-                  :supervisor-title="generatedData.supervisorTitle"
-                  :rows="generatedData.rows"
-                  :active-start-day="generatedData.activeStartDay"
-                  :active-end-day="generatedData.activeEndDay"
-                  :total-days-in-month="generatedData.totalDaysInMonth"
-                  :is-duplicate-blank-name="!rightCopyHasName"
-                />
-              </div>
-            </div>
+            <DtrPrintSheet :data="generatedData" :dual-copy="dualCopy" :right-copy-has-name="rightCopyHasName" />
           </div>
 
           <Empty v-else class="border border-dashed py-16">
@@ -342,42 +305,3 @@ const {
   </div>
 </template>
 
-<style>
-/* ─── Print styles for Civil Service Form 48 (official form exception, DESIGN.md §13) ─── */
-@media print {
-  @page {
-    size: letter portrait;
-    margin: 0.25in 0.35in;
-  }
-
-  /* Hide everything on the page except the DTR print canvas */
-  body * {
-    visibility: hidden;
-  }
-
-  .dtr-print-canvas,
-  .dtr-print-canvas * {
-    visibility: visible !important;
-  }
-
-  .dtr-print-canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    margin: 0 !important;
-    padding: 0 !important;
-    background-color: transparent !important;
-  }
-
-  .dtr-page-sheet {
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 auto !important;
-    max-width: 8in !important;
-    background: transparent !important;
-  }
-}
-</style>
