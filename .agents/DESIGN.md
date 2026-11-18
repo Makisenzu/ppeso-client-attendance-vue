@@ -106,23 +106,34 @@ All colors are CSS custom properties in `oklch()` in [`src/style.css`](../src/st
 > 1. **DO NOT add or import other fonts.** Roboto is the project font.
 > 2. Heading hierarchy uses real `<h1>`–`<h6>` tags — one `<h1>` per page.
 
-### 3.1 Dates — MM/DD/YYYY — MANDATORY
+### 3.1 Dates — Written Where Read, Numeric Where Compared — MANDATORY
 
 > [!IMPORTANT]
-> Every date shown in the UI reads **MM/DD/YYYY** (`11/13/2026`); with time **MM/DD/YYYY h:mm AM/PM**
-> (`11/13/2026 2:05 PM`). This is the users' preference.
+> Pick the date format by how the date is used. These are the users' preferences.
 >
-> 1. Use the shared helper `src/helpers/common/dateFormatHelper.ts` (`formatDisplayDate`, `formatDisplayDateTime`)
->    (first used by the Directory tab). **Older helpers still render `Nov 13, 2026`** via
->    `toLocaleDateString('en-US', { month: 'short' })` — `formatDateDisplay` in `attendanceHelper.ts`, `officeHelper.ts`
->    and `userManagementHelper.ts`. Migrate them to the shared helper instead of adding a fourth copy.
-> 2. **Never** use month names or other orders for a date in new UI. Times alone (`8:02 AM`), relative times and month
->    headers on the DTR are not dates and stay as they are.
+> | Use a **written date** — `November 13, 2026` (with time `November 13, 2026 2:05 PM`; a period `November 1-15, 2026`) | Use a **numeric date** — `11/13/2026` (with time `11/13/2026 2:05 PM`) |
+> | --- | --- |
+> | The date is **read as text**: date / period columns in tables and lists, page & card descriptions, status lines ("Submitted …", "Reviewed …"), dialog summaries, report periods | The date is **compared or entered**: dense grids with many dates side by side (e.g. the DTR day grid), messages next to a date picker (match what was typed), validation errors |
+> | Official printed documents follow their own form (see 4) | CSV / exported data and file names (ISO `yyyy-MM-dd` for file names) |
+>
+> When unsure, prefer the written date for anything a person reads once, and numeric for anything scanned or typed.
+>
+> 1. Use the shared helper `src/helpers/common/dateFormatHelper.ts`: written — `formatDisplayDateLong`,
+>    `formatDisplayDateTimeLong`; numeric — `formatDisplayDate`, `formatDisplayDateTime`. Report periods use
+>    `formatReportPeriod` / `formatPeriodRange` (`accomplishmentHelper.ts`). **Older helpers still render `Nov 13, 2026`**
+>    via `toLocaleDateString('en-US', { month: 'short' })` — `formatDateDisplay` in `attendanceHelper.ts`,
+>    `officeHelper.ts` and `userManagementHelper.ts`. Migrate them to the shared helper instead of adding another copy.
+> 2. **Never** abbreviate month names (`Nov`) or use other orders (`13/11/2026`, `2026-11-13`) in the UI. Times alone
+>    (`8:02 AM`), relative times and month headers on the DTR are not dates and stay as they are.
 > 3. **Display only.** The database keeps `date` / `timestamptz`, payloads send ISO (`yyyy-MM-dd`), `<input type="date">`
 >    values stay ISO, CSV file names keep `yyyy-MM-dd`.
-> 4. **Official printed forms** (Civil Service Form 48 DTR in `DtrSlip.vue` / `dtrHelper.ts`) follow the form's own layout.
+> 4. **Official printed forms** (Civil Service Form 48 DTR in `DtrSlip.vue` / `dtrHelper.ts`, accomplishment reports in
+>    `accomplishmentPrintHelper.ts`) follow the form's own layout.
 > 5. Always format attendance dates from the stored `attendance_date` string as a local date — never `new Date('yyyy-mm-dd')`,
 >    which parses as UTC and can shift the day.
+> 6. Written dates are plain text — don't put them in `font-mono`; keep `whitespace-nowrap` in table cells.
+>
+> Applied so far: Accomplishment tables (beneficiary My Reports, admin / supervisor review), My Attendance dates.
 
 ---
 
@@ -504,7 +515,7 @@ No restating the title, no filler ("Here you can…"), no implementation details
 | Raw `bg-emerald-500/10` in a component              | Badge class from a helper, token-based (§2) |
 | `<style scoped>` for one-off styling                | Tailwind utilities |
 | Sideways-scrolling page on a phone                  | Scroll the table inside its card; stack toolbars |
-| `toLocaleDateString` with month names               | MM/DD/YYYY via the shared date helper (§3.1) |
+| `toLocaleDateString` / abbreviated month names      | Written or numeric date via the shared helper (§3.1) |
 
 > [!CAUTION]
 > **Every UI decision must be justifiable by a principle in §1.1.** If you can't name one, remove the element.

@@ -211,8 +211,10 @@ Component (.vue) ──► Composable (useXxx) ──► [Store (xxxStore)] ─�
 >     the `trg_guard_profile_update` trigger. Never write those columns while signed in as the affected user.
 > 17. **DO NOT ship anything that breaks the Data Privacy Act (RA 10173).** No personal data in logs, URLs or third-party
 >     calls; select only the columns a screen shows; exports are admin-only. See [`PRIVACY.md`](PRIVACY.md) §0.
-> 18. **DO NOT show a date in any format but MM/DD/YYYY** (`11/13/2026`; with time `11/13/2026 2:05 PM`) in new or
->     modified UI. Display only — the database, payloads and date inputs keep ISO dates. See [`DESIGN.md`](DESIGN.md) §3.1.
+> 18. **Pick the date format by use** in new or modified UI: a **written date** (`November 13, 2026`) where the date is
+>     read as text (table date / period columns, descriptions, status lines), a **numeric date** (`11/13/2026`) where
+>     dates are compared or entered (dense grids, next to date pickers, exports). Never abbreviated months or other
+>     orders. Display only — the database, payloads and date inputs keep ISO dates. See [`DESIGN.md`](DESIGN.md) §3.1.
 > 19. **DO NOT ship a data table without bulk selection and bulk delete** (unless its records must never be deleted).
 >     See [`DESIGN.md`](DESIGN.md) §11.1.
 > 20. **DO NOT finish a change with failing checks.** Before handing work back run `rtk npm run build`
