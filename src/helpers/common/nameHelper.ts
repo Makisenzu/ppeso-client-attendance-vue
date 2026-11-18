@@ -35,6 +35,24 @@ function toEmailPart(value: string): string {
 }
 
 /**
+ * Full name with the middle name as an initial: ("Juan", "Santos", "Dela Cruz") → "Juan S. Dela Cruz".
+ * A two-word middle name gives two initials ("De Leon" → "D. L."); no middle name → "Juan Dela Cruz".
+ */
+export function formatNameWithMiddleInitial(
+  firstname: string | null | undefined,
+  middlename: string | null | undefined,
+  lastname: string | null | undefined,
+): string {
+  const middleInitials = (middlename ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}.`)
+    .join(' ')
+  return [firstname?.trim(), middleInitials, lastname?.trim()].filter(Boolean).join(' ')
+}
+
+/**
  * Staff email in the form lastname.firstname@peso.ph
  * ("Juan", "Dela Cruz Jr." → "delacruz.juan@peso.ph"). Empty until both names are given.
  */

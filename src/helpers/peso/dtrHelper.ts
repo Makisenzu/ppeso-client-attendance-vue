@@ -255,8 +255,11 @@ export function generateDtrData(
   const monthDisplay = options.monthLabel || formatMonthHeader(options.startDate, options.endDate)
   const regularHours = options.regularHours || ''
   const saturdayHours = options.saturdayHours || ''
-  const supervisorName = options.supervisorName || 'PGDH'
-  const supervisorTitle = options.supervisorTitle || '(PESO Manager)'
+  // `??` so a caller can ask for a blank signatory line on purpose (My DTR with no office head);
+  // the admin page passes its own 'PGDH' / '(PESO Manager)' fallbacks.
+  const supervisorName = options.supervisorName ?? 'PGDH'
+  const supervisorTitle = options.supervisorTitle ?? '(PESO Manager)'
+  const signatureName = options.printSignatureName && options.employee?.fullName ? employeeName : ''
 
   const {
     rows,
@@ -274,6 +277,7 @@ export function generateDtrData(
     saturdayHours,
     supervisorName,
     supervisorTitle,
+    signatureName,
     rows,
     activeStartDay,
     activeEndDay,

@@ -35,6 +35,8 @@ export interface DtrOptions {
   supervisorName?: string // e.g. "PGDH"
   supervisorTitle?: string // e.g. "(PESO Manager)"
   duplicateLayout?: boolean // true = 2 slips side-by-side (Civil Service standard)
+  /** Also print the employee's name above the "Name" signature line (My DTR). */
+  printSignatureName?: boolean
 }
 
 export interface DtrGenerationResult {
@@ -44,6 +46,8 @@ export interface DtrGenerationResult {
   saturdayHours: string
   supervisorName: string
   supervisorTitle: string
+  /** Name printed above the "Name" signature line; '' leaves the line blank. */
+  signatureName: string
   rows: DtrDayRow[]
   activeStartDay: number
   activeEndDay: number

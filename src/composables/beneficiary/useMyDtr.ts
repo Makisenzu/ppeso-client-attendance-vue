@@ -5,8 +5,6 @@ import { myDtrService } from '@/services/beneficiary/myDtrService'
 // Holidays are readable by every signed-in user (RLS "holidays: authenticated read").
 import { holidayService } from '@/services/peso/holidayService'
 import {
-  DTR_DEFAULT_SUPERVISOR_NAME,
-  DTR_DEFAULT_SUPERVISOR_TITLE,
   formatMonthHeader,
   generateDtrData,
   getDefaultDtrDateRange,
@@ -16,13 +14,21 @@ import {
 
 /**
  * My DTR (beneficiary): Civil Service Form No. 48 for the signed-in user only.
- * Same options as the admin Generate DTR page, minus the employee picker.
+ * Same options as the admin Generate DTR page, minus the employee picker. The user's name is also
+ * printed above the "Name" signature line, and the signatory is the head of their assigned office
+ * (editable; blank when there is none).
  */
 export function useMyDtr() {
   const router = useRouter()
 
   const myName = ref<string>('')
   const isLoadingName = ref(false)
+  /**
+   * Signatory: pre-filled with the head of the user's office and "PGDH / <code>" ('' when there is
+   * none). Editable, since some offices have someone other than the head sign.
+   */
+  const supervisorName = ref<string>('')
+  const supervisorTitle = ref<string>('')
   const isGenerating = ref(false)
 
   // ─── Dates ───
@@ -33,8 +39,6 @@ export function useMyDtr() {
   // ─── Form 48 layout & signatory ───
   const regularHours = ref<string>('')
   const saturdayHours = ref<string>('')
-  const supervisorName = ref<string>(DTR_DEFAULT_SUPERVISOR_NAME)
-  const supervisorTitle = ref<string>(DTR_DEFAULT_SUPERVISOR_TITLE)
   const dualCopy = ref<boolean>(true)
   const rightCopyHasName = ref<boolean>(false)
 
@@ -45,9 +49,12 @@ export function useMyDtr() {
   const loadMyName = async () => {
     isLoadingName.value = true
     try {
-      myName.value = await myDtrService.getMyFullName()
+      const profile = await myDtrService.getMyDtrProfile()
+      myName.value = profile.fullName
+      supervisorName.value = profile.supervisorName
+      supervisorTitle.value = profile.supervisorTitle
     } catch (err) {
-      console.error('Failed to load my name for the DTR.')
+      console.error('Failed to load my profile for the DTR.')
       fetchError.value = err instanceof Error ? err.message : 'Failed to load your profile.'
     } finally {
       isLoadingName.value = false
@@ -85,9 +92,11 @@ export function useMyDtr() {
         endDate: endDate.value,
         regularHours: regularHours.value,
         saturdayHours: saturdayHours.value,
-        supervisorName: supervisorName.value || 'PGDH',
-        supervisorTitle: supervisorTitle.value || '(PESO Manager)',
+        // Blank on purpose when the office has no head: the supervisor signs by hand.
+        supervisorName: supervisorName.value,
+        supervisorTitle: supervisorTitle.value,
         duplicateLayout: dualCopy.value,
+        printSignatureName: true,
       }
       generatedData.value = generateDtrData(options, records, holidays)
     } catch (err) {

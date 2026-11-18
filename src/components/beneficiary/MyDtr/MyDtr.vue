@@ -127,20 +127,32 @@ const {
             <span class="block text-xs font-semibold text-foreground">Form 48 Layout &amp; Signatory</span>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <label class="space-y-1">
+                <span class="block text-[11px] text-muted-foreground">Supervisor Name</span>
+                <Input
+                  v-model="supervisorName"
+                  :placeholder="isLoadingName ? 'Loading...' : 'Leave blank to sign by hand'"
+                  :disabled="isLoadingName"
+                  class="h-8 bg-background text-base md:text-xs"
+                />
+              </label>
+              <label class="space-y-1">
+                <span class="block text-[11px] text-muted-foreground">Supervisor Title</span>
+                <Input
+                  v-model="supervisorTitle"
+                  placeholder="e.g. PGDH / PIMO"
+                  :disabled="isLoadingName"
+                  class="h-8 bg-background text-base md:text-xs"
+                />
+              </label>
+            </div>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <label class="space-y-1">
                 <span class="block text-[11px] text-muted-foreground">Regular Days Hours</span>
                 <Input v-model="regularHours" placeholder="e.g. 8:00 AM - 5:00 PM" class="h-8 bg-background text-base md:text-xs" />
               </label>
               <label class="space-y-1">
                 <span class="block text-[11px] text-muted-foreground">Saturdays Hours</span>
                 <Input v-model="saturdayHours" placeholder="e.g. None" class="h-8 bg-background text-base md:text-xs" />
-              </label>
-              <label class="space-y-1">
-                <span class="block text-[11px] text-muted-foreground">Supervisor Name</span>
-                <Input v-model="supervisorName" placeholder="PGDH" class="h-8 bg-background text-base md:text-xs" />
-              </label>
-              <label class="space-y-1">
-                <span class="block text-[11px] text-muted-foreground">Supervisor Title</span>
-                <Input v-model="supervisorTitle" placeholder="(PESO Manager)" class="h-8 bg-background text-base md:text-xs" />
               </label>
             </div>
             <div class="flex flex-col gap-2 border-t pt-3">
