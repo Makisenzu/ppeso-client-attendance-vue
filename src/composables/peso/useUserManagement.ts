@@ -538,7 +538,36 @@ export function useUserManagement() {
     openEditUser(profile)
   }
 
+  // ─── Generate ID (GIP users) ───
+  const isIdCardOpen = ref<boolean>(false)
+  const idCardProfileId = ref<string | null>(null)
+  const canGenerateId = (profile: ProfileRecord | null) => profile?.position === 'gip'
+  const openIdCard = (profile: ProfileRecord) => {
+    idCardProfileId.value = profile.id
+    isIdCardOpen.value = true
+  }
+  const closeIdCard = () => {
+    isIdCardOpen.value = false
+  }
+  const onIdCardOpenChange = (open: boolean) => {
+    if (!open) closeIdCard()
+  }
+  /** "Generate ID" in the Details dialog */
+  const generateIdFromDetails = () => {
+    const profile = selectedProfile.value
+    if (!profile) return
+    closeDetails()
+    openIdCard(profile)
+  }
+
   return {
+    isIdCardOpen,
+    idCardProfileId,
+    canGenerateId,
+    openIdCard,
+    closeIdCard,
+    onIdCardOpenChange,
+    generateIdFromDetails,
     isAddSupervisorOpen,
     openAddSupervisor,
     supervisor,

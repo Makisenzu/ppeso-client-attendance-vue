@@ -5,6 +5,7 @@ import {
   Download,
   Eye,
   Filter,
+  IdCard,
   Loader2,
   Pencil,
   Plus,
@@ -56,6 +57,7 @@ import {
 } from '@/helpers/peso/userManagementHelper'
 import SearchSelect from '@/components/common/SearchSelect.vue'
 import PasswordInput from '@/components/common/PasswordInput.vue'
+import IdCardGenerator from '@/components/common/IdCard/IdCardGenerator.vue'
 import { Label } from '@/components/ui/label'
 import {
   Sheet,
@@ -131,6 +133,13 @@ const {
   addOfficeSelectOptions,
   editOfficeSelectOptions,
   editFromDetails,
+  isIdCardOpen,
+  idCardProfileId,
+  canGenerateId,
+  openIdCard,
+  closeIdCard,
+  onIdCardOpenChange,
+  generateIdFromDetails,
 } = useUserManagement()
 
 </script>
@@ -450,6 +459,17 @@ const {
                         <span class="hidden sm:inline">Edit</span>
                       </Button>
                       <Button
+                        v-if="canGenerateId(profile)"
+                        variant="ghost"
+                        size="icon"
+                        class="h-8 w-8 cursor-pointer"
+                        :title="`Generate ID for ${profile.fullName}`"
+                        :aria-label="`Generate ID for ${profile.fullName}`"
+                        @click="openIdCard(profile)"
+                      >
+                        <IdCard class="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="icon"
                         class="h-8 w-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
@@ -669,6 +689,16 @@ const {
             Close
           </Button>
           <Button
+            v-if="canGenerateId(selectedProfile)"
+            variant="outline"
+            size="sm"
+            class="gap-1.5 text-xs cursor-pointer"
+            @click="generateIdFromDetails"
+          >
+            <IdCard class="h-3.5 w-3.5" />
+            <span>Generate ID</span>
+          </Button>
+          <Button
             size="sm"
             class="gap-1.5 text-xs cursor-pointer"
             @click="editFromDetails"
@@ -677,6 +707,17 @@ const {
             <span>Edit User</span>
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- ─── Generate ID (GIP) ─── -->
+    <Dialog :open="isIdCardOpen" @update:open="onIdCardOpenChange">
+      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle class="text-base">Generate ID</DialogTitle>
+          <DialogDescription class="text-xs">The nickname and photo for the GIP ID.</DialogDescription>
+        </DialogHeader>
+        <IdCardGenerator v-if="isIdCardOpen" :profile-id="idCardProfileId" cancelable @cancel="closeIdCard" />
       </DialogContent>
     </Dialog>
 
