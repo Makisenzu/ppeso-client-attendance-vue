@@ -63,6 +63,15 @@ export function weekdaysBetween(from: string, to: string): string[] {
   return daysBetween(from, to).filter((day) => !isWeekendIso(day))
 }
 
+/** The first and last day of `today`'s month (reports may only be created for this month) */
+export function currentMonthRange(today = todayIso()): { from: string; to: string } {
+  const date = parseIsoDate(today)
+  return {
+    from: toIsoDate(new Date(date.getFullYear(), date.getMonth(), 1)),
+    to: toIsoDate(new Date(date.getFullYear(), date.getMonth() + 1, 0)),
+  }
+}
+
 /** This half of the month: the 1st–15th, or the 16th–last day */
 export function currentHalfMonth(today = todayIso()): { from: string; to: string } {
   const date = parseIsoDate(today)

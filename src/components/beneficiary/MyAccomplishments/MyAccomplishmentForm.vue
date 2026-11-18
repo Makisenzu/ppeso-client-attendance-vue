@@ -19,7 +19,6 @@ import {
 import { useMyAccomplishmentForm } from '@/composables/beneficiary/useMyAccomplishmentForm'
 
 const {
-  today,
   isLoading,
   isNew,
   isNotFound,
@@ -31,6 +30,9 @@ const {
   isReadOnly,
   periodFrom,
   periodTo,
+  periodMin,
+  periodMax,
+  periodFromMax,
   periodError,
   isEarly,
   days,
@@ -138,11 +140,11 @@ const textareaClass =
           <div class="grid min-w-0 grid-cols-2 gap-3 sm:w-80">
             <div class="grid gap-1.5">
               <Label for="report-from" class="text-xs">Date from</Label>
-              <Input id="report-from" v-model="periodFrom" type="date" :max="today" class="h-9 text-base md:text-xs" :disabled="isReadOnly || isSaving" />
+              <Input id="report-from" v-model="periodFrom" type="date" :min="periodMin" :max="periodFromMax" class="h-9 text-base md:text-xs" :disabled="isReadOnly || isSaving" />
             </div>
             <div class="grid gap-1.5">
               <Label for="report-to" class="text-xs">Date to</Label>
-              <Input id="report-to" v-model="periodTo" type="date" :min="periodFrom" class="h-9 text-base md:text-xs" :disabled="isReadOnly || isSaving" />
+              <Input id="report-to" v-model="periodTo" type="date" :min="periodFrom || periodMin" :max="periodMax" class="h-9 text-base md:text-xs" :disabled="isReadOnly || isSaving" />
             </div>
           </div>
           <Button variant="outline" size="sm" class="gap-1.5 text-xs cursor-pointer self-start sm:self-auto" @click="printCurrent">

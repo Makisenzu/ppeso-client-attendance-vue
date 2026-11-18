@@ -22,6 +22,7 @@ import {
 } from '@/types/common/accomplishment'
 import {
   currentHalfMonth,
+  currentMonthRange,
   formatPesoAmount,
   formatWeekday,
   fundingFormTitle,
@@ -71,6 +72,8 @@ export function useMyAccomplishmentForm() {
   const toast = useToastAlert()
   const { printHtml } = usePrintDocument()
   const today = todayIso()
+  /** New reports (or changed dates) must stay in this month — same rule as the database */
+  const month = currentMonthRange(today)
 
   const editingId = computed(() => (typeof route.params.id === 'string' ? route.params.id : null))
   const isNew = computed(() => !editingId.value)
@@ -88,10 +91,27 @@ export function useMyAccomplishmentForm() {
   // ─── Period ───
   const periodFrom = ref('')
   const periodTo = ref('')
+  /** An older report keeps its dates (e.g. a Returned one from last month); changing them applies the month rule */
+  const datesChanged = computed(
+    () =>
+      !currentReport.value ||
+      periodFrom.value !== currentReport.value.periodStart ||
+      periodTo.value !== currentReport.value.periodEnd,
+  )
+  /** Date picker limits: this month, unless the report already covers other dates */
+  const periodMin = computed(() =>
+    currentReport.value && currentReport.value.periodStart < month.from ? currentReport.value.periodStart : month.from,
+  )
+  const periodMax = computed(() =>
+    currentReport.value && currentReport.value.periodEnd > month.to ? currentReport.value.periodEnd : month.to,
+  )
+  const periodFromMax = computed(() => minIso(today, periodMax.value))
   const periodError = computed(() => {
     if (!periodFrom.value || !periodTo.value) return 'Pick the dates this report covers.'
     if (periodTo.value < periodFrom.value) return 'The end date must be on or after the start date.'
     if (periodFrom.value > today) return 'The start date cannot be after today.'
+    if (datesChanged.value && (periodFrom.value < month.from || periodTo.value > month.to))
+      return `Reports can only cover dates in the current month (${formatDisplayDate(month.from)} to ${formatDisplayDate(month.to)}).`
     return ''
   })
   /** Submitting before the last day is allowed after a confirmation */
@@ -414,6 +434,9 @@ export function useMyAccomplishmentForm() {
     isReadOnly,
     periodFrom,
     periodTo,
+    periodMin,
+    periodMax,
+    periodFromMax,
     periodError,
     isEarly,
     days,
