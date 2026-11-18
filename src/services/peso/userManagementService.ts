@@ -65,6 +65,7 @@ export const userManagementService = {
             status: p.status,
             passcode: p.passcode,
             officeId: p.office_id || null,
+            funding: (p.funding as ProfileRecord['funding']) ?? null,
             officeName: office?.name || null,
             officeCode: office?.code || null,
             createdAt: p.created_at,
@@ -96,6 +97,7 @@ export const userManagementService = {
           status: p.status,
           passcode: p.passcode,
           officeId: p.office_id || null,
+          funding: p.funding ?? null,
           officeName: office?.name || null,
           officeCode: office?.code || null,
           createdAt: p.created_at,
@@ -169,6 +171,7 @@ export const userManagementService = {
           status: 'active',
           office_id: officeId,
           role,
+          funding: formData.funding || null,
         })
         .eq('id', data.user.id)
         .select('id')
@@ -208,6 +211,7 @@ export const userManagementService = {
           role: formData.role || null,
           status: formData.status,
           office_id: formData.officeId || null,
+          funding: formData.funding || null,
         })
         .eq('id', id)
         .select('id')

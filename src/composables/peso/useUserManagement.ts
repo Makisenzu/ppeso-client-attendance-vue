@@ -13,6 +13,9 @@ import {
   getDefaultRoleForPosition,
   ADD_USER_POSITION_OPTIONS,
   POSITION_OPTIONS,
+  ADD_FUNDING_OPTIONS,
+  FUNDING_OPTIONS,
+  positionUsesFunding,
   ROLE_OPTIONS,
   STATUS_OPTIONS,
   toOfficeSelectOptions,
@@ -55,6 +58,7 @@ export function useUserManagement() {
     lastname: '',
     position: 'gip',
     officeId: '',
+    funding: '',
   })
 
   // ─── Add User email: lastname.firstname@peso.ph, kept in sync until the admin types their own ───
@@ -244,6 +248,7 @@ export function useUserManagement() {
       lastname: '',
       position: 'gip',
       officeId: '',
+      funding: '',
     }
     isAddEmailEdited.value = false
     submitError.value = ''
@@ -284,6 +289,10 @@ export function useUserManagement() {
     }
     if (!formData.value.lastname.trim()) {
       submitError.value = 'Last name is required'
+      return
+    }
+    if (positionUsesFunding(formData.value.position) && !formData.value.funding) {
+      submitError.value = 'Funding is required (DOLE or PGAS)'
       return
     }
 
@@ -341,6 +350,7 @@ export function useUserManagement() {
     role: '',
     status: 'active',
     officeId: '',
+    funding: '',
   })
 
   /** Active offices, plus the user's current office if it is inactive (so saving never drops it). */
@@ -364,6 +374,7 @@ export function useUserManagement() {
       role: profile.role ?? '',
       status: profile.status,
       officeId: profile.officeId || '',
+      funding: profile.funding ?? '',
     }
     editError.value = ''
     isEditUserOpen.value = true
@@ -409,13 +420,17 @@ export function useUserManagement() {
     }
 
     // Never send a change to your own role or status.
-    const payload: EditUserFormData = isEditingSelf.value
+    const basePayload: EditUserFormData = isEditingSelf.value
       ? {
           ...editForm.value,
           role: editingProfile.value.role ?? '',
           status: editingProfile.value.status,
         }
       : editForm.value
+    // Funding only applies to GIP / TUPAD; other positions clear it
+    const payload: EditUserFormData = positionUsesFunding(basePayload.position)
+      ? basePayload
+      : { ...basePayload, funding: '' }
 
     isSavingEdit.value = true
     try {
@@ -507,6 +522,10 @@ export function useUserManagement() {
   const positionOptions = POSITION_OPTIONS
   const addPositionOptions = ADD_USER_POSITION_OPTIONS
   const roleOptions = ROLE_OPTIONS
+  const fundingOptions = FUNDING_OPTIONS
+  const addFundingOptions = ADD_FUNDING_OPTIONS
+  /** Funding only applies to GIP / TUPAD (it picks their accomplishment report form) */
+  const showEditFunding = computed(() => positionUsesFunding(editForm.value.position))
   const statusOptions = STATUS_OPTIONS
   const addOfficeSelectOptions = computed(() => toOfficeSelectOptions(activeOffices.value))
   const editOfficeSelectOptions = computed(() => toOfficeSelectOptions(editOfficeOptions.value))
@@ -529,6 +548,9 @@ export function useUserManagement() {
     positionOptions,
     addPositionOptions,
     roleOptions,
+    fundingOptions,
+    addFundingOptions,
+    showEditFunding,
     statusOptions,
     addOfficeSelectOptions,
     editOfficeSelectOptions,

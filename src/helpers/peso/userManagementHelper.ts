@@ -21,6 +21,20 @@ export const ADD_USER_POSITION_OPTIONS: SearchSelectOption[] = POSITION_OPTIONS.
   ['gip', 'tupad'].includes(option.value),
 )
 
+/** Funding decides the accomplishment report form (DOLE daily entries, PGAS activities + payment). */
+export const FUNDING_OPTIONS: SearchSelectOption[] = [
+  { value: 'DOLE', label: 'DOLE' },
+  { value: 'PGAS', label: 'PGAS' },
+  { value: '', label: 'Not set' },
+]
+
+export const ADD_FUNDING_OPTIONS: SearchSelectOption[] = FUNDING_OPTIONS.filter((option) => option.value !== '')
+
+/** Only GIP / TUPAD beneficiaries write accomplishment reports */
+export function positionUsesFunding(position: string | null | undefined): boolean {
+  return position === 'gip' || position === 'tupad'
+}
+
 export const ROLE_OPTIONS: SearchSelectOption[] = [
   { value: 'admin', label: 'Admin' },
   { value: 'supervisor', label: 'Supervisor' },

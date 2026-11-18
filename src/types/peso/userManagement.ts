@@ -1,4 +1,5 @@
 import type { Database } from '../database.types'
+import type { ReportFunding } from '@/types/common/accomplishment'
 
 export type ProfilePosition = Database['public']['Enums']['profile_position']
 export type ProfileStatus = Database['public']['Enums']['profile_status']
@@ -16,6 +17,8 @@ export interface ProfileRecord {
   /** Kiosk passcode; null for admins and supervisors (they don't use the kiosk). */
   passcode: string | null
   officeId: string | null
+  /** GIP / TUPAD funding: decides the accomplishment report form (admin-only). */
+  funding: ReportFunding | null
   officeName?: string | null
   officeCode?: string | null
   createdAt: string
@@ -30,6 +33,8 @@ export interface UserFormData {
   lastname: string
   position: ProfilePosition
   officeId?: string | null
+  /** '' = not set */
+  funding?: ReportFunding | ''
   /** Overrides the position's default role (Add Supervisor sets 'supervisor'). */
   role?: ProfileRole | null
 }
@@ -54,6 +59,8 @@ export interface EditUserFormData {
   role: ProfileRole | ''
   status: ProfileStatus
   officeId: string
+  /** '' = not set */
+  funding: ReportFunding | ''
 }
 
 export interface ProfileFilterState {

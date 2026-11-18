@@ -124,6 +124,9 @@ const {
   positionOptions,
   addPositionOptions,
   roleOptions,
+  fundingOptions,
+  addFundingOptions,
+  showEditFunding,
   statusOptions,
   addOfficeSelectOptions,
   editOfficeSelectOptions,
@@ -636,6 +639,10 @@ const {
                   <span v-else>—</span>
                 </p>
               </div>
+              <div v-if="selectedProfile.position === 'gip' || selectedProfile.position === 'tupad'">
+                <p class="text-[11px] text-muted-foreground">Funding</p>
+                <p class="font-medium font-mono text-foreground mt-0.5">{{ selectedProfile.funding || 'Not set' }}</p>
+              </div>
               </div>
             </div>
           </div>
@@ -760,6 +767,19 @@ const {
                   :disabled="isSavingEdit || isEditingSelf"
                 />
               </div>
+            </div>
+
+            <!-- Funding (GIP / TUPAD only) -->
+            <div v-if="showEditFunding" class="space-y-1.5">
+              <label for="edit-funding" class="text-xs font-medium text-foreground">Funding</label>
+              <SearchSelect
+                id="edit-funding"
+                v-model="editForm.funding"
+                :options="fundingOptions"
+                :searchable="false"
+                :disabled="isSavingEdit"
+              />
+              <p class="text-[11px] text-muted-foreground">Sets the accomplishment report form (DOLE or PGAS).</p>
             </div>
 
             <div v-if="editError" class="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
@@ -974,6 +994,22 @@ const {
               :searchable="false"
               :disabled="isSubmitting"
             />
+          </div>
+
+          <!-- Funding (picks the accomplishment report form) -->
+          <div class="space-y-1.5">
+            <label for="add-funding" class="text-xs font-medium text-foreground">
+              Funding <span class="text-destructive">*</span>
+            </label>
+            <SearchSelect
+              id="add-funding"
+              v-model="formData.funding"
+              :options="addFundingOptions"
+              placeholder="Select DOLE or PGAS"
+              :searchable="false"
+              :disabled="isSubmitting"
+            />
+            <p class="text-[11px] text-muted-foreground">Sets the accomplishment report form they fill in.</p>
           </div>
 
           <!-- Assigned Office -->
