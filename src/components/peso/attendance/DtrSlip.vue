@@ -15,6 +15,8 @@ const props = withDefaults(
     activeEndDay?: number
     totalDaysInMonth?: number
     isDuplicateBlankName?: boolean
+    /** Printed above the "Name" signature line (My DTR); blank by default. */
+    signatureName?: string
   }>(),
   {
     employeeName: '',
@@ -28,6 +30,7 @@ const props = withDefaults(
     activeEndDay: 31,
     totalDaysInMonth: 31,
     isDuplicateBlankName: false,
+    signatureName: '',
   }
 )
 
@@ -157,6 +160,7 @@ const { slashSegments } = useDtrSlip(props)
 
     <!-- Employee Signature Line -->
     <div class="dtr-signature-section">
+      <div class="dtr-sig-name">{{ isDuplicateBlankName ? '' : signatureName }}</div>
       <div class="dtr-sig-line"></div>
       <div class="dtr-sig-label">Name</div>
     </div>
@@ -334,8 +338,10 @@ const { slashSegments } = useDtrSlip(props)
 .dtr-table td {
   border: 1px solid #000000;
   padding: 0;
-  height: 13.8px;
-  line-height: 13.8px;
+  /* Tall enough that the form fills a letter page like the printed CS Form 48. Header rows use the
+     same height so the diagonal slash (calculateDiagonalSlashes) lines up with the day rows. */
+  height: 19px;
+  line-height: 19px;
   vertical-align: middle;
   color: #000000;
 }
@@ -343,7 +349,7 @@ const { slashSegments } = useDtrSlip(props)
 .th-group th {
   font-weight: bold;
   font-size: 8pt;
-  height: 14px;
+  height: 19px;
 }
 
 .th-corner {
@@ -356,7 +362,7 @@ const { slashSegments } = useDtrSlip(props)
   font-weight: normal;
   font-size: 6.8pt;
   line-height: 1;
-  height: 20px;
+  height: 19px;
   vertical-align: middle;
 }
 
@@ -415,13 +421,24 @@ const { slashSegments } = useDtrSlip(props)
   line-height: 1.15;
   text-align: justify;
   margin-top: 4px;
-  margin-bottom: 12px;
+  /* Room to sign above the name, matching the space above the supervisor's name. */
+  margin-bottom: 18px;
   color: #000000;
 }
 
 .dtr-signature-section {
   text-align: center;
   margin-bottom: 8px;
+}
+
+/* Name printed above the employee's signature line (same size as the supervisor's name). */
+.dtr-sig-name {
+  font-size: 10.5pt;
+  font-weight: bold;
+  min-height: 14px;
+  line-height: 14px;
+  color: #000000;
+  text-transform: uppercase;
 }
 
 .dtr-sig-line {
@@ -454,10 +471,12 @@ const { slashSegments } = useDtrSlip(props)
 }
 
 .dtr-sup-name {
-  font-size: 7.5pt;
-  font-weight: normal;
+  font-size: 10.5pt;
+  font-weight: bold;
   margin-top: 2px;
-  line-height: 10px;
+  min-height: 14px;
+  line-height: 14px;
+  text-transform: uppercase;
   color: #000000;
 }
 
@@ -466,6 +485,7 @@ const { slashSegments } = useDtrSlip(props)
   font-style: italic;
   font-size: 7pt;
   line-height: 10px;
+  margin-top: 3px;
   color: #000000;
 }
 </style>

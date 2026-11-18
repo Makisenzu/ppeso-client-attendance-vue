@@ -31,6 +31,7 @@ defineProps<{
           :active-end-day="data.activeEndDay"
           :total-days-in-month="data.totalDaysInMonth"
           :is-duplicate-blank-name="false"
+          :signature-name="data.signatureName"
         />
       </div>
 
@@ -51,6 +52,7 @@ defineProps<{
             :active-end-day="data.activeEndDay"
             :total-days-in-month="data.totalDaysInMonth"
             :is-duplicate-blank-name="!rightCopyHasName"
+            :signature-name="data.signatureName"
           />
         </div>
       </template>
@@ -122,11 +124,14 @@ defineProps<{
     margin: 0.25in 0.35in;
   }
 
-  /* Only while a DTR sheet is on the page: print that sheet and nothing else, on one page. */
+  /* Only while a DTR sheet is on the page: print that sheet and nothing else, on one page,
+     on white paper even when the app is in dark mode. */
   html:has(.dtr-print-canvas),
   body:has(.dtr-print-canvas) {
     height: 100%;
     overflow: hidden;
+    background: #ffffff !important;
+    color-scheme: light;
   }
 
   body:has(.dtr-print-canvas) * {
