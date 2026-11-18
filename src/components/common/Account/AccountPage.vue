@@ -82,7 +82,6 @@ const {
               <span v-if="!summary.emailVerified" class="text-xs"> · not verified</span>
             </p>
             <div class="flex flex-wrap gap-1.5">
-              <Badge variant="secondary" class="text-[11px]">{{ summary.roleLabel }}</Badge>
               <Badge variant="outline" class="text-[11px]">{{ summary.positionLabel }}</Badge>
               <Badge variant="outline" :class="[summary.statusBadgeClass, 'text-[11px]']">{{ summary.statusLabel }}</Badge>
             </div>
