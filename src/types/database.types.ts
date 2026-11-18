@@ -165,10 +165,35 @@ export type Database = {
         }
         Relationships: []
       }
+      holidays: {
+        Row: {
+          created_at: string
+          holiday_date: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          holiday_date: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          holiday_date?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       offices: {
         Row: {
           code: string | null
           created_at: string | null
+          directory_id: string | null
           id: string
           is_active: boolean | null
           name: string
@@ -177,6 +202,7 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string | null
+          directory_id?: string | null
           id?: string
           is_active?: boolean | null
           name: string
@@ -185,12 +211,21 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string | null
+          directory_id?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "offices_directory_id_fkey"
+            columns: ["directory_id"]
+            isOneToOne: false
+            referencedRelation: "directories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -200,7 +235,7 @@ export type Database = {
           lastname: string
           middlename: string | null
           office_id: string | null
-          passcode: string
+          passcode: string | null
           position: Database["public"]["Enums"]["profile_position"]
           role: Database["public"]["Enums"]["profile_roles"] | null
           status: Database["public"]["Enums"]["profile_status"]
@@ -213,7 +248,7 @@ export type Database = {
           lastname: string
           middlename?: string | null
           office_id?: string | null
-          passcode: string
+          passcode?: string | null
           position: Database["public"]["Enums"]["profile_position"]
           role?: Database["public"]["Enums"]["profile_roles"] | null
           status?: Database["public"]["Enums"]["profile_status"]
@@ -226,7 +261,7 @@ export type Database = {
           lastname?: string
           middlename?: string | null
           office_id?: string | null
-          passcode?: string
+          passcode?: string | null
           position?: Database["public"]["Enums"]["profile_position"]
           role?: Database["public"]["Enums"]["profile_roles"] | null
           status?: Database["public"]["Enums"]["profile_status"]
@@ -247,10 +282,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_delete_user: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      profile_position: "employee" | "gip" | "tupad" | "client"
+      profile_position: "employee" | "gip" | "tupad" | "client" | "admin"
       profile_roles: "admin" | "beneficiary" | "supervisor"
       profile_status: "active" | "inactive" | "pending"
     }
@@ -395,7 +433,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      profile_position: ["employee", "gip", "tupad", "client"],
+      profile_position: ["employee", "gip", "tupad", "client", "admin"],
       profile_roles: ["admin", "beneficiary", "supervisor"],
       profile_status: ["active", "inactive", "pending"],
     },
