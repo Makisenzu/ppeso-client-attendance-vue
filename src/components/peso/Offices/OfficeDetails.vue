@@ -10,7 +10,7 @@ import { useOfficeDetails } from '@/composables/peso/useOfficeDetails'
 import { formatStatusLabel as formatOfficeStatus, getStatusBadgeClass as getOfficeStatusClass } from '@/helpers/peso/officeHelper'
 import { formatStatusLabel as formatProfileStatus, getStatusBadgeClass as getProfileStatusClass } from '@/helpers/peso/userManagementHelper'
 import { getInitials } from '@/helpers/peso/attendanceHelper'
-import { formatDisplayDate } from '@/helpers/common/dateFormatHelper'
+import { formatDisplayDateLong } from '@/helpers/common/dateFormatHelper'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 const {
@@ -192,7 +192,7 @@ const COLUMN_COUNT = 4
                     </Badge>
                   </TableCell>
                   <TableCell class="py-3 font-mono text-xs text-muted-foreground">
-                    {{ formatDisplayDate(gip.createdAt) }}
+                    {{ formatDisplayDateLong(gip.createdAt) }}
                   </TableCell>
                 </TableRow>
               </template>

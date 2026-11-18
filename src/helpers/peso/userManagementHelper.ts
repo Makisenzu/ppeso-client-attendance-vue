@@ -16,6 +16,11 @@ export const POSITION_OPTIONS: SearchSelectOption[] = [
   { value: 'client', label: 'Client' },
 ]
 
+/** Positions offered when adding a new user (beneficiary programs only). */
+export const ADD_USER_POSITION_OPTIONS: SearchSelectOption[] = POSITION_OPTIONS.filter((option) =>
+  ['gip', 'tupad'].includes(option.value),
+)
+
 export const ROLE_OPTIONS: SearchSelectOption[] = [
   { value: 'admin', label: 'Admin' },
   { value: 'supervisor', label: 'Supervisor' },

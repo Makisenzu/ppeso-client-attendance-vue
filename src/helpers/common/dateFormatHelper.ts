@@ -24,6 +24,19 @@ export function formatDisplayDate(value?: string | Date | null, fallback = '—'
   return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}/${date.getFullYear()}`
 }
 
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+
+/** `November 13, 2026` — written-out date for places that ask for text instead of numbers. */
+export function formatDisplayDateLong(value?: string | Date | null, fallback = '—'): string {
+  if (!value) return fallback
+  const date = toDate(value)
+  if (!date) return fallback
+  return `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
+}
+
 /** `11/13/2026 2:05 PM` */
 export function formatDisplayDateTime(value?: string | Date | null, fallback = '—'): string {
   if (!value) return fallback

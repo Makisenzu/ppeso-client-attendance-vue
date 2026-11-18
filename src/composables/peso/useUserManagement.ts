@@ -11,6 +11,7 @@ import { authService } from '@/services/common/authService'
 import {
   exportProfilesToCsv,
   getDefaultRoleForPosition,
+  ADD_USER_POSITION_OPTIONS,
   POSITION_OPTIONS,
   ROLE_OPTIONS,
   STATUS_OPTIONS,
@@ -19,6 +20,8 @@ import {
 import { getPageRange, getVisiblePages } from '@/helpers/common/paginationHelper'
 import { useOfficeStore } from '@/stores/officeStore'
 import { useToastAlert } from '@/composables/common/useToastAlert'
+import { buildPesoEmail } from '@/helpers/common/nameHelper'
+import { DEFAULT_STAFF_PASSWORD } from '@/helpers/common/accountHelper'
 
 export function useUserManagement() {
   const officeStore = useOfficeStore()
@@ -46,13 +49,37 @@ export function useUserManagement() {
 
   const formData = ref<UserFormData>({
     email: '',
-    password: '',
+    password: DEFAULT_STAFF_PASSWORD,
     firstname: '',
     middlename: '',
     lastname: '',
-    position: 'employee',
+    position: 'gip',
     officeId: '',
   })
+
+  // ─── Add User email: lastname.firstname@peso.ph, kept in sync until the admin types their own ───
+  const isAddEmailEdited = ref<boolean>(false)
+  const suggestedAddEmail = computed(() =>
+    buildPesoEmail(formData.value.firstname, formData.value.lastname),
+  )
+
+  watch(suggestedAddEmail, (email) => {
+    if (!isAddEmailEdited.value) formData.value.email = email
+  })
+
+  // An email that differs from the suggestion was typed by the admin: stop auto-filling.
+  // Clearing the field turns auto-fill back on.
+  watch(
+    () => formData.value.email,
+    (email) => {
+      if (email.trim() === '') {
+        isAddEmailEdited.value = false
+        if (suggestedAddEmail.value) formData.value.email = suggestedAddEmail.value
+      } else {
+        isAddEmailEdited.value = email !== suggestedAddEmail.value
+      }
+    },
+  )
 
   // ─── Fetch Profiles ───
   const fetchProfiles = async () => {
@@ -211,13 +238,14 @@ export function useUserManagement() {
   const openAddUser = async () => {
     formData.value = {
       email: '',
-      password: '',
+      password: DEFAULT_STAFF_PASSWORD,
       firstname: '',
       middlename: '',
       lastname: '',
-      position: 'employee',
+      position: 'gip',
       officeId: '',
     }
+    isAddEmailEdited.value = false
     submitError.value = ''
     submitSuccess.value = false
     isAddUserOpen.value = true
@@ -477,6 +505,7 @@ export function useUserManagement() {
   const hasHiddenPages = computed(() => totalPages.value > visiblePages.value.length)
 
   const positionOptions = POSITION_OPTIONS
+  const addPositionOptions = ADD_USER_POSITION_OPTIONS
   const roleOptions = ROLE_OPTIONS
   const statusOptions = STATUS_OPTIONS
   const addOfficeSelectOptions = computed(() => toOfficeSelectOptions(activeOffices.value))
@@ -498,6 +527,7 @@ export function useUserManagement() {
     visiblePages,
     hasHiddenPages,
     positionOptions,
+    addPositionOptions,
     roleOptions,
     statusOptions,
     addOfficeSelectOptions,
@@ -522,6 +552,7 @@ export function useUserManagement() {
     submitError,
     submitSuccess,
     formData,
+    isAddEmailEdited,
     activeOffices,
     isOfficesLoading,
     profileToDelete,

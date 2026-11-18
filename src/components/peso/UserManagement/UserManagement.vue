@@ -84,6 +84,7 @@ const {
   submitError,
   submitSuccess,
   formData,
+  isAddEmailEdited,
   activeOffices,
   isOfficesLoading,
   profileToDelete,
@@ -121,6 +122,7 @@ const {
   visiblePages,
   hasHiddenPages,
   positionOptions,
+  addPositionOptions,
   roleOptions,
   statusOptions,
   addOfficeSelectOptions,
@@ -968,7 +970,7 @@ const {
             <SearchSelect
               id="add-position"
               v-model="formData.position"
-              :options="positionOptions"
+              :options="addPositionOptions"
               :searchable="false"
               :disabled="isSubmitting"
             />
@@ -1008,24 +1010,29 @@ const {
               id="add-email"
               v-model="formData.email"
               type="email"
-              placeholder="user@example.com"
+              autocomplete="off"
+              placeholder="lastname.firstname@peso.ph"
               class="text-xs h-9"
               :disabled="isSubmitting"
             />
+            <p class="text-[11px] text-muted-foreground">
+              {{ isAddEmailEdited ? 'Custom email. Clear it to use lastname.firstname@peso.ph.' : 'Filled from the name.' }}
+            </p>
           </div>
 
           <div class="space-y-1.5">
             <label for="add-password" class="text-xs font-medium text-foreground">
               Password <span class="text-destructive">*</span>
             </label>
-            <Input
+            <PasswordInput
               id="add-password"
               v-model="formData.password"
-              type="password"
+              autocomplete="new-password"
               placeholder="Min. 6 characters"
               class="text-xs h-9"
               :disabled="isSubmitting"
             />
+            <p class="text-[11px] text-muted-foreground">Default password is filled in. You can change it.</p>
           </div>
 
           <!-- Error Message -->
