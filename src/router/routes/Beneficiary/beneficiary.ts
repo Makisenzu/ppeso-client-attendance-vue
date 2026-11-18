@@ -26,6 +26,24 @@ export const beneficiaryRoutes: RouteRecordRaw[] = [
         meta: { title: 'My DTR' },
       },
       {
+        path: 'accomplishments',
+        name: 'beneficiary-accomplishments',
+        component: () => import('@/components/beneficiary/MyAccomplishments/MyAccomplishments.vue'),
+        meta: { title: 'Accomplishments' },
+      },
+      {
+        path: 'accomplishments/new',
+        name: 'beneficiary-accomplishment-new',
+        component: () => import('@/components/beneficiary/MyAccomplishments/MyAccomplishmentForm.vue'),
+        meta: { title: 'New Report' },
+      },
+      {
+        path: 'accomplishments/:id',
+        name: 'beneficiary-accomplishment',
+        component: () => import('@/components/beneficiary/MyAccomplishments/MyAccomplishmentForm.vue'),
+        meta: { title: 'Accomplishment Report' },
+      },
+      {
         path: 'account',
         name: 'beneficiary-account',
         component: () => import('@/components/common/Account/AccountPage.vue'),
