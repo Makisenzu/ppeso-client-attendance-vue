@@ -53,7 +53,7 @@ const {
   openReport,
   printReport,
   formatPeriodRange,
-  formatDisplayDateTime,
+  formatDisplayDateTimeLong,
   fundingFormTitle,
   getReportStatusBadgeClass,
 } = useMyAccomplishments()
@@ -140,7 +140,7 @@ const checkboxClass =
                 <TableHead class="min-w-48 text-xs font-semibold">Period</TableHead>
                 <TableHead class="min-w-20 text-xs font-semibold">Form</TableHead>
                 <TableHead class="min-w-24 text-xs font-semibold">Status</TableHead>
-                <TableHead class="min-w-36 text-xs font-semibold">Submitted</TableHead>
+                <TableHead class="min-w-44 text-xs font-semibold">Submitted</TableHead>
                 <TableHead class="min-w-32 pr-4 text-right text-xs font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -169,7 +169,7 @@ const checkboxClass =
                       @change="toggleSelect(report.id)"
                     />
                   </TableCell>
-                  <TableCell class="py-3 text-xs font-medium font-mono text-foreground whitespace-nowrap">
+                  <TableCell class="py-3 text-xs font-medium text-foreground whitespace-nowrap">
                     {{ formatPeriodRange(report.periodStart, report.periodEnd) }}
                   </TableCell>
                   <TableCell class="py-3 text-xs text-muted-foreground">{{ report.funding }}</TableCell>
@@ -178,8 +178,8 @@ const checkboxClass =
                       {{ report.status }}
                     </Badge>
                   </TableCell>
-                  <TableCell class="py-3 text-xs font-mono text-muted-foreground whitespace-nowrap">
-                    {{ report.submittedAt ? formatDisplayDateTime(report.submittedAt) : '—' }}
+                  <TableCell class="py-3 text-xs text-muted-foreground whitespace-nowrap">
+                    {{ report.submittedAt ? formatDisplayDateTimeLong(report.submittedAt) : '—' }}
                   </TableCell>
                   <TableCell class="py-3 pr-4 text-right">
                     <div class="flex items-center justify-end gap-1">
@@ -276,7 +276,7 @@ const checkboxClass =
         </DialogHeader>
         <div class="max-h-48 overflow-y-auto rounded-lg border bg-muted/30 text-xs divide-y">
           <div v-for="report in removePreview" :key="report.id" class="flex items-center justify-between gap-3 px-3.5 py-2">
-            <span class="font-mono text-foreground">{{ formatPeriodRange(report.periodStart, report.periodEnd) }}</span>
+            <span class="text-foreground">{{ formatPeriodRange(report.periodStart, report.periodEnd) }}</span>
             <span class="text-muted-foreground">{{ report.status }}</span>
           </div>
         </div>

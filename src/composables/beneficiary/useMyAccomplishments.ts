@@ -9,7 +9,7 @@ import {
   REPORT_STATUS_FILTER_OPTIONS,
 } from '@/helpers/common/accomplishmentHelper'
 import { buildAccomplishmentDocument } from '@/helpers/common/accomplishmentPrintHelper'
-import { formatDisplayDate, formatDisplayDateTime } from '@/helpers/common/dateFormatHelper'
+import { formatDisplayDate, formatDisplayDateTimeLong } from '@/helpers/common/dateFormatHelper'
 import { getPageRange, getVisiblePages } from '@/helpers/common/paginationHelper'
 import { usePrintDocument } from '@/composables/common/usePrintDocument'
 import { useToastAlert } from '@/composables/common/useToastAlert'
@@ -225,7 +225,7 @@ export function useMyAccomplishments() {
     printReport,
     formatPeriodRange,
     formatDisplayDate,
-    formatDisplayDateTime,
+    formatDisplayDateTimeLong,
     fundingFormTitle,
     getReportStatusBadgeClass,
   }

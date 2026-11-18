@@ -37,6 +37,17 @@ export function formatDisplayDateLong(value?: string | Date | null, fallback = '
   return `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
 }
 
+/** `November 13, 2026 2:05 PM` — written date with time (DESIGN.md §3.1: where a date is read as text). */
+export function formatDisplayDateTimeLong(value?: string | Date | null, fallback = '—'): string {
+  if (!value) return fallback
+  const date = toDate(value)
+  if (!date) return fallback
+  const hours = date.getHours()
+  const hour12 = hours % 12 || 12
+  const meridiem = hours < 12 ? 'AM' : 'PM'
+  return `${formatDisplayDateLong(date)} ${hour12}:${pad(date.getMinutes())} ${meridiem}`
+}
+
 /** `11/13/2026 2:05 PM` */
 export function formatDisplayDateTime(value?: string | Date | null, fallback = '—'): string {
   if (!value) return fallback

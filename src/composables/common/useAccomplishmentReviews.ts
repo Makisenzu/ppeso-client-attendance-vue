@@ -14,7 +14,7 @@ import {
   REVIEW_STATUS_FILTER_OPTIONS,
 } from '@/helpers/common/accomplishmentHelper'
 import { buildAccomplishmentDocument } from '@/helpers/common/accomplishmentPrintHelper'
-import { formatDisplayDateTime } from '@/helpers/common/dateFormatHelper'
+import { formatDisplayDateTimeLong } from '@/helpers/common/dateFormatHelper'
 import { getPageRange, getVisiblePages } from '@/helpers/common/paginationHelper'
 import { usePrintDocument } from '@/composables/common/usePrintDocument'
 import { useToastAlert } from '@/composables/common/useToastAlert'
@@ -77,7 +77,7 @@ export function useAccomplishmentReviews() {
         r.fullName.toLowerCase().includes(q) ||
         (r.officeName ?? '').toLowerCase().includes(q) ||
         (r.officeCode ?? '').toLowerCase().includes(q) ||
-        formatPeriodRange(r.periodStart, r.periodEnd).includes(q)
+        formatPeriodRange(r.periodStart, r.periodEnd).toLowerCase().includes(q)
       )
     })
   })
@@ -341,7 +341,7 @@ export function useAccomplishmentReviews() {
     formatPeriodRange,
     formatWeekday,
     formatPesoAmount,
-    formatDisplayDateTime,
+    formatDisplayDateTimeLong,
     fundingFormTitle,
     getReportStatusBadgeClass,
     getReportDayBadgeClass,

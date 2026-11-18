@@ -77,7 +77,7 @@ const {
   formatPeriodRange,
   formatWeekday,
   formatPesoAmount,
-  formatDisplayDateTime,
+  formatDisplayDateTimeLong,
   fundingFormTitle,
   getReportStatusBadgeClass,
   getReportDayBadgeClass,
@@ -141,7 +141,7 @@ const textareaClass =
         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <div class="sm:col-span-2 relative">
             <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input v-model="searchQuery" placeholder="Search by name or office..." class="pl-9 h-9 text-base md:text-xs" />
+            <Input v-model="searchQuery" placeholder="Search by name, office or month..." class="pl-9 h-9 text-base md:text-xs" />
           </div>
           <SearchSelect v-model="statusFilter" :options="statusOptions" :searchable="false" />
           <SearchSelect v-model="fundingFilter" :options="fundingOptions" :searchable="false" />
@@ -186,7 +186,7 @@ const textareaClass =
                 <TableHead class="min-w-44 text-xs font-semibold">Period</TableHead>
                 <TableHead class="min-w-16 text-xs font-semibold">Form</TableHead>
                 <TableHead class="min-w-24 text-xs font-semibold">Status</TableHead>
-                <TableHead class="min-w-36 text-xs font-semibold">Submitted</TableHead>
+                <TableHead class="min-w-44 text-xs font-semibold">Submitted</TableHead>
                 <TableHead class="min-w-28 pr-4 text-right text-xs font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -221,15 +221,15 @@ const textareaClass =
                       <span class="text-[11px] text-muted-foreground truncate">{{ report.officeName || 'Unassigned' }}</span>
                     </div>
                   </TableCell>
-                  <TableCell class="py-3 text-xs font-mono text-foreground whitespace-nowrap">
+                  <TableCell class="py-3 text-xs text-foreground whitespace-nowrap">
                     {{ formatPeriodRange(report.periodStart, report.periodEnd) }}
                   </TableCell>
                   <TableCell class="py-3 text-xs text-muted-foreground">{{ report.funding }}</TableCell>
                   <TableCell class="py-3">
                     <Badge variant="outline" :class="[getReportStatusBadgeClass(report.status), 'text-[10px]']">{{ report.status }}</Badge>
                   </TableCell>
-                  <TableCell class="py-3 text-xs font-mono text-muted-foreground whitespace-nowrap">
-                    {{ formatDisplayDateTime(report.submittedAt) }}
+                  <TableCell class="py-3 text-xs text-muted-foreground whitespace-nowrap">
+                    {{ formatDisplayDateTimeLong(report.submittedAt) }}
                   </TableCell>
                   <TableCell class="py-3 pr-4 text-right">
                     <div class="flex items-center justify-end gap-1">
@@ -317,8 +317,8 @@ const textareaClass =
         <div v-if="selectedReport" class="grid flex-1 content-start gap-5 overflow-y-auto px-6 py-4 text-sm">
           <div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="outline" :class="getReportStatusBadgeClass(selectedReport.status)">{{ selectedReport.status }}</Badge>
-            <span>Submitted {{ formatDisplayDateTime(selectedReport.submittedAt) }}</span>
-            <span v-if="selectedReport.reviewedAt">· Reviewed {{ formatDisplayDateTime(selectedReport.reviewedAt) }}</span>
+            <span>Submitted {{ formatDisplayDateTimeLong(selectedReport.submittedAt) }}</span>
+            <span v-if="selectedReport.reviewedAt">· Reviewed {{ formatDisplayDateTimeLong(selectedReport.reviewedAt) }}</span>
           </div>
 
           <!-- PGAS activities -->
@@ -435,7 +435,7 @@ const textareaClass =
         <div class="max-h-48 overflow-y-auto rounded-lg border bg-muted/30 text-xs divide-y">
           <div v-for="report in deletePreview" :key="report.id" class="flex items-center justify-between gap-3 px-3.5 py-2">
             <span class="font-semibold text-foreground truncate">{{ report.fullName }}</span>
-            <span class="font-mono text-muted-foreground shrink-0">{{ formatPeriodRange(report.periodStart, report.periodEnd) }}</span>
+            <span class="text-muted-foreground shrink-0">{{ formatPeriodRange(report.periodStart, report.periodEnd) }}</span>
           </div>
           <div v-if="deleteOverflow > 0" class="px-3.5 py-2 text-muted-foreground">…and {{ deleteOverflow }} more</div>
         </div>

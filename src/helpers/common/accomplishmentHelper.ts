@@ -83,9 +83,9 @@ export function currentHalfMonth(today = todayIso()): { from: string; to: string
 
 // ─── Display ───
 
-/** "11/01/2026 – 11/15/2026" */
+/** A report's dates in words for tables and lists: "November 1-15, 2026" (DESIGN.md §3.1) */
 export function formatPeriodRange(from: string, to: string): string {
-  return `${formatDisplayDate(from, from)} – ${formatDisplayDate(to, to)}`
+  return formatReportPeriod(from, to)
 }
 
 /** "Mon 11/03/2026" */
