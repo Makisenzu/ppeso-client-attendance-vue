@@ -72,6 +72,8 @@ Organizational duties outside the code (remind the user; don't invent the docume
 | Kiosk passcode | `public.profiles.passcode` | **Credential** — treat as secret |
 | Daily time records: check-in/out times and statuses | `core.attendances` | No, but confidential employment data (used for payroll and performance) |
 | Walk-in client: full name, gender, contact number, province / municipality / barangay / purok, purpose of visit, visit times | `core.walkin_attendances` | Not sensitive under Sec. 3(l), but the **purpose** can reveal program participation (e.g. OFW, GIP, SPES) — confidential |
+| Accomplishment reports: daily work entries, activities, pay for the period (PGAS), signatory names, review remarks | `core.accomplishment_reports` | No, but confidential employment and pay data; visible to the writer, admins and their office supervisor |
+| GIP / TUPAD funding (DOLE / PGAS) | `public.profiles.funding` | No |
 | Offices | `public.offices` | No personal data |
 | Office directory: office name, code, **office head's name**, status | `public.directories` | No — but the head's name is personal data; readable by every signed-in user |
 

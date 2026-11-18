@@ -14,6 +14,75 @@ export type Database = {
   }
   core: {
     Tables: {
+      accomplishment_reports: {
+        Row: {
+          activities: Json
+          amount: number | null
+          amount_in_words: string | null
+          approver_name: string | null
+          approver_position: string | null
+          created_at: string
+          daily_entries: Json
+          designation: string | null
+          funding: string
+          id: string
+          period_end: string
+          period_start: string
+          profile_id: string
+          review_remarks: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string | null
+          supervisor_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          activities?: Json
+          amount?: number | null
+          amount_in_words?: string | null
+          approver_name?: string | null
+          approver_position?: string | null
+          created_at?: string
+          daily_entries?: Json
+          designation?: string | null
+          funding: string
+          id?: string
+          period_end: string
+          period_start: string
+          profile_id: string
+          review_remarks?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          supervisor_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activities?: Json
+          amount?: number | null
+          amount_in_words?: string | null
+          approver_name?: string | null
+          approver_position?: string | null
+          created_at?: string
+          daily_entries?: Json
+          designation?: string | null
+          funding?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          profile_id?: string
+          review_remarks?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          supervisor_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       attendances: {
         Row: {
           am_check_in: string | null
@@ -231,6 +300,7 @@ export type Database = {
         Row: {
           created_at: string
           firstname: string
+          funding: string | null
           id: string
           lastname: string
           middlename: string | null
@@ -244,6 +314,7 @@ export type Database = {
         Insert: {
           created_at?: string
           firstname: string
+          funding?: string | null
           id: string
           lastname: string
           middlename?: string | null
@@ -257,6 +328,7 @@ export type Database = {
         Update: {
           created_at?: string
           firstname?: string
+          funding?: string | null
           id?: string
           lastname?: string
           middlename?: string | null

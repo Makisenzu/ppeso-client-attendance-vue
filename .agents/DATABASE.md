@@ -94,6 +94,7 @@ One row per auth user. Created by the `on_auth_user_created` trigger — never i
 | `position`   | `profile_position` | NOT NULL                                            |
 | `role`       | `profile_roles`    | nullable, default `'beneficiary'`                    |
 | `office_id`  | `uuid`             | FK → `offices(id)` ON DELETE SET NULL; indexed       |
+| `funding`    | `text`             | nullable, CHECK `in ('DOLE', 'PGAS')` — GIP / TUPAD funding; picks the accomplishment report form. Admin-only (guard trigger) |
 | `created_at` | `timestamptz`      | NOT NULL, default `now()`                            |
 | `updated_at` | `timestamptz`      | set by `trg_guard_profile_update`                    |
 
@@ -147,6 +148,28 @@ Walk-in client log (not linked to an account).
 | `check_out`      | `timestamptz`      | nullable                            |
 | `created_at`     | `timestamptz`      | NOT NULL, default `now()`           |
 
+### `accomplishment_reports`
+
+Accomplishment reports of GIP / TUPAD beneficiaries (migration `20261118000000_accomplishment_reports.sql`, ported from
+vue-agsurjobs). One row per date range; one person's reports never overlap.
+
+| Column | Type | Notes |
+| ------ | ---- | ----- |
+| `id` | `uuid` | PK |
+| `profile_id` | `uuid` | NOT NULL, FK → `public.profiles(id)` ON DELETE CASCADE |
+| `funding` | `text` | `DOLE` / `PGAS`, copied from the profile on insert (never from the client) |
+| `period_start` / `period_end` | `date` | `period_end >= period_start`; start not after today (PHT) |
+| `daily_entries` | `jsonb` | `[{ date, status: Worked\|Holiday\|Leave, entry }]` — weekdays of the period up to today |
+| `activities` | `jsonb` | PGAS: `[{ activity, output, remarks }]` (≤ 50) |
+| `designation`, `supervisor_name`, `approver_name`, `approver_position` | `text` | ≤ 150, printed on the form |
+| `amount` / `amount_in_words` | `numeric(12,2)` / `text` | PGAS payment receipt |
+| `status` | `text` | `Draft` → `Submitted` → `Reviewed`, or `Returned` (needs `review_remarks`) |
+| `review_remarks`, `reviewed_by` (FK profiles, SET NULL), `reviewed_at`, `submitted_at`, `created_at`, `updated_at` | | Review stamps are set by the trigger |
+
+`core.check_accomplishment_report()` (BEFORE INSERT/UPDATE, **SECURITY INVOKER**) validates what the owner writes
+(funding, overlap, entries, submit completeness; saving a Returned report keeps it Returned) and lets a reviewer
+(admin, or the supervisor of the person's office) change only `status` / `review_remarks`.
+
 ### Core Enums
 
 | Enum               | Values                                                        |
@@ -191,6 +214,7 @@ Full rules in SECURITY.md §4. Policy names are prefixed with the table (`"atten
 | `public.holidays`         | any signed-in user                                      | admin                    |
 | `core.attendances`        | own rows · admin all · supervisor same office           | admin                    |
 | `core.walkin_attendances` | admin, supervisor                                       | admin                    |
+| `core.accomplishment_reports` | own · admin all · supervisor same office        | insert: own · update: own (not Reviewed) or reviewer (status/remarks only, trigger) · delete: own unreviewed, admin |
 
 ---
 
@@ -259,6 +283,10 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261113000700_holidays.sql` | `public.holidays` + RLS; `flag_daily_absences` skips holidays |
 | `20261113000800_passcode_only_for_kiosk_roles.sql` | Passcode nullable; none for admins / supervisors; absence flagging skips them |
 | `20261113000900_admin_delete_user.sql` | `admin_delete_user()` — User Management deletes the login, not just the profile |
+| `20261118000000_accomplishment_reports.sql` | `profiles.funding` (admin-only); `core.accomplishment_reports` + RLS + validation trigger |
+
+> Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
+> `supabase migration repair --status applied` (no SQL re-run).
 
 ### Workflow
 
