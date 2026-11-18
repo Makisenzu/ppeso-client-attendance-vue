@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toRef } from 'vue'
-import { ImageOff, Loader2, Printer, Upload, X } from '@lucide/vue'
+import { ImageOff, Loader2, Printer, Upload, UserRound, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,6 +25,10 @@ const {
   nicknameError,
   onNicknameInput,
   photoUrl,
+  photoSource,
+  profilePhotoUrl,
+  useProfilePhoto,
+  photoHint,
   photoError,
   choosePhoto,
   onPhotoSelected,
@@ -74,7 +78,7 @@ const {
       </div>
 
       <div class="grid gap-1.5">
-        <Label class="text-xs">Photo <span class="font-normal text-muted-foreground">(optional, not saved)</span></Label>
+        <Label class="text-xs">Photo <span class="font-normal text-muted-foreground">(optional)</span></Label>
         <div class="flex items-center gap-4">
           <div class="flex h-28 w-[5.6rem] shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
             <img v-if="photoUrl" :src="photoUrl" alt="ID photo" class="size-full object-cover" />
@@ -83,7 +87,18 @@ const {
           <div class="flex flex-col items-start gap-2">
             <Button type="button" variant="outline" size="sm" class="gap-1.5 text-xs cursor-pointer" @click="choosePhoto">
               <Upload class="h-3.5 w-3.5" />
-              <span>{{ photoUrl ? 'Change Photo' : 'Upload Photo' }}</span>
+              <span>{{ photoSource === 'upload' ? 'Change Photo' : 'Use Another Photo' }}</span>
+            </Button>
+            <Button
+              v-if="profilePhotoUrl && photoSource !== 'profile'"
+              type="button"
+              variant="outline"
+              size="sm"
+              class="gap-1.5 text-xs cursor-pointer"
+              @click="useProfilePhoto"
+            >
+              <UserRound class="h-3.5 w-3.5" />
+              <span>Use Profile Picture</span>
             </Button>
             <Button v-if="photoUrl" type="button" variant="ghost" size="sm" class="gap-1.5 text-xs cursor-pointer" @click="removePhoto">
               <X class="h-3.5 w-3.5" />
@@ -93,6 +108,7 @@ const {
           <input ref="photoInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onPhotoSelected" />
         </div>
         <p v-if="photoError" class="text-xs text-destructive">{{ photoError }}</p>
+        <p v-else class="text-[11px] text-muted-foreground">{{ photoHint }}</p>
       </div>
 
       <div class="flex justify-end gap-2">

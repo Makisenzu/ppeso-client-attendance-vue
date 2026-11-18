@@ -95,6 +95,7 @@ One row per auth user. Created by the `on_auth_user_created` trigger — never i
 | `role`       | `profile_roles`    | nullable, default `'beneficiary'`                    |
 | `office_id`  | `uuid`             | FK → `offices(id)` ON DELETE SET NULL; indexed       |
 | `funding`    | `text`             | nullable, CHECK `in ('DOLE', 'PGAS')` — GIP / TUPAD funding; picks the accomplishment report form. Admin-only (guard trigger) |
+| `avatar_path` | `text`            | nullable — profile picture path in the private `avatars` bucket (`<user id>/<file>`); the user may only point it at their own folder (guard trigger) |
 | `created_at` | `timestamptz`      | NOT NULL, default `now()`                            |
 | `updated_at` | `timestamptz`      | set by `trg_guard_profile_update`                    |
 
@@ -285,6 +286,7 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261113000900_admin_delete_user.sql` | `admin_delete_user()` — User Management deletes the login, not just the profile |
 | `20261118000000_accomplishment_reports.sql` | `profiles.funding` (admin-only); `core.accomplishment_reports` + RLS + validation trigger |
 | `20261118000100_accomplishment_reports_current_month.sql` | New reports (or changed dates) must fall within the current month (PHT); older reports keep their dates |
+| `20261118000200_profile_photos.sql` | `profiles.avatar_path`; private Storage bucket `avatars` (JPG/PNG/WebP ≤ 5 MB) + storage.objects policies (own folder; admin read / delete) |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).

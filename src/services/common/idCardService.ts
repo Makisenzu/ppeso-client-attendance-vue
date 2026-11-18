@@ -7,6 +7,8 @@ export interface IdCardPerson {
   position: string
   /** Office code (offices.code, else the directory's), else its name; '' when unassigned */
   office: string
+  /** Storage path of their profile picture, or null; screens open it through the avatar store's cached link */
+  avatarPath: string | null
 }
 
 /**
@@ -17,7 +19,7 @@ export const idCardService = {
   async getPerson(profileId: string): Promise<IdCardPerson> {
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('firstname, middlename, lastname, position, office_id')
+      .select('firstname, middlename, lastname, position, office_id, avatar_path')
       .eq('id', profileId)
       .maybeSingle()
     if (error || !profile) throw new Error('This account could not be loaded.')
@@ -26,6 +28,7 @@ export const idCardService = {
       fullName: formatIdFullName(profile.firstname, profile.middlename, profile.lastname),
       position: profile.position,
       office: '',
+      avatarPath: profile.avatar_path,
     }
     if (!profile.office_id) return person
 

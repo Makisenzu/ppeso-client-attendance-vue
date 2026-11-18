@@ -74,6 +74,7 @@ Organizational duties outside the code (remind the user; don't invent the docume
 | Walk-in client: full name, gender, contact number, province / municipality / barangay / purok, purpose of visit, visit times | `core.walkin_attendances` | Not sensitive under Sec. 3(l), but the **purpose** can reveal program participation (e.g. OFW, GIP, SPES) — confidential |
 | Accomplishment reports: daily work entries, activities, pay for the period (PGAS), signatory names, review remarks | `core.accomplishment_reports` | No, but confidential employment and pay data; visible to the writer, admins and their office supervisor |
 | GIP / TUPAD funding (DOLE / PGAS) | `public.profiles.funding` | No |
+| Profile picture (face photo) | Storage bucket `avatars` (private), path in `public.profiles.avatar_path` | No, but identifies the person; visible to them and admins only; printed on the GIP ID; deleted with the account |
 | Offices | `public.offices` | No personal data |
 | Office directory: office name, code, **office head's name**, status | `public.directories` | No — but the head's name is personal data; readable by every signed-in user |
 
@@ -105,8 +106,10 @@ When asked to add one:
    own records; walk-in records are visible to admins and supervisors only.
 2. **Select only the columns a screen shows** when reading other people's records — every selected column is visible in
    DevTools' Network tab.
-3. **No files are stored.** The system has no Storage buckets. If uploads are added (IDs, documents, photos), they go
-   in a **private** bucket opened by short-lived signed URLs; store the path, never a URL.
+3. **Files go in private buckets.** The only bucket is `avatars` (profile pictures, migration
+   `20261118000200_profile_photos.sql`): private, opened by 1-hour signed URLs, the path (never a URL) stored on the
+   profile, each user limited to their own folder, admins read / delete. New uploads follow the same pattern. A photo
+   picked only for a GIP ID stays in the browser and is never uploaded.
 4. **The kiosk device** runs an admin session; the office must keep it physically supervised (SECURITY.md §5).
 
 ---

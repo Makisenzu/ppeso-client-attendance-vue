@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePesoSidebar } from '@/composables/peso/usePesoSidebar'
@@ -33,6 +33,7 @@ const {
   isLoading,
   displayName,
   userInitials,
+  avatarSrc,
   userEmail,
   isVerified,
   isDashboard,
@@ -142,6 +143,7 @@ const {
                   :class="state === 'collapsed' ? 'justify-center p-0' : 'justify-start px-2'"
                 >
                   <Avatar class="size-8 rounded-lg shrink-0">
+                    <AvatarImage :src="avatarSrc" :alt="displayName" class="rounded-lg" />
                     <AvatarFallback class="rounded-lg">{{ userInitials }}</AvatarFallback>
                   </Avatar>
 
@@ -169,6 +171,7 @@ const {
               >
                 <div class="flex items-center gap-2 px-2 py-1.5 text-sm font-normal">
                   <Avatar class="size-8 rounded-lg shrink-0">
+                    <AvatarImage :src="avatarSrc" :alt="displayName" class="rounded-lg" />
                     <AvatarFallback class="rounded-lg">{{ userInitials }}</AvatarFallback>
                   </Avatar>
 

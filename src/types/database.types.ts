@@ -298,6 +298,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_path: string | null
           created_at: string
           firstname: string
           funding: string | null
@@ -312,6 +313,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          avatar_path?: string | null
           created_at?: string
           firstname: string
           funding?: string | null
@@ -326,6 +328,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          avatar_path?: string | null
           created_at?: string
           firstname?: string
           funding?: string | null

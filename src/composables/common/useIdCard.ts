@@ -12,6 +12,7 @@ import {
 } from '@/helpers/common/idCardHelper'
 import { usePrintDocument } from '@/composables/common/usePrintDocument'
 import { useToastAlert } from '@/composables/common/useToastAlert'
+import { useAvatarStore } from '@/stores/avatarStore'
 
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const PHOTO_MAX_BYTES = 10 * 1024 * 1024
@@ -55,8 +56,8 @@ const measureText: MeasureText = (text, size) => {
 }
 
 /**
- * Generate ID (GIP): the nickname and an optional photo, then a preview of the card and a print sheet with two
- * copies. Nothing is saved — the photo stays in this browser tab (PRIVACY.md: no files are stored).
+ * Generate ID (GIP): the nickname and a photo — the profile picture by default, or one picked just for this ID
+ * (kept in this browser tab, never saved) — then a preview of the card and a print sheet with two copies.
  * `profileId` is whose ID it is; RLS lets admins read anyone and beneficiaries only themselves.
  */
 export function useIdCard(profileId: Ref<string | null>) {
@@ -71,8 +72,21 @@ export function useIdCard(profileId: Ref<string | null>) {
   const step = ref<'form' | 'preview'>('form')
   const nickname = ref('')
   const nicknameError = ref('')
-  const photoUrl = ref<string | null>(null)
+  /** Picked just for this ID (data: URL, never uploaded) */
+  const uploadedPhotoUrl = ref<string | null>(null)
+  const photoSource = ref<'profile' | 'upload' | 'none'>('none')
+  const avatarStore = useAvatarStore()
+  /** Profile picture link from the shared avatar cache (same link My Account uses → no re-download) */
+  const profilePhotoUrl = ref<string | null>(null)
+  const photoUrl = computed(() =>
+    photoSource.value === 'profile' ? profilePhotoUrl.value : photoSource.value === 'upload' ? uploadedPhotoUrl.value : null,
+  )
   const photoError = ref('')
+  const photoHint = computed(() => {
+    if (photoSource.value === 'profile') return 'Using the profile picture.'
+    if (photoSource.value === 'upload') return 'This photo is only used for this ID and is not saved.'
+    return profilePhotoUrl.value ? 'No photo on this ID.' : 'No profile picture yet. Add one on My Account, or use another photo.'
+  })
   const isGenerating = ref(false)
   const cardData = ref<IdCardData | null>(null)
   const previewSvg = ref('')
@@ -84,7 +98,8 @@ export function useIdCard(profileId: Ref<string | null>) {
     step.value = 'form'
     nickname.value = ''
     nicknameError.value = ''
-    photoUrl.value = null
+    uploadedPhotoUrl.value = null
+    photoSource.value = profilePhotoUrl.value ? 'profile' : 'none'
     photoError.value = ''
     cardData.value = null
     previewSvg.value = ''
@@ -93,11 +108,15 @@ export function useIdCard(profileId: Ref<string | null>) {
   async function loadPerson(id: string | null) {
     reset()
     person.value = null
+    profilePhotoUrl.value = null
     loadError.value = ''
     if (!id) return
     isLoadingPerson.value = true
     try {
-      person.value = await idCardService.getPerson(id)
+      const loaded = await idCardService.getPerson(id)
+      profilePhotoUrl.value = await avatarStore.getUrl(loaded.avatarPath)
+      person.value = loaded
+      photoSource.value = profilePhotoUrl.value ? 'profile' : 'none'
     } catch (err) {
       loadError.value = err instanceof Error ? err.message : 'This account could not be loaded.'
     } finally {
@@ -124,14 +143,19 @@ export function useIdCard(profileId: Ref<string | null>) {
       return
     }
     try {
-      photoUrl.value = await readAsDataUrl(file)
+      uploadedPhotoUrl.value = await readAsDataUrl(file)
+      photoSource.value = 'upload'
     } catch {
       photoError.value = 'The photo could not be read.'
     }
   }
 
   const removePhoto = () => {
-    photoUrl.value = null
+    photoSource.value = 'none'
+    photoError.value = ''
+  }
+  const useProfilePhoto = () => {
+    if (profilePhotoUrl.value) photoSource.value = 'profile'
     photoError.value = ''
   }
 
@@ -191,6 +215,10 @@ export function useIdCard(profileId: Ref<string | null>) {
     nicknameError,
     onNicknameInput,
     photoUrl,
+    photoSource,
+    profilePhotoUrl,
+    useProfilePhoto,
+    photoHint,
     photoError,
     choosePhoto,
     onPhotoSelected,

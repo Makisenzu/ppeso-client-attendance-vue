@@ -17,6 +17,8 @@ export interface MyAccount {
   passcode: string | null
   officeName: string | null
   officeCode: string | null
+  /** Profile picture path in the private avatars bucket (opened with a signed URL) */
+  avatarPath: string | null
   createdAt: string
   updatedAt: string | null
 }

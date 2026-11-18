@@ -1,13 +1,17 @@
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/services/common/authService'
 import { buildFullName } from '@/helpers/peso/userManagementHelper'
 import { getInitials } from '@/helpers/peso/attendanceHelper'
 import { useSidebar } from '@/components/ui/sidebar'
+import { useAvatarStore } from '@/stores/avatarStore'
 
 export function useSidebarUser() {
   const router = useRouter()
   const { state, isMobile } = useSidebar()
+  const avatarStore = useAvatarStore()
+  /** Profile picture in the footer ('' when none → AvatarFallback shows the initials). Shared cache; follows uploads on My Account */
+  const avatarSrc = computed(() => avatarStore.myAvatarUrl ?? '')
 
   const displayName = ref('User')
   const userInitials = ref('U')
@@ -26,6 +30,7 @@ export function useSidebarUser() {
         userInitials.value = 'U'
         userEmail.value = ''
         isVerified.value = false
+        avatarStore.clear()
         isLoading.value = false
         return
       }
@@ -34,6 +39,7 @@ export function useSidebarUser() {
       isVerified.value = !!user.email_confirmed_at
 
       const profile = await authService.getUserProfile(user.id)
+      void avatarStore.setMyAvatarPath(profile?.avatar_path)
 
       if (profile && (profile.firstname || profile.lastname)) {
         const completeName = buildFullName(profile.firstname, profile.middlename, profile.lastname)
@@ -54,6 +60,7 @@ export function useSidebarUser() {
 
   const handleSignOut = async () => {
     await authService.signOut()
+    avatarStore.clear()
     await router.replace({ name: 'login' })
   }
 
@@ -73,6 +80,7 @@ export function useSidebarUser() {
     isMobile,
     displayName,
     userInitials,
+    avatarSrc,
     userEmail,
     isVerified,
     isLoading,

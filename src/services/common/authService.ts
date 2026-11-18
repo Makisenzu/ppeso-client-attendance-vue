@@ -3,7 +3,7 @@ import type { Database } from '@/types/database.types'
 
 export type UserProfile = Pick<
   Database['public']['Tables']['profiles']['Row'],
-  'firstname' | 'middlename' | 'lastname' | 'position' | 'role' | 'status'
+  'firstname' | 'middlename' | 'lastname' | 'position' | 'role' | 'status' | 'avatar_path'
 >
 
 export const authService = {
@@ -25,7 +25,7 @@ export const authService = {
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('firstname, middlename, lastname, position, role, status')
+      .select('firstname, middlename, lastname, position, role, status, avatar_path')
       .eq('id', userId)
       .maybeSingle()
 

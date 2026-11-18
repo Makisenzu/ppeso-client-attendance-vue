@@ -11,7 +11,7 @@ export const accountService = {
     const { data, error } = await supabase
       .from('profiles')
       .select(
-        'id, firstname, middlename, lastname, position, role, status, passcode, created_at, updated_at, office:offices ( name, code )',
+        'id, firstname, middlename, lastname, position, role, status, passcode, avatar_path, created_at, updated_at, office:offices ( name, code )',
       )
       .eq('id', user.id)
       .maybeSingle()
@@ -33,6 +33,7 @@ export const accountService = {
       passcode: data.passcode,
       officeName: office?.name ?? null,
       officeCode: office?.code ?? null,
+      avatarPath: data.avatar_path,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     }
@@ -55,6 +56,13 @@ export const accountService = {
 
     const { error: metaError } = await supabase.auth.updateUser({ data: names })
     if (metaError) console.warn('Profile saved, but the session metadata was not updated.')
+  },
+
+  /** Points the profile at an uploaded photo (or clears it); the guard trigger only allows the user's own folder */
+  async setAvatarPath(userId: string, path: string | null): Promise<void> {
+    const { data, error } = await supabase.from('profiles').update({ avatar_path: path }).eq('id', userId).select('id')
+    if (error) throw new Error(error.message || 'Failed to save your photo.')
+    if (!data || data.length === 0) throw new Error('Your profile could not be updated.')
   },
 
   async changePassword(newPassword: string): Promise<void> {

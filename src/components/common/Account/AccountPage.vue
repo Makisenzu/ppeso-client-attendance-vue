@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Eye, EyeOff, IdCard, Loader2, RefreshCw, UserRound } from '@lucide/vue'
+import { Camera, Eye, EyeOff, IdCard, Loader2, RefreshCw, UserRound } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
@@ -35,6 +35,12 @@ const {
   passcodeDisplay,
   togglePasscode,
   gipIdProfileId,
+  avatarUrl,
+  isSavingAvatar,
+  avatarProgress,
+  avatarUploadState,
+  chooseAvatar,
+  onAvatarSelected,
   isIdCardOpen,
   openIdCard,
   closeIdCard,
@@ -79,9 +85,56 @@ const {
       <!-- ─── Profile summary ─── -->
       <Card class="border shadow-xs">
         <CardContent class="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <Avatar class="h-16 w-16 shrink-0 text-lg font-semibold">
-            <AvatarFallback class="bg-primary/10 text-primary">{{ summary.initials }}</AvatarFallback>
-          </Avatar>
+          <!-- Profile picture: used on the GIP ID -->
+          <div class="flex shrink-0 justify-center">
+            <button
+              type="button"
+              class="group relative cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-wait"
+              title="Change profile picture"
+              aria-label="Change profile picture"
+              :disabled="isSavingAvatar"
+              @click="chooseAvatar"
+            >
+              <Avatar class="h-28 w-28 text-2xl font-semibold">
+                <AvatarImage v-if="avatarUrl" :src="avatarUrl" alt="Your profile picture" />
+                <AvatarFallback class="bg-primary/10 text-primary">{{ summary.initials }}</AvatarFallback>
+              </Avatar>
+              <span
+                class="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/50 text-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                :class="{ 'opacity-100': isSavingAvatar }"
+              >
+                <span v-if="isSavingAvatar" class="text-sm font-semibold tabular-nums">{{ Math.round(avatarProgress) }}%</span>
+                <Camera v-else class="h-6 w-6" />
+              </span>
+              <!-- Upload progress: the border fills clockwise from the left -->
+              <svg
+                v-if="isSavingAvatar"
+                class="pointer-events-none absolute -inset-1.5 h-[calc(100%+0.75rem)] w-[calc(100%+0.75rem)] rotate-180 animate-in fade-in-0 zoom-in-95"
+                viewBox="0 0 100 100"
+                aria-hidden="true"
+              >
+                <circle cx="50" cy="50" r="47" fill="none" stroke-width="3" class="stroke-border" />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="47"
+                  fill="none"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  pathLength="100"
+                  stroke-dasharray="100"
+                  :stroke-dashoffset="100 - avatarProgress"
+                  class="transition-[stroke-dashoffset,stroke] duration-300 ease-out"
+                  :class="{
+                    'stroke-primary': avatarUploadState === 'uploading',
+                    'stroke-success': avatarUploadState === 'success',
+                    'stroke-destructive': avatarUploadState === 'error',
+                  }"
+                />
+              </svg>
+            </button>
+            <input ref="avatarInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onAvatarSelected" />
+          </div>
           <div class="min-w-0 flex-1 space-y-1.5">
             <p class="truncate text-lg font-semibold text-foreground">{{ summary.fullName }}</p>
             <p class="truncate text-sm text-muted-foreground">

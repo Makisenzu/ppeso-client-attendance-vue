@@ -1,6 +1,7 @@
 import { supabase } from '@/services/supabase'
 import type { EditUserFormData, ProfileRecord, UserFormData } from '@/types/peso/userManagement'
 import { getDefaultRoleForPosition } from '@/helpers/peso/userManagementHelper'
+import { avatarService } from '@/services/common/avatarService'
 
 export const userManagementService = {
   async getProfiles(): Promise<ProfileRecord[]> {
@@ -244,6 +245,13 @@ export const userManagementService = {
       if (error) {
         // Messages raised on purpose by the function are written for the admin; pass them through.
         return { success: false, error: error.message || 'Failed to delete the account.' }
+      }
+
+      // The profile picture goes with the account (storage files can't be removed from SQL)
+      try {
+        await avatarService.removeAllFor(id)
+      } catch {
+        console.error('The account was deleted, but its profile picture could not be removed.')
       }
 
       return { success: true }
