@@ -123,6 +123,20 @@ export function useAccount() {
     return isPasscodeVisible.value ? code : '•'.repeat(code.length || 6)
   })
 
+  // ─── GIP ID (GIP accounts only) ───
+  /** Whose ID Generate ID makes: this account when its position is GIP, otherwise none (button hidden) */
+  const gipIdProfileId = computed(() => (account.value?.position === 'gip' ? account.value.id : null))
+  const isIdCardOpen = ref(false)
+  const openIdCard = () => {
+    if (gipIdProfileId.value) isIdCardOpen.value = true
+  }
+  const closeIdCard = () => {
+    isIdCardOpen.value = false
+  }
+  const onIdCardOpenChange = (open: boolean) => {
+    if (!open) closeIdCard()
+  }
+
   // ─── Display values ───
   const summary = computed(() => {
     const a = account.value
@@ -167,5 +181,10 @@ export function useAccount() {
     hasPasscode,
     passcodeDisplay,
     togglePasscode,
+    gipIdProfileId,
+    isIdCardOpen,
+    openIdCard,
+    closeIdCard,
+    onIdCardOpenChange,
   }
 }

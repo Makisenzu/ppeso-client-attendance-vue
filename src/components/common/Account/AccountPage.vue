@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye, EyeOff, Loader2, RefreshCw, UserRound } from '@lucide/vue'
+import { Eye, EyeOff, IdCard, Loader2, RefreshCw, UserRound } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,7 +8,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import PasswordInput from '@/components/common/PasswordInput.vue'
+import IdCardGenerator from '@/components/common/IdCard/IdCardGenerator.vue'
 import { useAccount } from '@/composables/common/useAccount'
 
 /** Account page shared by every role (admin, supervisor, beneficiary). */
@@ -32,6 +34,11 @@ const {
   hasPasscode,
   passcodeDisplay,
   togglePasscode,
+  gipIdProfileId,
+  isIdCardOpen,
+  openIdCard,
+  closeIdCard,
+  onIdCardOpenChange,
 } = useAccount()
 </script>
 
@@ -86,7 +93,19 @@ const {
               <Badge variant="outline" :class="[summary.statusBadgeClass, 'text-[11px]']">{{ summary.statusLabel }}</Badge>
             </div>
           </div>
+          <!-- GIP accounts: Generate ID in place of Refresh -->
           <Button
+            v-if="gipIdProfileId"
+            variant="outline"
+            size="sm"
+            class="gap-1.5 self-start text-xs cursor-pointer sm:self-center"
+            @click="openIdCard"
+          >
+            <IdCard class="h-3.5 w-3.5" />
+            <span>Generate ID</span>
+          </Button>
+          <Button
+            v-else
             variant="outline"
             size="sm"
             class="gap-1.5 self-start text-xs cursor-pointer sm:self-center"
@@ -260,5 +279,16 @@ const {
         </form>
       </Card>
     </template>
+
+    <!-- ─── Generate ID (GIP accounts only) ─── -->
+    <Dialog :open="isIdCardOpen" @update:open="onIdCardOpenChange">
+      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle class="text-base">Generate ID</DialogTitle>
+          <DialogDescription class="text-xs">Add your nickname and a photo, then print your GIP ID.</DialogDescription>
+        </DialogHeader>
+        <IdCardGenerator v-if="isIdCardOpen" :profile-id="gipIdProfileId" cancelable @cancel="closeIdCard" />
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
