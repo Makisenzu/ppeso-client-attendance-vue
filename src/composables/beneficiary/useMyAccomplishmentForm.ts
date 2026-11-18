@@ -63,7 +63,7 @@ const newActivity = (row?: ReportActivity): ActivityDraft => ({
 
 /**
  * Add / edit one accomplishment report (beneficiary). The form follows the funding: DOLE asks what was done each
- * weekday; PGAS asks for Activities / Output / Remarks and the payment, with optional daily entries.
+ * weekday; PGAS asks for Activities / Output / Remarks and the payment (no daily entries).
  * Client checks mirror the database trigger so mistakes show on the right field.
  */
 export function useMyAccomplishmentForm() {
@@ -117,10 +117,8 @@ export function useMyAccomplishmentForm() {
   /** Submitting before the last day is allowed after a confirmation */
   const isEarly = computed(() => !periodError.value && periodTo.value > today)
 
-  // ─── Daily entries ───
+  // ─── Daily entries (DOLE only) ───
   const days = ref<DayDraft[]>([])
-  const showDailyOptional = ref(false)
-  const showDaily = computed(() => isDole.value || showDailyOptional.value)
   const dayErrors = reactive<Record<string, string>>({})
 
   /** Weekday rows for the picked dates (up to today), keeping whatever was typed for days still in range */
@@ -150,9 +148,6 @@ export function useMyAccomplishmentForm() {
   }
   const onDayInput = (day: DayDraft) => {
     if (day.entry.trim()) delete dayErrors[day.date]
-  }
-  const openDailyEntries = () => {
-    showDailyOptional.value = true
   }
 
   // ─── PGAS activities ───
@@ -222,7 +217,6 @@ export function useMyAccomplishmentForm() {
     periodFrom.value = period.from
     periodTo.value = period.to
     rebuildDays(report?.dailyEntries ?? [])
-    showDailyOptional.value = (report?.dailyEntries.length ?? 0) > 0
 
     details.designation = report?.designation ?? previous?.designation ?? REPORT_DEFAULT_DESIGNATION
     // The supervisor is usually not the office head: carried over from the last report
@@ -261,7 +255,8 @@ export function useMyAccomplishmentForm() {
   // ─── Collect & validate ───
   /** Blank Worked days are left out (a draft keeps filling them later) */
   function collectEntries(): ReportDay[] {
-    if (!showDaily.value) return []
+    // PGAS reports have no daily entries; saving one clears any it had
+    if (!isDole.value) return []
     return days.value
       .filter((day) => day.status !== 'Worked' || day.entry.trim())
       .map((day) => ({ date: day.date, status: day.status, entry: day.entry.trim() || null }))
@@ -442,11 +437,9 @@ export function useMyAccomplishmentForm() {
     days,
     dayErrors,
     dayStatuses: REPORT_DAY_STATUSES,
-    showDaily,
     missingDays,
     setDayStatus,
     onDayInput,
-    openDailyEntries,
     entryMax: REPORT_ENTRY_MAX,
     activities,
     activityErrors,

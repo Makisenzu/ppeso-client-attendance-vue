@@ -352,8 +352,8 @@ const textareaClass =
             </p>
           </section>
 
-          <!-- Daily entries -->
-          <section v-if="selectedReport.dailyEntries.length || selectedReport.funding === 'DOLE'" class="grid gap-2">
+          <!-- Daily entries (DOLE only) -->
+          <section v-if="selectedReport.funding === 'DOLE'" class="grid gap-2">
             <h3 class="text-xs font-semibold uppercase text-muted-foreground">Daily entries</h3>
             <ul class="divide-y rounded-lg border">
               <li v-for="day in selectedReport.dailyEntries" :key="day.date" class="grid gap-1 px-3 py-2">

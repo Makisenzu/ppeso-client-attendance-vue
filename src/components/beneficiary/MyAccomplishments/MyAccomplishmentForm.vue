@@ -38,11 +38,9 @@ const {
   days,
   dayErrors,
   dayStatuses,
-  showDaily,
   missingDays,
   setDayStatus,
   onDayInput,
-  openDailyEntries,
   entryMax,
   activities,
   activityErrors,
@@ -224,14 +222,11 @@ const textareaClass =
           <p v-if="detailErrors.activities" class="text-xs text-destructive">{{ detailErrors.activities }}</p>
         </section>
 
-        <!-- ─── Daily entries (DOLE: the report itself; PGAS: optional) ─── -->
-        <section v-if="showDaily" class="grid gap-3" aria-labelledby="report-daily-title">
+        <!-- ─── Daily entries (DOLE only: the report itself) ─── -->
+        <section v-if="isDole" class="grid gap-3" aria-labelledby="report-daily-title">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="report-daily-title" class="text-sm font-semibold">
-              {{ isDole ? 'What you did each day' : 'Daily entries' }}
-              <span v-if="!isDole" class="font-normal text-muted-foreground">(optional)</span>
-            </h2>
-            <span v-if="isDole && missingDays > 0 && !isReadOnly" class="text-xs text-muted-foreground">
+            <h2 id="report-daily-title" class="text-sm font-semibold">What you did each day</h2>
+            <span v-if="missingDays > 0 && !isReadOnly" class="text-xs text-muted-foreground">
               {{ missingDays }} weekday{{ missingDays > 1 ? 's' : '' }} left to fill
             </span>
           </div>
@@ -276,17 +271,6 @@ const textareaClass =
             </li>
           </ul>
         </section>
-        <Button
-          v-else-if="!isReadOnly"
-          type="button"
-          variant="outline"
-          size="sm"
-          class="w-fit gap-1.5 text-xs cursor-pointer"
-          @click="openDailyEntries"
-        >
-          <Plus class="h-3.5 w-3.5" />
-          <span>Add daily entries</span>
-        </Button>
 
         <!-- ─── PGAS: Acknowledgement Receipt of Payment ─── -->
         <section v-if="!isDole" class="grid gap-3" aria-labelledby="report-payment-title">
