@@ -218,11 +218,11 @@ const {
 
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <label class="space-y-1">
-                <span class="block text-[11px] text-muted-foreground">Regular Days Hours</span>
-                <Input v-model="regularHours" placeholder="e.g. 8:00 AM - 5:00 PM" class="h-8 bg-background text-base md:text-xs" />
+                <span class="block text-[11px] text-muted-foreground">Regular Days</span>
+                <Input v-model="regularHours" placeholder="e.g. Monday - Friday" class="h-8 bg-background text-base md:text-xs" />
               </label>
               <label class="space-y-1">
-                <span class="block text-[11px] text-muted-foreground">Saturdays Hours</span>
+                <span class="block text-[11px] text-muted-foreground">Saturdays</span>
                 <Input v-model="saturdayHours" placeholder="e.g. None" class="h-8 bg-background text-base md:text-xs" />
               </label>
               <label class="space-y-1">
