@@ -38,3 +38,18 @@ export interface TeamTodaySummary {
   late: number
   notIn: number
 }
+
+/** One GIP on the supervisor's Accomplishment Reports list, with their report counts. */
+export interface TeamGipRow {
+  member: TeamMember
+  toReview: number
+  returned: number
+  reviewed: number
+  total: number
+  /** Period of their latest submitted report ('' when none), and when it was submitted */
+  latestPeriodStart: string
+  latestPeriodEnd: string
+  latestSubmittedAt: string | null
+}
+
+export type TeamGipStatusFilter = 'active' | 'inactive' | 'ALL'

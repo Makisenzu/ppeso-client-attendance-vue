@@ -105,18 +105,18 @@ src/
 │   ├── sidebars/            # PesoSidebar, SupervisorSidebar, BeneficiarySidebar (+ index.ts)
 │   ├── peso/                # Admin screens: Dashboard/, attendance/, ClientRecords/, Offices/,
 │   │                        #   UserManagement/, UserKiosk/, Calendar/
-│   ├── supervisor/          # Supervisor screens (Dashboard/, TeamAttendance/) — read-only, own office
+│   ├── supervisor/          # Supervisor screens (Dashboard/, TeamAttendance/, TeamAccomplishments/) — read-only, own office
 │   └── beneficiary/         # Beneficiary screens (Dashboard/)
 ├── composables/
 │   ├── common/              # usePsgc, useSidebarUser
 │   ├── peso/                # useAttendance, useKiosk, useDtrGenerator, useDtrSlip, useClientRecords,
 │   │                        #   useClientRecordSheet, useOffice, useUserManagement, useDashboard
-│   ├── supervisor/          # useSupervisorSidebar, useSupervisorDashboard, useTeamAttendance
+│   ├── supervisor/          # useSupervisorSidebar, useSupervisorDashboard, useTeamAttendance, useTeamAccomplishments
 │   ├── beneficiary/         # useBeneficiarySidebar
 │   └── useAuthForm.ts       # Shared login/signup form state
 ├── helpers/
 │   ├── common/              # persistentCache, psgcHelpers
-│   ├── supervisor/          # teamHelper (today status, member options, team search)
+│   ├── supervisor/          # teamHelper (today status, member options, team search, GIP report rows)
 │   └── peso/                # attendanceHelper, kioskhelper, dtrHelper, clientRecordHelper,
 │                            #   dashboardHelper, officeHelper, userManagementHelper
 ├── layouts/                 # PesoLayout, SupervisorLayout, BeneficiaryLayout, auth/AuthLayout

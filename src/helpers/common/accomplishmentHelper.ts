@@ -181,6 +181,16 @@ export const REVIEW_STATUS_FILTER_OPTIONS: SearchSelectOption[] = REPORT_STATUS_
   (option) => option.value !== 'Draft',
 )
 
+/** Supervisors read a submitted report as "Pending" (waiting for their review); the stored status stays Submitted */
+export const SUPERVISOR_REVIEW_STATUS_FILTER_OPTIONS: SearchSelectOption[] = REVIEW_STATUS_FILTER_OPTIONS.map(
+  (option) => (option.value === 'Submitted' ? { ...option, label: 'Pending' } : option),
+)
+
+/** Status label on the review screen: "Pending" for a submitted report when the reviewer is a supervisor */
+export function formatReviewStatusLabel(status: ReportStatus | string, asSupervisor: boolean): string {
+  return asSupervisor && status === 'Submitted' ? 'Pending' : status
+}
+
 export const REPORT_FUNDING_FILTER_OPTIONS: SearchSelectOption[] = [
   { value: 'ALL', label: 'All Forms' },
   { value: 'DOLE', label: 'DOLE' },

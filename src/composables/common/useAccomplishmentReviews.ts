@@ -1,4 +1,5 @@
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, type Ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/authStore'
 import { accomplishmentReviewService } from '@/services/common/accomplishmentReviewService'
@@ -10,8 +11,10 @@ import {
   fundingFormTitle,
   getReportDayBadgeClass,
   getReportStatusBadgeClass,
+  formatReviewStatusLabel,
   REPORT_FUNDING_FILTER_OPTIONS,
   REVIEW_STATUS_FILTER_OPTIONS,
+  SUPERVISOR_REVIEW_STATUS_FILTER_OPTIONS,
 } from '@/helpers/common/accomplishmentHelper'
 import { buildAccomplishmentDocument } from '@/helpers/common/accomplishmentPrintHelper'
 import { formatDisplayDateTimeLong } from '@/helpers/common/dateFormatHelper'
@@ -25,23 +28,38 @@ type ReviewAction = 'Reviewed' | 'Returned' | 'Submitted'
  * Accomplishment Reports review screen, shared by admins (every office) and supervisors (their own office —
  * RLS decides which rows load). Only admins delete; supervisors get no selection column (DESIGN.md §11.1
  * exemption: they cannot delete reports).
+ *
+ * With `profileId` it lists one person's reports (supervisor → GIP list → View); the header then shows their
+ * name with a way back to the list, and every status is shown at first.
  */
-export function useAccomplishmentReviews() {
+export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
   const toast = useToastAlert()
+  const router = useRouter()
   const { printHtml } = usePrintDocument()
   const { isAdmin } = storeToRefs(useAuthStore())
   const canDelete = computed(() => isAdmin.value)
 
+  const isPersonView = computed(() => Boolean(profileId?.value))
+  const personName = ref('')
+  /** Table columns: selection (admins) + beneficiary (all-people view) + period, form, status, submitted, actions */
+  const columnCount = computed(() => 5 + (canDelete.value ? 1 : 0) + (isPersonView.value ? 0 : 1))
+
   const reports = ref<ReviewReport[]>([])
   const isLoading = ref(false)
   const searchQuery = ref('')
-  const statusFilter = ref<string>('Submitted')
+  const statusFilter = ref<string>(isPersonView.value ? 'ALL' : 'Submitted')
   const fundingFilter = ref<string>('ALL')
 
   const fetchReports = async () => {
     isLoading.value = true
     try {
-      reports.value = await accomplishmentReviewService.getReports()
+      const id = profileId?.value
+      const [rows, name] = await Promise.all([
+        accomplishmentReviewService.getReports(id),
+        id ? accomplishmentReviewService.getPersonName(id) : Promise.resolve(''),
+      ])
+      reports.value = rows
+      personName.value = name ?? rows[0]?.fullName ?? ''
     } catch (err) {
       console.error('Failed to load accomplishment reports.')
       toast.show(err instanceof Error ? err.message : 'Failed to load reports.', 'error')
@@ -58,7 +76,7 @@ export function useAccomplishmentReviews() {
   })
   const statCards = computed(() => [
     { key: 'ALL', label: 'All Reports', value: reports.value.length },
-    { key: 'Submitted', label: 'To Review', value: counts.value.Submitted },
+    { key: 'Submitted', label: isAdmin.value ? 'To Review' : 'Pending', value: counts.value.Submitted },
     { key: 'Returned', label: 'Returned', value: counts.value.Returned },
     { key: 'Reviewed', label: 'Reviewed', value: counts.value.Reviewed },
   ])
@@ -255,34 +273,58 @@ export function useAccomplishmentReviews() {
   const undoReview = () => applyReview('Submitted')
 
   // ─── Print ───
-  const printReport = (report: ReviewReport) => {
-    printHtml(
-      buildAccomplishmentDocument(
-        {
-          funding: report.funding,
-          dailyEntries: report.dailyEntries,
-          activities: report.activities,
-          designation: report.designation,
-          supervisorName: report.supervisorName,
-          approverName: report.approverName,
-          approverPosition: report.approverPosition,
-          amount: report.amount,
-          amountInWords: report.amountInWords,
-        },
-        { name: report.fullName, office: report.officeName ?? '', from: report.periodStart, to: report.periodEnd },
-        window.location.origin,
-      ),
+  /** The report on its official form — what Print sends, and what supervisors read in the review sheet */
+  const buildReportDocument = (report: ReviewReport) =>
+    buildAccomplishmentDocument(
+      {
+        funding: report.funding,
+        dailyEntries: report.dailyEntries,
+        activities: report.activities,
+        designation: report.designation,
+        supervisorName: report.supervisorName,
+        approverName: report.approverName,
+        approverPosition: report.approverPosition,
+        amount: report.amount,
+        amountInWords: report.amountInWords,
+      },
+      { name: report.fullName, office: report.officeName ?? '', from: report.periodStart, to: report.periodEnd },
+      window.location.origin,
     )
+
+  /** Supervisors review the report as it will be printed; admins keep the itemised view. */
+  const showPrintedForm = computed(() => !isAdmin.value)
+  const selectedDocument = computed(() =>
+    showPrintedForm.value && selectedReport.value ? buildReportDocument(selectedReport.value) : '',
+  )
+
+  const printReport = (report: ReviewReport) => {
+    printHtml(buildReportDocument(report))
   }
   const printSelected = () => {
     if (selectedReport.value) printReport(selectedReport.value)
   }
 
+  /** Person view: back to the supervisor's GIP list */
+  const goBackToList = () => {
+    void router.push({ name: 'supervisor-accomplishments' })
+  }
+
   onMounted(() => {
     void fetchReports()
   })
+  // Same page, another person (the route reuses the component): load their reports
+  if (profileId) {
+    watch(profileId, () => {
+      personName.value = ''
+      void fetchReports()
+    })
+  }
 
   return {
+    isPersonView,
+    personName,
+    columnCount,
+    goBackToList,
     canDelete,
     reports,
     isLoading,
@@ -292,7 +334,9 @@ export function useAccomplishmentReviews() {
     searchQuery,
     statusFilter,
     fundingFilter,
-    statusOptions: REVIEW_STATUS_FILTER_OPTIONS,
+    statusOptions: computed(() => (isAdmin.value ? REVIEW_STATUS_FILTER_OPTIONS : SUPERVISOR_REVIEW_STATUS_FILTER_OPTIONS)),
+    /** "Pending" instead of "Submitted" for supervisors */
+    formatStatus: (status: string) => formatReviewStatusLabel(status, !isAdmin.value),
     fundingOptions: REPORT_FUNDING_FILTER_OPTIONS,
     hasActiveFilters,
     resetFilters,
@@ -323,6 +367,8 @@ export function useAccomplishmentReviews() {
     onDeleteDialogChange,
     confirmDelete,
     selectedReport,
+    showPrintedForm,
+    selectedDocument,
     isReviewOpen,
     remarks,
     remarksError,

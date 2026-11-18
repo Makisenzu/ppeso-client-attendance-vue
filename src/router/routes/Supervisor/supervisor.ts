@@ -22,7 +22,15 @@ export const supervisorRoutes: RouteRecordRaw[] = [
       {
         path: 'accomplishments',
         name: 'supervisor-accomplishments',
+        component: () => import('@/components/supervisor/TeamAccomplishments/TeamAccomplishments.vue'),
+        meta: { title: 'Accomplishment Reports' },
+      },
+      {
+        // One GIP's reports (View on the list); RLS limits it to people in the supervisor's office
+        path: 'accomplishments/:profileId',
+        name: 'supervisor-accomplishment-member',
         component: () => import('@/components/common/Accomplishments/AccomplishmentReviews.vue'),
+        props: true,
         meta: { title: 'Accomplishment Reports' },
       },
       {

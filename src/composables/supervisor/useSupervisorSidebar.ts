@@ -15,13 +15,15 @@ export function useSupervisorSidebar() {
 
   const operationsItems: SidebarNavItem[] = [
     { title: 'Team Attendance', to: { name: 'supervisor-attendance' }, icon: FingerprintPattern },
-    { title: 'Accomplishments', to: { name: 'supervisor-accomplishments' }, icon: ClipboardList },
+    { title: 'Accom. Reports', to: { name: 'supervisor-accomplishments' }, icon: ClipboardList },
   ]
 
   const isDashboard = computed(() => route.name === 'supervisor-dashboard')
 
-  /** Highlights the current Operations item. */
-  const isNavItemActive = (item: SidebarNavItem) => route.name === item.to.name
+  /** Highlights the current Operations item (a GIP's reports count as Accomplishments). */
+  const isNavItemActive = (item: SidebarNavItem) =>
+    route.name === item.to.name ||
+    (item.to.name === 'supervisor-accomplishments' && route.name === 'supervisor-accomplishment-member')
 
   return {
     ...sidebarUser,

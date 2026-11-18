@@ -1,6 +1,9 @@
 import type { SearchSelectOption } from '@/types/common/searchSelect'
+import type { ReviewReport } from '@/types/common/accomplishment'
 import type {
   TeamAttendanceRecord,
+  TeamGipRow,
+  TeamGipStatusFilter,
   TeamMember,
   TeamTodayRow,
   TeamTodaySummary,
@@ -120,3 +123,61 @@ export const TEAM_TODAY_STAT_CARDS: TeamTodayStatCard[] = [
   { key: 'late', label: 'Late Today', hint: 'Late AM or PM check-in', valueClass: 'text-amber-600 dark:text-amber-400' },
   { key: 'notIn', label: 'Not In', hint: 'No check-in or absent', valueClass: 'text-destructive' },
 ]
+
+// ─── Accomplishment Reports: GIP list ───
+
+/** The GIPs (position "gip") of the office with their report counts; ones with reports to review first. */
+export function buildGipRows(
+  members: TeamMember[],
+  reports: Pick<ReviewReport, 'profileId' | 'status' | 'periodStart' | 'periodEnd' | 'submittedAt'>[],
+): TeamGipRow[] {
+  const byMember = new Map<string, typeof reports>()
+  for (const r of reports) {
+    const list = byMember.get(r.profileId) ?? []
+    list.push(r)
+    byMember.set(r.profileId, list)
+  }
+  return members
+    .filter((m) => m.position === 'gip')
+    .map((member) => {
+      const own = byMember.get(member.id) ?? []
+      // Reports arrive newest submission first
+      const latest = own[0]
+      return {
+        member,
+        toReview: own.filter((r) => r.status === 'Submitted').length,
+        returned: own.filter((r) => r.status === 'Returned').length,
+        reviewed: own.filter((r) => r.status === 'Reviewed').length,
+        total: own.length,
+        latestPeriodStart: latest?.periodStart ?? '',
+        latestPeriodEnd: latest?.periodEnd ?? '',
+        latestSubmittedAt: latest?.submittedAt ?? null,
+      }
+    })
+    .sort((a, b) => b.toReview - a.toReview || a.member.fullName.localeCompare(b.member.fullName))
+}
+
+export function gipRowMatches(row: TeamGipRow, query: string, status: TeamGipStatusFilter): boolean {
+  if (status !== 'ALL' && (row.member.status ?? 'active') !== status) return false
+  const q = query.trim().toLowerCase()
+  return !q || row.member.fullName.toLowerCase().includes(q)
+}
+
+export const GIP_STATUS_OPTIONS: SearchSelectOption[] = [
+  { value: 'active', label: 'Current GIPs' },
+  { value: 'inactive', label: 'Former GIPs' },
+  { value: 'ALL', label: 'All GIPs' },
+]
+
+export function formatMemberStatusLabel(status: TeamMember['status']): string {
+  if (status === 'inactive') return 'Inactive'
+  if (status === 'pending') return 'Pending'
+  return 'Active'
+}
+
+/** Account status badge (status colors live in helpers — DESIGN.md §2 rule 5). */
+export function getMemberStatusBadgeClass(status: TeamMember['status']): string {
+  if (status === 'inactive') return 'bg-muted text-muted-foreground border-border'
+  if (status === 'pending') return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+  return 'bg-success/10 text-success border-success/30'
+}

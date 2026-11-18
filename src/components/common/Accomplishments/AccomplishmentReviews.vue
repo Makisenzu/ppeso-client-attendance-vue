@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Check, ClipboardList, Eye, Filter, Loader2, Printer, RefreshCw, Search, Trash2, Undo2, X } from '@lucide/vue'
+import { toRef } from 'vue'
+import { ArrowLeft, Check, ClipboardList, Eye, Filter, Loader2, Printer, RefreshCw, Search, Trash2, Undo2, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -16,9 +17,19 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import SearchSelect from '@/components/common/SearchSelect.vue'
+import AccomplishmentDocumentPreview from '@/components/common/Accomplishments/AccomplishmentDocumentPreview.vue'
 import { useAccomplishmentReviews } from '@/composables/common/useAccomplishmentReviews'
 
+const props = defineProps<{
+  /** One person's reports (supervisor → GIP list → View); omitted = every report the user may review */
+  profileId?: string
+}>()
+
 const {
+  isPersonView,
+  personName,
+  columnCount,
+  goBackToList,
   canDelete,
   reports,
   isLoading,
@@ -29,6 +40,7 @@ const {
   statusFilter,
   fundingFilter,
   statusOptions,
+  formatStatus,
   fundingOptions,
   hasActiveFilters,
   resetFilters,
@@ -59,6 +71,8 @@ const {
   onDeleteDialogChange,
   confirmDelete,
   selectedReport,
+  showPrintedForm,
+  selectedDocument,
   isReviewOpen,
   remarks,
   remarksError,
@@ -81,7 +95,7 @@ const {
   fundingFormTitle,
   getReportStatusBadgeClass,
   getReportDayBadgeClass,
-} = useAccomplishmentReviews()
+} = useAccomplishmentReviews(toRef(props, 'profileId'))
 
 const checkboxClass =
   'h-4 w-4 cursor-pointer rounded border-input accent-primary align-middle disabled:cursor-not-allowed disabled:opacity-50'
@@ -94,7 +108,25 @@ const textareaClass =
   <div class="flex flex-col gap-6 pb-12">
     <!-- ─── Header ─── -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="space-y-1">
+      <div v-if="isPersonView" class="flex items-start gap-3 min-w-0">
+        <Button
+          variant="outline"
+          size="icon"
+          class="h-9 w-9 shrink-0 cursor-pointer"
+          title="Back to the GIP list"
+          aria-label="Back to the GIP list"
+          @click="goBackToList"
+        >
+          <ArrowLeft class="h-4 w-4" />
+        </Button>
+        <div class="space-y-1 min-w-0">
+          <h1 class="text-2xl font-bold tracking-tight sm:text-3xl text-foreground truncate">
+            {{ personName || (isLoading ? 'Loading...' : 'Accomplishment Reports') }}
+          </h1>
+          <p class="text-sm text-muted-foreground">Their submitted accomplishment reports. Open one to review it.</p>
+        </div>
+      </div>
+      <div v-else class="space-y-1">
         <h1 class="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">Accomplishment Reports</h1>
         <p class="text-sm text-muted-foreground">Review submitted reports, or return them with remarks.</p>
       </div>
@@ -141,7 +173,7 @@ const textareaClass =
         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <div class="sm:col-span-2 relative">
             <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input v-model="searchQuery" placeholder="Search by name, office or month..." class="pl-9 h-9 text-base md:text-xs" />
+            <Input v-model="searchQuery" :placeholder="isPersonView ? 'Search by month...' : 'Search by name, office or month...'" class="pl-9 h-9 text-base md:text-xs" />
           </div>
           <SearchSelect v-model="statusFilter" :options="statusOptions" :searchable="false" />
           <SearchSelect v-model="fundingFilter" :options="fundingOptions" :searchable="false" />
@@ -182,8 +214,8 @@ const textareaClass =
                     @change="toggleSelectPage"
                   />
                 </TableHead>
-                <TableHead class="min-w-44 text-xs font-semibold" :class="!canDelete && 'pl-4'">Beneficiary</TableHead>
-                <TableHead class="min-w-44 text-xs font-semibold">Period</TableHead>
+                <TableHead v-if="!isPersonView" class="min-w-44 text-xs font-semibold" :class="!canDelete && 'pl-4'">Beneficiary</TableHead>
+                <TableHead class="min-w-44 text-xs font-semibold" :class="isPersonView && !canDelete && 'pl-4'">Period</TableHead>
                 <TableHead class="min-w-16 text-xs font-semibold">Form</TableHead>
                 <TableHead class="min-w-24 text-xs font-semibold">Status</TableHead>
                 <TableHead class="min-w-44 text-xs font-semibold">Submitted</TableHead>
@@ -192,7 +224,7 @@ const textareaClass =
             </TableHeader>
             <TableBody>
               <TableRow v-if="isLoading">
-                <TableCell :colspan="canDelete ? 7 : 6" class="h-40 text-center">
+                <TableCell :colspan="columnCount" class="h-40 text-center">
                   <div class="flex flex-col items-center justify-center gap-2 py-6">
                     <Loader2 class="h-8 w-8 animate-spin text-primary" />
                     <p class="text-xs text-muted-foreground">Loading reports...</p>
@@ -215,18 +247,18 @@ const textareaClass =
                       @change="toggleSelect(report.id)"
                     />
                   </TableCell>
-                  <TableCell class="py-3" :class="!canDelete && 'pl-4'">
+                  <TableCell v-if="!isPersonView" class="py-3" :class="!canDelete && 'pl-4'">
                     <div class="flex flex-col min-w-0">
                       <span class="text-xs sm:text-sm font-semibold text-foreground truncate">{{ report.fullName }}</span>
                       <span class="text-[11px] text-muted-foreground truncate">{{ report.officeName || 'Unassigned' }}</span>
                     </div>
                   </TableCell>
-                  <TableCell class="py-3 text-xs text-foreground whitespace-nowrap">
+                  <TableCell class="py-3 text-xs text-foreground whitespace-nowrap" :class="isPersonView && !canDelete && 'pl-4'">
                     {{ formatPeriodRange(report.periodStart, report.periodEnd) }}
                   </TableCell>
                   <TableCell class="py-3 text-xs text-muted-foreground">{{ report.funding }}</TableCell>
                   <TableCell class="py-3">
-                    <Badge variant="outline" :class="[getReportStatusBadgeClass(report.status), 'text-[10px]']">{{ report.status }}</Badge>
+                    <Badge variant="outline" :class="[getReportStatusBadgeClass(report.status), 'text-[10px]']">{{ formatStatus(report.status) }}</Badge>
                   </TableCell>
                   <TableCell class="py-3 text-xs text-muted-foreground whitespace-nowrap">
                     {{ formatDisplayDateTimeLong(report.submittedAt) }}
@@ -256,7 +288,7 @@ const textareaClass =
                 </TableRow>
               </template>
 
-              <TableEmpty v-else :colspan="canDelete ? 7 : 6">
+              <TableEmpty v-else :colspan="columnCount">
                 <Empty class="border-0 p-6 md:p-8">
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
@@ -265,7 +297,7 @@ const textareaClass =
                     </EmptyMedia>
                     <EmptyTitle>{{ reports.length === 0 ? 'No reports yet' : 'No matching reports' }}</EmptyTitle>
                     <EmptyDescription>
-                      {{ reports.length === 0 ? 'Submitted accomplishment reports will appear here.' : 'No reports match your search or filters.' }}
+                      {{ reports.length === 0 ? (isPersonView ? 'Reports this GIP submits will appear here.' : 'Submitted accomplishment reports will appear here.') : 'No reports match your search or filters.' }}
                     </EmptyDescription>
                   </EmptyHeader>
                   <EmptyContent v-if="reports.length > 0">
@@ -305,7 +337,7 @@ const textareaClass =
 
     <!-- ─── Review sheet ─── -->
     <Sheet :open="isReviewOpen" @update:open="onReviewOpenChange">
-      <SheetContent class="flex h-full flex-col p-0 sm:max-w-xl">
+      <SheetContent class="flex h-full flex-col p-0" :class="showPrintedForm ? 'sm:max-w-3xl' : 'sm:max-w-xl'">
         <SheetHeader class="shrink-0 px-6 pt-6 pb-2">
           <SheetTitle>{{ selectedReport ? fundingFormTitle(selectedReport.funding) : 'Report' }}</SheetTitle>
           <SheetDescription v-if="selectedReport" class="text-xs">
@@ -316,11 +348,19 @@ const textareaClass =
 
         <div v-if="selectedReport" class="grid flex-1 content-start gap-5 overflow-y-auto px-6 py-4 text-sm">
           <div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="outline" :class="getReportStatusBadgeClass(selectedReport.status)">{{ selectedReport.status }}</Badge>
+            <Badge variant="outline" :class="getReportStatusBadgeClass(selectedReport.status)">{{ formatStatus(selectedReport.status) }}</Badge>
             <span>Submitted {{ formatDisplayDateTimeLong(selectedReport.submittedAt) }}</span>
             <span v-if="selectedReport.reviewedAt">· Reviewed {{ formatDisplayDateTimeLong(selectedReport.reviewedAt) }}</span>
           </div>
 
+          <!-- Supervisors: the report on its official form, exactly as printed -->
+          <AccomplishmentDocumentPreview
+            v-if="showPrintedForm"
+            :document="selectedDocument"
+            :title="`${fundingFormTitle(selectedReport.funding)} of ${selectedReport.fullName}, as printed`"
+          />
+
+          <template v-else>
           <!-- PGAS activities -->
           <section v-if="selectedReport.funding === 'PGAS'" class="grid gap-2">
             <h3 class="text-xs font-semibold uppercase text-muted-foreground">Activities</h3>
@@ -377,6 +417,7 @@ const textareaClass =
               <span v-if="selectedReport.approverPosition" class="text-muted-foreground">({{ selectedReport.approverPosition }})</span>
             </p>
           </section>
+          </template>
 
           <!-- Remarks -->
           <section class="grid gap-1.5">

@@ -20,14 +20,18 @@ function chunks<T>(items: T[]): T[][] {
  * (enforced by the database trigger); only admins may delete.
  */
 export const accomplishmentReviewService = {
-  /** Submitted, Returned and Reviewed reports, newest submission first, with the writer's name and office */
-  async getReports(): Promise<ReviewReport[]> {
-    const { data, error } = await supabase
+  /**
+   * Submitted, Returned and Reviewed reports, newest submission first, with the writer's name and office.
+   * `profileId` narrows it to one person's reports (a supervisor viewing one GIP).
+   */
+  async getReports(profileId?: string): Promise<ReviewReport[]> {
+    let query = supabase
       .schema('core')
       .from('accomplishment_reports')
       .select(REPORT_COLUMNS)
       .neq('status', 'Draft')
-      .order('submitted_at', { ascending: false })
+    if (profileId) query = query.eq('profile_id', profileId)
+    const { data, error } = await query.order('submitted_at', { ascending: false })
 
     if (error) throw new Error('Failed to load accomplishment reports.')
     const rows = data ?? []
@@ -65,6 +69,17 @@ export const accomplishmentReviewService = {
         officeCode: office?.code ?? null,
       }
     })
+  },
+
+  /** The name of the person whose reports are listed (RLS: a supervisor reads only their own office) */
+  async getPersonName(profileId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('firstname, middlename, lastname')
+      .eq('id', profileId)
+      .maybeSingle()
+    if (error) throw new Error('Failed to load this person.')
+    return data ? formatNameWithMiddleInitial(data.firstname, data.middlename, data.lastname) : null
   },
 
   /** Reviewed, Returned (with remarks) or back to Submitted (undo); returns whether the row changed */
