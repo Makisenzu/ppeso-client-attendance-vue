@@ -20,7 +20,6 @@ import { useMyAccomplishmentForm } from '@/composables/beneficiary/useMyAccompli
 
 const {
   isLoading,
-  isNew,
   isNotFound,
   context,
   currentReport,
@@ -28,6 +27,7 @@ const {
   isDole,
   formTitle,
   isReadOnly,
+  pageTitle,
   periodFrom,
   periodTo,
   periodMin,
@@ -68,6 +68,11 @@ const {
   confirmEarlySubmit,
   onEarlySubmitDialogChange,
   printCurrent,
+  reviewedDocument,
+  previewBoxStyle,
+  previewFrameStyle,
+  onPreviewLoad,
+  printReviewed,
   goBack,
   formatWeekday,
   formatDisplayDate,
@@ -80,16 +85,16 @@ const textareaClass =
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-3xl flex-col gap-6 pb-12">
+  <!-- The editor stays narrow; a reviewed report (shown as printed) uses the full width -->
+  <div class="mx-auto flex w-full flex-col gap-6 pb-12" :class="isReadOnly ? '' : 'max-w-3xl'">
     <!-- ─── Header ─── -->
     <div class="flex flex-col gap-1">
       <Button variant="ghost" size="sm" class="-ml-2 w-fit gap-1.5 text-xs cursor-pointer" :disabled="isSaving" @click="goBack">
         <ArrowLeft class="h-4 w-4" />
         <span>Back to Accomplishments</span>
       </Button>
-      <h1 class="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
-        {{ isNew ? 'New Report' : isReadOnly ? 'Accomplishment Report' : 'Edit Report' }}
-      </h1>
+      <h1 v-if="pageTitle" class="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">{{ pageTitle }}</h1>
+      <Skeleton v-else class="h-8 w-64 sm:h-9" />
     </div>
 
     <Skeleton v-if="isLoading" class="h-[28rem] w-full" />
@@ -116,6 +121,44 @@ const textareaClass =
             <EmptyDescription>Ask PESO to set your funding (DOLE or PGAS) before writing a report.</EmptyDescription>
           </EmptyHeader>
         </Empty>
+      </CardContent>
+    </Card>
+
+    <!-- ─── Reviewed: the report as it prints ─── -->
+    <Card v-else-if="isReadOnly && currentReport">
+      <CardHeader class="gap-3">
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div class="min-w-0 space-y-1">
+            <CardTitle class="text-base">{{ formTitle }}</CardTitle>
+            <CardDescription class="text-xs">
+              Reviewed {{ formatDisplayDate(currentReport.reviewedAt) }}. It can no longer be changed.
+            </CardDescription>
+          </div>
+          <div class="flex items-center gap-2">
+            <Badge variant="outline" :class="getReportStatusBadgeClass(currentReport.status)">{{ currentReport.status }}</Badge>
+            <Button variant="outline" size="sm" class="gap-1.5 text-xs cursor-pointer" @click="printReviewed">
+              <Printer class="h-3.5 w-3.5" />
+              <span>Print</span>
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div class="rounded-lg bg-muted/30 p-2 sm:p-4">
+          <!-- The official form is black on white in both themes, like the printout. No sandbox: the document is
+               built by accomplishmentPrintHelper (every value escaped, no scripts), and a sandbox only made the
+               browser log "Blocked script execution" when extensions inject scripts into frames. -->
+          <!-- Paper-width page scaled to fit (sizes are computed at runtime, hence the inline styles) -->
+          <div ref="previewBox" class="relative w-full overflow-hidden" :style="previewBoxStyle">
+            <iframe
+              :srcdoc="reviewedDocument"
+              title="Accomplishment report as printed"
+              class="absolute left-0 top-0 border-0 shadow-md"
+              :style="previewFrameStyle"
+              @load="onPreviewLoad"
+            />
+          </div>
+        </div>
       </CardContent>
     </Card>
 
@@ -158,10 +201,6 @@ const textareaClass =
         <div v-if="currentReport?.status === 'Returned' && currentReport.reviewRemarks" class="border-l-2 border-destructive pl-3">
           <p class="text-xs font-semibold text-destructive uppercase">Returned with remarks</p>
           <p class="text-sm text-foreground whitespace-pre-line">{{ currentReport.reviewRemarks }}</p>
-        </div>
-
-        <div v-if="currentReport?.status === 'Reviewed'" class="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
-          Reviewed on {{ formatDisplayDate(currentReport.reviewedAt) }}. It can no longer be changed.
         </div>
 
         <!-- ─── PGAS: Activities / Output / Remarks ─── -->

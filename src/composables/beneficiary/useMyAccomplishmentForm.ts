@@ -1,4 +1,4 @@
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { myAccomplishmentService } from '@/services/beneficiary/myAccomplishmentService'
 import {
@@ -87,6 +87,12 @@ export function useMyAccomplishmentForm() {
   const isDole = computed(() => funding.value === 'DOLE')
   const formTitle = computed(() => (funding.value ? fundingFormTitle(funding.value) : 'Accomplishment Report'))
   const isReadOnly = computed(() => currentReport.value?.status === 'Reviewed')
+  /** Empty while an existing report loads, so the page never flashes "Edit Report" before a reviewed one */
+  const pageTitle = computed(() => {
+    if (isNew.value) return 'New Report'
+    if (isLoading.value) return ''
+    return isReadOnly.value || isNotFound.value ? 'Accomplishment Report' : 'Edit Report'
+  })
 
   // ─── Period ───
   const periodFrom = ref('')
@@ -405,6 +411,85 @@ export function useMyAccomplishmentForm() {
     )
   }
 
+  // ─── Reviewed report: shown as its printed form ───
+  /** The saved report on its official form (same document Print sends), for a report that can't change anymore */
+  const reviewedDocument = computed(() => {
+    const report = currentReport.value
+    if (!report || report.status !== 'Reviewed') return ''
+    return buildAccomplishmentDocument(
+      {
+        funding: report.funding,
+        dailyEntries: report.dailyEntries,
+        activities: report.activities,
+        designation: report.designation,
+        supervisorName: report.supervisorName,
+        approverName: report.approverName,
+        approverPosition: report.approverPosition,
+        amount: report.amount,
+        amountInWords: report.amountInWords,
+      },
+      {
+        name: context.value?.fullName ?? '',
+        office: context.value?.officeName ?? '',
+        from: report.periodStart,
+        to: report.periodEnd,
+      },
+      window.location.origin,
+    )
+  })
+
+  /**
+   * The form is laid out at A4 paper width (as printed) and scaled to the space it has, like a PDF viewer:
+   * smaller on phones, larger on wide screens, never reflowed into a narrow column.
+   */
+  const PAPER_WIDTH_PX = 794 // 210mm at 96 dpi
+  const previewBox = useTemplateRef<HTMLElement>('previewBox')
+  const boxWidth = ref(PAPER_WIDTH_PX)
+  const documentHeight = ref(1123) // 297mm until the document reports its own height
+  const previewScale = computed(() => boxWidth.value / PAPER_WIDTH_PX)
+  const previewBoxStyle = computed(() => ({ height: `${Math.ceil(documentHeight.value * previewScale.value)}px` }))
+  const previewFrameStyle = computed(() => ({
+    width: `${PAPER_WIDTH_PX}px`,
+    height: `${documentHeight.value}px`,
+    transform: `scale(${previewScale.value})`,
+    transformOrigin: 'top left',
+  }))
+
+  let boxObserver: ResizeObserver | null = null
+  let documentObserver: ResizeObserver | null = null
+
+  watch(previewBox, (el) => {
+    boxObserver?.disconnect()
+    boxObserver = null
+    if (!el) return
+    boxWidth.value = el.clientWidth || PAPER_WIDTH_PX
+    boxObserver = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width > 0) boxWidth.value = entry.contentRect.width
+    })
+    boxObserver.observe(el)
+  })
+
+  const onPreviewLoad = (event: Event) => {
+    const root = (event.target as HTMLIFrameElement).contentDocument?.documentElement
+    if (!root) return
+    const fit = () => {
+      documentHeight.value = root.scrollHeight
+    }
+    fit()
+    documentObserver?.disconnect()
+    documentObserver = new ResizeObserver(fit)
+    documentObserver.observe(root)
+  }
+
+  onUnmounted(() => {
+    boxObserver?.disconnect()
+    documentObserver?.disconnect()
+  })
+
+  const printReviewed = () => {
+    if (reviewedDocument.value) printHtml(reviewedDocument.value)
+  }
+
   const goBack = () => router.push({ name: 'beneficiary-accomplishments' })
 
   // Opening another report (or the new-report page) while on this page reloads it
@@ -427,6 +512,7 @@ export function useMyAccomplishmentForm() {
     isDole,
     formTitle,
     isReadOnly,
+    pageTitle,
     periodFrom,
     periodTo,
     periodMin,
@@ -467,6 +553,11 @@ export function useMyAccomplishmentForm() {
     confirmEarlySubmit,
     onEarlySubmitDialogChange,
     printCurrent,
+    reviewedDocument,
+    previewBoxStyle,
+    previewFrameStyle,
+    onPreviewLoad,
+    printReviewed,
     goBack,
     formatWeekday,
     formatDisplayDate,
