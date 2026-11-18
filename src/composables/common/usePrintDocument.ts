@@ -32,17 +32,27 @@ export function usePrintDocument() {
         isPrinting.value = false
         return
       }
-      // Let the letterhead images load before the dialog opens
-      const images = Array.from(win.document.images)
-      Promise.all(
-        images.map((img) =>
-          img.complete ? Promise.resolve() : new Promise<void>((done) => { img.onload = img.onerror = () => done() }),
-        ),
-      ).then(() => {
-        win.focus()
-        win.print()
-        isPrinting.value = false
-      })
+      // Pictures (<img> and SVG <image>) and web fonts must be in before the dialog opens, or they print blank
+      const doc = win.document
+      const sources = [
+        ...Array.from(doc.images).map((img) => img.currentSrc || img.src),
+        ...Array.from(doc.querySelectorAll('image')).map((node) => node.getAttribute('href') ?? ''),
+      ].filter(Boolean)
+      const loadImage = (src: string) =>
+        new Promise<void>((done) => {
+          const probe = new Image()
+          probe.onload = probe.onerror = () => done()
+          probe.src = src
+          setTimeout(done, 4000)
+        })
+      const fontsReady = doc.fonts ? doc.fonts.ready.then(() => undefined) : Promise.resolve()
+      Promise.all([...sources.map(loadImage), fontsReady])
+        .then(() => new Promise((done) => setTimeout(done, 150)))
+        .then(() => {
+          win.focus()
+          win.print()
+          isPrinting.value = false
+        })
     }
 
     iframe.srcdoc = html
