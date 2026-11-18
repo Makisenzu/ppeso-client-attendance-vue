@@ -14,6 +14,12 @@ export const supervisorRoutes: RouteRecordRaw[] = [
         component: () => import('@/components/supervisor/Dashboard/SupervisorDashboard.vue'),
       },
       {
+        path: 'accomplishments',
+        name: 'supervisor-accomplishments',
+        component: () => import('@/components/common/Accomplishments/AccomplishmentReviews.vue'),
+        meta: { title: 'Accomplishment Reports' },
+      },
+      {
         path: 'account',
         name: 'supervisor-account',
         component: () => import('@/components/common/Account/AccountPage.vue'),

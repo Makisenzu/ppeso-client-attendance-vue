@@ -29,6 +29,12 @@ export const pesoRoutes: RouteRecordRaw[] = [
         component: () => import('@/components/peso/attendance/Attendance.vue'),
       },
       {
+        path: 'accomplishments',
+        name: 'accomplishments',
+        component: () => import('@/components/common/Accomplishments/AccomplishmentReviews.vue'),
+        meta: { title: 'Accomplishment Reports' },
+      },
+      {
         path: 'attendance/dtr',
         name: 'attendance-dtr',
         component: () => import('@/components/peso/attendance/DtrGenerator.vue'),

@@ -1,6 +1,6 @@
 import { computed, type Component } from 'vue'
 import { useRoute } from 'vue-router'
-import { Clock, Book } from '@lucide/vue'
+import { Clock, Book, ClipboardList } from '@lucide/vue'
 import { useSidebarUser } from '@/composables/common/useSidebarUser'
 
 export interface SidebarNavItem {
@@ -15,6 +15,7 @@ export function useSupervisorSidebar() {
 
   const operationsItems: SidebarNavItem[] = [
     { title: 'Daily Time Record', to: { name: 'supervisor-dashboard' }, icon: Clock },
+    { title: 'Accomplishments', to: { name: 'supervisor-accomplishments' }, icon: ClipboardList },
     { title: 'Client Records', to: { name: 'supervisor-dashboard' }, icon: Book },
   ]
 
