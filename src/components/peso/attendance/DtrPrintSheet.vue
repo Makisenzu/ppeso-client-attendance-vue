@@ -2,10 +2,13 @@
 import { Scissors } from '@lucide/vue'
 import type { DtrGenerationResult } from '@/types/peso/dtr'
 import DtrSlip from './DtrSlip.vue'
+import { useFitToWidth } from '@/composables/common/useFitToWidth'
 
 /**
  * One letter-size sheet of Civil Service Form 48, shown on screen exactly as it prints:
  * with 2 copies, each fills half the page and a dashed line marks the center cut.
+ * On screen the sheet keeps its paper size and is scaled to the available width (phones see the whole page);
+ * printing is always true size.
  * Used by the admin Generate DTR page and the beneficiary My DTR page.
  */
 defineProps<{
@@ -13,32 +16,15 @@ defineProps<{
   dualCopy: boolean
   rightCopyHasName: boolean
 }>()
+
+const { fitBoxStyle, fitContentStyle } = useFitToWidth()
 </script>
 
 <template>
-  <div class="dtr-print-canvas">
-    <div class="dtr-page-sheet" :class="dualCopy ? 'is-dual' : 'is-single'">
-      <div class="dtr-copy">
-        <DtrSlip
-          :employee-name="data.employeeName"
-          :month-display="data.monthDisplay"
-          :regular-hours="data.regularHours"
-          :saturday-hours="data.saturdayHours"
-          :supervisor-name="data.supervisorName"
-          :supervisor-title="data.supervisorTitle"
-          :rows="data.rows"
-          :active-start-day="data.activeStartDay"
-          :active-end-day="data.activeEndDay"
-          :total-days-in-month="data.totalDaysInMonth"
-          :is-duplicate-blank-name="false"
-          :signature-name="data.signatureName"
-        />
-      </div>
-
-      <template v-if="dualCopy">
-        <div class="dtr-cut-line" aria-hidden="true">
-          <Scissors class="dtr-cut-icon" />
-        </div>
+  <!-- Scaled preview box: sizes are computed at runtime, hence the inline styles -->
+  <div ref="fitBox" class="dtr-fit-box" :style="fitBoxStyle">
+    <div class="dtr-print-canvas">
+      <div ref="fitContent" class="dtr-page-sheet" :class="dualCopy ? 'is-dual' : 'is-single'" :style="fitContentStyle">
         <div class="dtr-copy">
           <DtrSlip
             :employee-name="data.employeeName"
@@ -51,11 +37,33 @@ defineProps<{
             :active-start-day="data.activeStartDay"
             :active-end-day="data.activeEndDay"
             :total-days-in-month="data.totalDaysInMonth"
-            :is-duplicate-blank-name="!rightCopyHasName"
+            :is-duplicate-blank-name="false"
             :signature-name="data.signatureName"
           />
         </div>
-      </template>
+
+        <template v-if="dualCopy">
+          <div class="dtr-cut-line" aria-hidden="true">
+            <Scissors class="dtr-cut-icon" />
+          </div>
+          <div class="dtr-copy">
+            <DtrSlip
+              :employee-name="data.employeeName"
+              :month-display="data.monthDisplay"
+              :regular-hours="data.regularHours"
+              :saturday-hours="data.saturdayHours"
+              :supervisor-name="data.supervisorName"
+              :supervisor-title="data.supervisorTitle"
+              :rows="data.rows"
+              :active-start-day="data.activeStartDay"
+              :active-end-day="data.activeEndDay"
+              :total-days-in-month="data.totalDaysInMonth"
+              :is-duplicate-blank-name="!rightCopyHasName"
+              :signature-name="data.signatureName"
+            />
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -110,6 +118,11 @@ defineProps<{
   transform: rotate(-90deg);
 }
 
+.dtr-fit-box {
+  width: 100%;
+  overflow: hidden;
+}
+
 @media screen {
   .dtr-page-sheet {
     border: 1px solid #e5e5e5;
@@ -152,7 +165,14 @@ defineProps<{
     padding: 0 !important;
   }
 
+  /* The screen preview's scaling never reaches paper */
+  .dtr-fit-box {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
   .dtr-page-sheet {
+    transform: none !important;
     margin: 0 auto !important;
     break-inside: avoid;
     -webkit-print-color-adjust: exact;

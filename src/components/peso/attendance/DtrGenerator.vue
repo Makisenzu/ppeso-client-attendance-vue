@@ -286,7 +286,7 @@ const {
         </CardHeader>
 
         <CardContent class="print:p-0">
-          <div v-if="generatedData" class="overflow-x-auto rounded-lg bg-muted/30 p-4 print:overflow-visible print:bg-transparent print:p-0">
+          <div v-if="generatedData" class="rounded-lg bg-muted/30 p-2 sm:p-4 print:bg-transparent print:p-0">
             <DtrPrintSheet :data="generatedData" :dual-copy="dualCopy" :right-copy-has-name="rightCopyHasName" />
           </div>
 
