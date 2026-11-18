@@ -35,6 +35,20 @@ export interface AttendanceRecord {
   createdAt: string
 }
 
+/** The punch columns of a record — all the status helpers need, so other screens can reuse them. */
+export type AttendancePunches = Pick<
+  AttendanceRecord,
+  | 'amCheckIn'
+  | 'amInStatus'
+  | 'amCheckOut'
+  | 'amOutStatus'
+  | 'pmCheckIn'
+  | 'pmInStatus'
+  | 'pmCheckOut'
+  | 'pmOutStatus'
+  | 'status'
+>
+
 export interface AttendanceStatsSummary {
   total: number
   onTimeCount: number

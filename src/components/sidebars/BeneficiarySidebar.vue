@@ -37,6 +37,7 @@ const {
   isVerified,
   isDashboard,
   myRecordsItems,
+  isNavItemActive,
   handleSignOut,
   accountRoute,
 } = useBeneficiarySidebar()
@@ -109,7 +110,7 @@ const {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem v-for="item in myRecordsItems" :key="item.title">
-                <SidebarMenuButton as-child :tooltip="item.title">
+                <SidebarMenuButton as-child :tooltip="item.title" :is-active="isNavItemActive(item)">
                   <RouterLink :to="item.to">
                     <component :is="item.icon" />
                     <span>{{ item.title }}</span>

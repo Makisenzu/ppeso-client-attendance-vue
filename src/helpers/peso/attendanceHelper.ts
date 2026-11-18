@@ -1,4 +1,9 @@
-import type { AttendanceRecord, AttendanceStatsSummary, PunchStatus } from '@/types/peso/attendance'
+import type {
+  AttendancePunches,
+  AttendanceRecord,
+  AttendanceStatsSummary,
+  PunchStatus,
+} from '@/types/peso/attendance'
 
 export function getInitials(name?: string | null): string {
   if (!name) return 'U'
@@ -170,7 +175,7 @@ export function parseRecordDate(
 /**
  * Returns all lowercase punch statuses present in an attendance record
  */
-export function getRecordStatuses(record: AttendanceRecord): string[] {
+export function getRecordStatuses(record: AttendancePunches): string[] {
   return [
     record.status,
     record.amInStatus,
@@ -185,7 +190,7 @@ export function getRecordStatuses(record: AttendanceRecord): string[] {
 /**
  * Check if a record or punch represents an absent attendance
  */
-export function isRecordAbsent(record: AttendanceRecord): boolean {
+export function isRecordAbsent(record: AttendancePunches): boolean {
   return (
     record.status === 'absent' ||
     record.amInStatus === 'absent' ||
@@ -199,7 +204,7 @@ export function isRecordAbsent(record: AttendanceRecord): boolean {
  * Check if a record matches a punch status filter
  */
 export function recordMatchesStatus(
-  record: AttendanceRecord,
+  record: AttendancePunches,
   status?: string | null
 ): boolean {
   if (!status || status === 'ALL') return true
@@ -288,7 +293,7 @@ export function recordMatchesDate(
   return true
 }
 
-export function computeAttendanceStats(records: AttendanceRecord[]): AttendanceStatsSummary {
+export function computeAttendanceStats(records: AttendancePunches[]): AttendanceStatsSummary {
   let onTimeCount = 0
   let lateCount = 0
   let earlyOutCount = 0

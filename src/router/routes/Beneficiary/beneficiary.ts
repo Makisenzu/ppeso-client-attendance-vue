@@ -14,6 +14,12 @@ export const beneficiaryRoutes: RouteRecordRaw[] = [
         component: () => import('@/components/beneficiary/Dashboard/BeneficiaryDashboard.vue'),
       },
       {
+        path: 'attendance',
+        name: 'beneficiary-attendance',
+        component: () => import('@/components/beneficiary/MyAttendance/MyAttendance.vue'),
+        meta: { title: 'My Attendance' },
+      },
+      {
         path: 'account',
         name: 'beneficiary-account',
         component: () => import('@/components/common/Account/AccountPage.vue'),
