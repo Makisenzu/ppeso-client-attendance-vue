@@ -20,6 +20,12 @@ export const beneficiaryRoutes: RouteRecordRaw[] = [
         meta: { title: 'My Attendance' },
       },
       {
+        path: 'dtr',
+        name: 'beneficiary-dtr',
+        component: () => import('@/components/beneficiary/MyDtr/MyDtr.vue'),
+        meta: { title: 'My DTR' },
+      },
+      {
         path: 'account',
         name: 'beneficiary-account',
         component: () => import('@/components/common/Account/AccountPage.vue'),

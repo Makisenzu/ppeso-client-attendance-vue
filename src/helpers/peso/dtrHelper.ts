@@ -1,6 +1,9 @@
-import type { AttendanceRecord } from '@/types/peso/attendance'
-import type { DtrDayRow, DtrGenerationResult, DtrOptions } from '@/types/peso/dtr'
+import type { DtrAttendance, DtrDayRow, DtrGenerationResult, DtrOptions } from '@/types/peso/dtr'
 import type { HolidayRecord } from '@/types/peso/holiday'
+
+/** Default signatory printed under "Verified as to the prescribed office hours". */
+export const DTR_DEFAULT_SUPERVISOR_NAME = 'PAULINE J. ANG'
+export const DTR_DEFAULT_SUPERVISOR_TITLE = 'PGDH / PESO Manager'
 
 /** Escapes text placed into the standalone DTR HTML document. */
 function escapeHtml(value: string): string {
@@ -130,7 +133,7 @@ export function formatMonthHeader(startDateStr: string, endDateStr: string): str
 export function buildDtrRows(
   startDateStr: string,
   endDateStr: string,
-  attendances: AttendanceRecord[],
+  attendances: DtrAttendance[],
   holidays: HolidayRecord[] = []
 ): {
   rows: DtrDayRow[]
@@ -146,7 +149,7 @@ export function buildDtrRows(
   const totalDaysInMonth = new Date(startY, startM, 0).getDate()
 
   // Build a lookup map of attendance records by day number
-  const attendanceMap = new Map<number, AttendanceRecord>()
+  const attendanceMap = new Map<number, DtrAttendance>()
   for (const rec of attendances) {
     if (rec.attendanceDate) {
       const [y, m, d] = rec.attendanceDate.split('-').map(Number)
@@ -242,7 +245,7 @@ export function buildDtrRows(
  */
 export function generateDtrData(
   options: DtrOptions,
-  attendances: AttendanceRecord[],
+  attendances: DtrAttendance[],
   holidays: HolidayRecord[] = []
 ): DtrGenerationResult {
   const employeeName = options.employee?.fullName

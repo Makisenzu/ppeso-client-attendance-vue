@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Calendar, CalendarX2, Clock, Eye, Filter, Loader2, RefreshCw, Search, X } from '@lucide/vue'
+import { Calendar, CalendarX2, Clock, Eye, FileText, Filter, Loader2, RefreshCw, Search, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -83,6 +83,7 @@ const {
   formatDisplayDateTime,
   formatPunchStatusLabel,
   getPunchStatusBadgeClass,
+  openMyDtr,
 } = useMyAttendance()
 
 const COLUMN_COUNT = 6
@@ -97,16 +98,22 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
         <h1 class="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">My Attendance</h1>
         <p class="text-sm text-muted-foreground">Your daily time records and punch logs.</p>
       </div>
-      <Button
-        variant="outline"
-        size="sm"
-        class="gap-1.5 text-xs cursor-pointer shadow-xs self-start sm:self-auto"
-        :disabled="isLoading"
-        @click="fetchRecords"
-      >
-        <RefreshCw :class="['h-3.5 w-3.5', isLoading && 'animate-spin']" />
-        <span>Refresh</span>
-      </Button>
+      <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+        <Button size="sm" class="gap-1.5 text-xs cursor-pointer shadow-xs font-semibold" @click="openMyDtr">
+          <FileText class="h-3.5 w-3.5" />
+          <span>Generate DTR</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="gap-1.5 text-xs cursor-pointer shadow-xs"
+          :disabled="isLoading"
+          @click="fetchRecords"
+        >
+          <RefreshCw :class="['h-3.5 w-3.5', isLoading && 'animate-spin']" />
+          <span>Refresh</span>
+        </Button>
+      </div>
     </div>
 
     <!-- ─── Stat cards (click to filter) ─── -->

@@ -6,6 +6,8 @@ import { attendanceService } from '@/services/peso/attendanceService'
 import { userManagementService } from '@/services/peso/userManagementService'
 import { holidayService } from '@/services/peso/holidayService'
 import {
+  DTR_DEFAULT_SUPERVISOR_NAME,
+  DTR_DEFAULT_SUPERVISOR_TITLE,
   generateDtrData,
   getDefaultDtrDateRange,
   getDtrPresetDateRange,
@@ -41,8 +43,8 @@ export function useDtrGenerator() {
   // ─── Form 48 Layout & Signatories ───
   const regularHours = ref<string>('')
   const saturdayHours = ref<string>('')
-  const supervisorName = ref<string>('PAULINE J. ANG')
-  const supervisorTitle = ref<string>('PGDH / PESO Manager')
+  const supervisorName = ref<string>(DTR_DEFAULT_SUPERVISOR_NAME)
+  const supervisorTitle = ref<string>(DTR_DEFAULT_SUPERVISOR_TITLE)
   const dualCopy = ref<boolean>(true)
   const rightCopyHasName = ref<boolean>(false)
 

@@ -1,4 +1,5 @@
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { myAttendanceService } from '@/services/beneficiary/myAttendanceService'
 import type {
   MyAttendanceDateFilter,
@@ -35,6 +36,12 @@ import { useToastAlert } from '@/composables/common/useToastAlert'
  */
 export function useMyAttendance() {
   const toast = useToastAlert()
+  const router = useRouter()
+
+  /** "Generate DTR" button: opens the My DTR page. */
+  const openMyDtr = () => {
+    router.push({ name: 'beneficiary-dtr' })
+  }
 
   const records = ref<MyAttendanceRecord[]>([])
   const isLoading = ref<boolean>(false)
@@ -173,6 +180,7 @@ export function useMyAttendance() {
   })
 
   return {
+    openMyDtr,
     // data
     records,
     filteredRecords,

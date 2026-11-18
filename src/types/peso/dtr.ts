@@ -1,4 +1,11 @@
 import type { ProfileRecord } from './userManagement'
+import type { AttendanceRecord } from './attendance'
+
+/** The attendance fields a DTR needs — lets the beneficiary My DTR page reuse the builder. */
+export type DtrAttendance = Pick<
+  AttendanceRecord,
+  'attendanceDate' | 'amCheckIn' | 'amCheckOut' | 'pmCheckIn' | 'pmCheckOut'
+>
 
 export interface DtrDayRow {
   day: number
@@ -18,7 +25,8 @@ export interface DtrDayRow {
 }
 
 export interface DtrOptions {
-  employee: ProfileRecord | null
+  /** Only the name is printed on the form. */
+  employee: Pick<ProfileRecord, 'fullName'> | null
   startDate: string // YYYY-MM-DD
   endDate: string // YYYY-MM-DD
   monthLabel?: string

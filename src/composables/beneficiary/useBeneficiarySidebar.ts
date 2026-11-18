@@ -15,7 +15,7 @@ export function useBeneficiarySidebar() {
 
   const myRecordsItems: SidebarNavItem[] = [
     { title: 'My Attendance', to: { name: 'beneficiary-attendance' }, icon: FingerprintPattern },
-    { title: 'My DTR', to: { name: 'beneficiary-dashboard' }, icon: Clock },
+    { title: 'My DTR', to: { name: 'beneficiary-dtr' }, icon: Clock },
   ]
 
   const isDashboard = computed(() => route.name === 'beneficiary-dashboard')
