@@ -1,6 +1,6 @@
 import { computed, type Component } from 'vue'
 import { useRoute } from 'vue-router'
-import { Clock, Book, ClipboardList } from '@lucide/vue'
+import { ClipboardList, FingerprintPattern } from '@lucide/vue'
 import { useSidebarUser } from '@/composables/common/useSidebarUser'
 
 export interface SidebarNavItem {
@@ -14,17 +14,20 @@ export function useSupervisorSidebar() {
   const sidebarUser = useSidebarUser()
 
   const operationsItems: SidebarNavItem[] = [
-    { title: 'Daily Time Record', to: { name: 'supervisor-dashboard' }, icon: Clock },
+    { title: 'Team Attendance', to: { name: 'supervisor-attendance' }, icon: FingerprintPattern },
     { title: 'Accomplishments', to: { name: 'supervisor-accomplishments' }, icon: ClipboardList },
-    { title: 'Client Records', to: { name: 'supervisor-dashboard' }, icon: Book },
   ]
 
   const isDashboard = computed(() => route.name === 'supervisor-dashboard')
+
+  /** Highlights the current Operations item. */
+  const isNavItemActive = (item: SidebarNavItem) => route.name === item.to.name
 
   return {
     ...sidebarUser,
     operationsItems,
     isDashboard,
+    isNavItemActive,
     accountRoute: { name: 'supervisor-account' },
   }
 }

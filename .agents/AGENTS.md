@@ -105,17 +105,18 @@ src/
 │   ├── sidebars/            # PesoSidebar, SupervisorSidebar, BeneficiarySidebar (+ index.ts)
 │   ├── peso/                # Admin screens: Dashboard/, attendance/, ClientRecords/, Offices/,
 │   │                        #   UserManagement/, UserKiosk/, Calendar/
-│   ├── supervisor/          # Supervisor screens (Dashboard/)
+│   ├── supervisor/          # Supervisor screens (Dashboard/, TeamAttendance/) — read-only, own office
 │   └── beneficiary/         # Beneficiary screens (Dashboard/)
 ├── composables/
 │   ├── common/              # usePsgc, useSidebarUser
 │   ├── peso/                # useAttendance, useKiosk, useDtrGenerator, useDtrSlip, useClientRecords,
 │   │                        #   useClientRecordSheet, useOffice, useUserManagement, useDashboard
-│   ├── supervisor/          # useSupervisorSidebar
+│   ├── supervisor/          # useSupervisorSidebar, useSupervisorDashboard, useTeamAttendance
 │   ├── beneficiary/         # useBeneficiarySidebar
 │   └── useAuthForm.ts       # Shared login/signup form state
 ├── helpers/
 │   ├── common/              # persistentCache, psgcHelpers
+│   ├── supervisor/          # teamHelper (today status, member options, team search)
 │   └── peso/                # attendanceHelper, kioskhelper, dtrHelper, clientRecordHelper,
 │                            #   dashboardHelper, officeHelper, userManagementHelper
 ├── layouts/                 # PesoLayout, SupervisorLayout, BeneficiaryLayout, auth/AuthLayout
@@ -127,12 +128,14 @@ src/
 ├── services/
 │   ├── supabase.ts          # Singleton typed Supabase client
 │   ├── common/              # authService, psgc (axios instance)
+│   ├── supervisor/          # teamService (own office, team members, team attendance, pending reviews)
 │   └── peso/                # attendanceService, kioskService, clientRecordService, officeService,
 │                            #   userManagementService
-├── stores/                  # authStore, kioskStore, officeStore (flat — no role subfolders yet)
+├── stores/                  # authStore, kioskStore, officeStore, avatarStore (flat — no role subfolders yet)
 ├── types/
 │   ├── database.types.ts    # AUTO-GENERATED — DO NOT EDIT MANUALLY
 │   ├── router.d.ts          # RouteMeta augmentation (requiresAuth, allowedRoles)
+│   ├── supervisor/          # team
 │   └── peso/                # attendance, kiosk, dtr, clientRecord, office, userManagement
 ├── App.vue                  # Root: RouterView with fade transition
 ├── main.ts                  # Entry point (Pinia + router)

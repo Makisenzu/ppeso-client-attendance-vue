@@ -38,6 +38,7 @@ const {
   isVerified,
   isDashboard,
   operationsItems,
+  isNavItemActive,
   handleSignOut,
   accountRoute,
 } = useSupervisorSidebar()
@@ -110,7 +111,7 @@ const {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem v-for="item in operationsItems" :key="item.title">
-                <SidebarMenuButton as-child :tooltip="item.title">
+                <SidebarMenuButton as-child :tooltip="item.title" :is-active="isNavItemActive(item)">
                   <RouterLink :to="item.to">
                     <component :is="item.icon" />
                     <span>{{ item.title }}</span>
