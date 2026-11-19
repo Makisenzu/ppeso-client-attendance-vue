@@ -14,5 +14,15 @@ export interface EvaluationFormGroup {
   category: EvaluationCategory
   label: string
   hint: string
-  items: { id: string; question: string }[]
+  /** `number` counts across all groups (1, 2, 3 … on the whole form) */
+  items: { id: string; question: string; number: number }[]
+}
+
+/** How far a category is rated on the evaluation form, with its running average. */
+export interface EvaluationCategoryProgress {
+  category: EvaluationCategory
+  label: string
+  rated: number
+  total: number
+  average: number | null
 }

@@ -2,6 +2,7 @@ import type { SearchSelectOption } from '@/types/common/searchSelect'
 import type { EvaluationCategory, GipEvaluation } from '@/types/common/evaluation'
 import type { TeamMember } from '@/types/supervisor/team'
 import type {
+  EvaluationCategoryProgress,
   EvaluationFormGroup,
   TeamEvaluationRow,
   TeamEvaluationStatusFilter,
@@ -47,16 +48,47 @@ export function summarizeEvaluationRows(rows: TeamEvaluationRow[]) {
   }
 }
 
-/** Groups items into Performance / Attitude, keeping their order; empty groups are left out. */
+/** Groups items into Performance / Attitude, keeping their order and numbering them across the form. */
 export function buildFormGroups(
   items: { id: string; question: string; category: EvaluationCategory }[],
 ): EvaluationFormGroup[] {
+  let number = 0
   return EVALUATION_CATEGORIES.map((c) => ({
     category: c.value,
     label: c.label,
     hint: c.hint,
-    items: items.filter((i) => i.category === c.value).map((i) => ({ id: i.id, question: i.question })),
+    items: items
+      .filter((i) => i.category === c.value)
+      .map((i) => ({ id: i.id, question: i.question, number: ++number })),
   })).filter((g) => g.items.length > 0)
+}
+
+/** Average of 1–5 ratings to two decimals, or null when nothing is rated. */
+export function averageRatings(values: number[]): number | null {
+  if (values.length === 0) return null
+  return Math.round((values.reduce((sum, v) => sum + v, 0) / values.length) * 100) / 100
+}
+
+/** Rated count and running average of each category on the form. */
+export function buildCategoryProgress(
+  groups: EvaluationFormGroup[],
+  ratings: Record<string, number>,
+): EvaluationCategoryProgress[] {
+  return groups.map((group) => {
+    const values = group.items.map((item) => ratings[item.id]).filter((v): v is number => !!v)
+    return {
+      category: group.category,
+      label: group.label,
+      rated: values.length,
+      total: group.items.length,
+      average: averageRatings(values),
+    }
+  })
+}
+
+/** Anchor id of a category section (summary links jump to it). */
+export function getSectionId(category: EvaluationCategory): string {
+  return `evaluation-section-${category}`
 }
 
 export function getEvaluateActionLabel(row: TeamEvaluationRow): string {

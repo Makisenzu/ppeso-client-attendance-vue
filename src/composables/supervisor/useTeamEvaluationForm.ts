@@ -8,6 +8,7 @@ import {
   countUnanswered,
   formatEvaluationStatusLabel,
   formatPeriodMonth,
+  formatRatingLabel,
   formatScore,
   formatScoreLabel,
   getCurrentPeriodMonth,
@@ -17,7 +18,12 @@ import {
   REMARKS_MAX_LENGTH,
   sortQuestions,
 } from '@/helpers/common/evaluationHelper'
-import { buildFormGroups } from '@/helpers/supervisor/teamEvaluationHelper'
+import {
+  averageRatings,
+  buildCategoryProgress,
+  buildFormGroups,
+  getSectionId,
+} from '@/helpers/supervisor/teamEvaluationHelper'
 import { formatPositionLabel } from '@/helpers/supervisor/teamHelper'
 import { getInitials } from '@/helpers/peso/attendanceHelper'
 import { formatDisplayDateTimeLong } from '@/helpers/common/dateFormatHelper'
@@ -104,6 +110,49 @@ export function useTeamEvaluationForm(props: { profileId: string }) {
     return `${total - unansweredCount.value} of ${total} rated`
   })
   const scores = computed(() => (isReadOnly.value ? (evaluation.value?.scores ?? null) : null))
+
+  // ─── Summary panel ───
+  const allItems = computed(() => formGroups.value.flatMap((g) => g.items))
+  const totalCount = computed(() => allItems.value.length)
+  const ratedCount = computed(() => allItems.value.filter((item) => !!ratings.value[item.id]).length)
+  const isComplete = computed(() => totalCount.value > 0 && ratedCount.value === totalCount.value)
+  /** One tick per question, in form order (filled once rated) */
+  const progressTicks = computed(() =>
+    allItems.value.map((item) => ({ id: item.id, number: item.number, rated: !!ratings.value[item.id] })),
+  )
+  const categoryProgress = computed(() => buildCategoryProgress(formGroups.value, ratings.value))
+  /** Submitted: the stored scores. Drafting: a live preview from the current ratings. */
+  const summaryScores = computed(() => {
+    if (scores.value) return scores.value
+    const byCategory = (c: string) => categoryProgress.value.find((p) => p.category === c)?.average ?? null
+    return {
+      performance: byCategory('performance'),
+      attitude: byCategory('attitude'),
+      overall: averageRatings(Object.values(ratings.value)),
+    }
+  })
+  const overallScoreText = computed(() => formatScore(summaryScores.value.overall))
+  const overallScoreLabel = computed(() =>
+    summaryScores.value.overall === null ? 'No ratings yet' : formatScoreLabel(summaryScores.value.overall),
+  )
+  const progressText = computed(() => `${ratedCount.value} of ${totalCount.value} rated`)
+  const remainingText = computed(() => {
+    const left = totalCount.value - ratedCount.value
+    if (isReadOnly.value) return 'Locked after submission'
+    if (left === 0) return 'Ready to submit'
+    return `${left} ${left === 1 ? 'question' : 'questions'} left`
+  })
+  const remarksCount = computed(() => `${remarks.value.length} / ${REMARKS_MAX_LENGTH}`)
+
+  // ─── Per question ───
+  /** Set after Submit with questions left, to point them out */
+  const attemptedSubmit = ref(false)
+  const isRated = (questionId: string) => !!ratings.value[questionId]
+  const isMissing = (questionId: string) => attemptedSubmit.value && !isReadOnly.value && !ratings.value[questionId]
+  const getRatingLabel = (questionId: string) =>
+    ratings.value[questionId] ? formatRatingLabel(ratings.value[questionId]) : 'Not rated yet'
+  const scaleStartLabel = RATING_SCALE[0]?.label ?? ''
+  const scaleEndLabel = RATING_SCALE[RATING_SCALE.length - 1]?.label ?? ''
   const statusLine = computed(() => {
     if (evaluation.value?.submittedAt) return `Submitted ${formatDisplayDateTimeLong(evaluation.value.submittedAt)}`
     if (evaluation.value) return `Draft saved ${formatDisplayDateTimeLong(evaluation.value.updatedAt)}`
@@ -111,11 +160,25 @@ export function useTeamEvaluationForm(props: { profileId: string }) {
   })
 
   // ─── Ratings ───
-  const isRatingSelected = (questionId: string, value: number) => ratings.value[questionId] === value
   const setRating = (questionId: string, value: number) => {
     if (!canEdit.value || isSaving.value) return
     ratings.value = { ...ratings.value, [questionId]: value }
     formError.value = ''
+  }
+
+  // ─── RubberSegment binding (its values are strings: "1"…"5", null = not rated) ───
+  const ratingOptions = RATING_SCALE.map((r) => ({
+    value: String(r.value),
+    label: String(r.value),
+    description: `${r.value} – ${r.label}`,
+  }))
+  const getRatingValue = (questionId: string) => {
+    const rating = ratings.value[questionId]
+    return rating ? String(rating) : null
+  }
+  const onRatingChange = (questionId: string, value: string | null) => {
+    const rating = Number(value)
+    if (Number.isInteger(rating) && rating >= 1 && rating <= 5) setRating(questionId, rating)
   }
 
   const goBack = () => {
@@ -154,6 +217,7 @@ export function useTeamEvaluationForm(props: { profileId: string }) {
   const isSubmitDialogOpen = ref(false)
   const requestSubmit = () => {
     if (unansweredCount.value > 0) {
+      attemptedSubmit.value = true
       formError.value = `Rate every question before submitting (${unansweredCount.value} left).`
       return
     }
@@ -234,9 +298,9 @@ export function useTeamEvaluationForm(props: { profileId: string }) {
     hasQuestions,
     canEdit,
     formGroups,
-    ratingScale: RATING_SCALE,
-    isRatingSelected,
-    setRating,
+    ratingOptions,
+    getRatingValue,
+    onRatingChange,
     remarks,
     remarksMax: REMARKS_MAX_LENGTH,
     formError,
@@ -244,6 +308,23 @@ export function useTeamEvaluationForm(props: { profileId: string }) {
     scores,
     formatScore,
     formatScoreLabel,
+    // summary panel
+    progressTicks,
+    progressText,
+    remainingText,
+    isComplete,
+    categoryProgress,
+    summaryScores,
+    overallScoreText,
+    overallScoreLabel,
+    remarksCount,
+    getSectionId,
+    // per question
+    isRated,
+    isMissing,
+    getRatingLabel,
+    scaleStartLabel,
+    scaleEndLabel,
     savingAction,
     isSaving,
     saveDraft,
