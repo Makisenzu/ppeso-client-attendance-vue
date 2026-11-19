@@ -39,6 +39,7 @@ export const ROLE_OPTIONS: SearchSelectOption[] = [
   { value: 'admin', label: 'Admin' },
   { value: 'supervisor', label: 'Supervisor' },
   { value: 'beneficiary', label: 'Beneficiary' },
+  { value: 'kiosk', label: 'Kiosk' },
   { value: '', label: 'No role' },
 ]
 

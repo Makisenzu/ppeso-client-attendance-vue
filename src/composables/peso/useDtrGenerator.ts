@@ -76,7 +76,7 @@ export function useDtrGenerator() {
     try {
       // Employees and admin accounts have no DTR here: only program beneficiaries are listed
       const list = (await userManagementService.getProfiles()).filter(
-        (p) => p.position !== 'employee' && p.position !== 'admin' && p.role !== 'admin',
+        (p) => p.position !== 'employee' && p.position !== 'admin' && p.role !== 'admin' && p.role !== 'kiosk',
       )
       profiles.value = list
       const requestedExists = list.some((p) => p.id === selectedProfileId.value)

@@ -49,6 +49,13 @@ export const pesoRoutes: RouteRecordRaw[] = [
         meta: { title: 'Files' },
       },
       {
+        // PACD: sign-in accounts for each office's PACD computer (office kiosks)
+        path: 'office-kiosks',
+        name: 'office-kiosks',
+        component: () => import('@/components/peso/OfficeKiosks/OfficeKiosks.vue'),
+        meta: { title: 'Office Kiosks' },
+      },
+      {
         path: 'attendance/dtr',
         name: 'attendance-dtr',
         component: () => import('@/components/peso/attendance/DtrGenerator.vue'),
