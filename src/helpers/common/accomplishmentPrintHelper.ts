@@ -27,9 +27,12 @@ const escapeHtml = (value: string | null | undefined) =>
     .replace(/'/g, '&#39;')
 
 const BASE_STYLES = `
-  @page { size: A4 portrait; margin: 12mm 14mm; }
+  /* No page margin: the browser then has no room for its own header and footer (print date, page title, web
+     address, page number). The paper margin is the .sheet padding below, repeated on every printed page. */
+  @page { size: A4 portrait; margin: 0; }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #fff; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sheet { padding: 12mm 14mm; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
   table { page-break-inside: auto; }
   tr { page-break-inside: avoid; }
   thead { display: table-header-group; }
@@ -185,5 +188,5 @@ export function buildAccomplishmentDocument(data: ReportPrintData, ctx: ReportPr
   const title = `Accomplishment Report - ${ctx.name} (${formatReportPeriod(ctx.from, ctx.to)})`
   return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
     <style>${BASE_STYLES}${isDole ? DOLE_STYLES : PGAS_STYLES}</style></head>
-    <body>${isDole ? doleBody(data, ctx, origin) : pgasBody(data, ctx)}</body></html>`
+    <body><div class="sheet">${isDole ? doleBody(data, ctx, origin) : pgasBody(data, ctx)}</div></body></html>`
 }
