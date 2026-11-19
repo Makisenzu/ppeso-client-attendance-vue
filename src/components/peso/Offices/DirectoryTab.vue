@@ -492,7 +492,7 @@ const checkboxClass =
           The office stays, but will no longer show its head.
         </p>
 
-        <DialogFooter class="mt-2 gap-2 sm:gap-0">
+        <DialogFooter class="mt-2 gap-2">
           <Button
             variant="outline"
             size="sm"

@@ -688,7 +688,7 @@ const {
           </div>
         </div>
 
-        <DialogFooter class="gap-2 sm:gap-0 mt-2">
+        <DialogFooter class="gap-2 mt-2">
           <Button
             variant="outline"
             size="sm"

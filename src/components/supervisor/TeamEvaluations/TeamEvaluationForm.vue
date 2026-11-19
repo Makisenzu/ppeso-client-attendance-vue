@@ -350,7 +350,7 @@ const textareaClass =
             <span class="text-muted-foreground"> · {{ overallScoreLabel }}</span>
           </span>
         </div>
-        <DialogFooter class="mt-2 gap-2 sm:gap-0">
+        <DialogFooter class="mt-2 gap-2">
           <Button variant="outline" size="sm" class="text-xs cursor-pointer" :disabled="isSaving" @click="closeSubmitDialog">
             Cancel
           </Button>
@@ -376,7 +376,7 @@ const textareaClass =
             </div>
           </div>
         </DialogHeader>
-        <DialogFooter class="mt-2 gap-2 sm:gap-0">
+        <DialogFooter class="mt-2 gap-2">
           <Button variant="outline" size="sm" class="text-xs cursor-pointer" :disabled="isDiscarding" @click="closeDiscardDialog">
             Cancel
           </Button>

@@ -407,7 +407,7 @@ const textareaClass =
           <div v-if="deleteOverflow > 0" class="px-3.5 py-2 text-muted-foreground">…and {{ deleteOverflow }} more</div>
         </div>
 
-        <DialogFooter class="mt-2 gap-2 sm:gap-0">
+        <DialogFooter class="mt-2 gap-2">
           <Button variant="outline" size="sm" class="text-xs cursor-pointer" :disabled="isDeleting" @click="closeDeleteDialog">
             Cancel
           </Button>
