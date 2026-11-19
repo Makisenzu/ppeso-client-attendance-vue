@@ -118,6 +118,9 @@ office (drafts editable, submitted ones locked — `core.check_gip_evaluation`).
 
 **Profile pictures** (Storage bucket `avatars`, private): each user reads / writes only `<their id>/…`; admins read
 (GIP IDs) and delete (account deletion — done from the client, since SQL can't delete storage files).
+
+**Files** (`core.pacd_files` + Storage bucket `pacd-files`, private): admins only — read, upload, edit details and
+delete. Files open with 10-minute signed URLs.
 | **anon**        | —                                   | —                         | —                    | —                    |
 
 **Inactive / pending accounts** get no admin or supervisor rights (`private.user_role()` only returns a role for

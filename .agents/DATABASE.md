@@ -184,6 +184,22 @@ Questions supervisors rate GIPs on, written by admins (migration `20261119000000
 | `is_active` | `boolean` | only active questions are asked (and visible to supervisors) |
 | `created_at` / `updated_at` | `timestamptz` | |
 
+### `pacd_files`
+
+The admin **Files** page: the PACD file container (printable forms, templates, guidelines). Migration
+`20261119000100_pacd_files.sql`. The file itself is in the private Storage bucket `pacd-files` (PDF / DOCX / XLSX ≤ 20 MB).
+
+| Column | Type | Notes |
+| ------ | ---- | ----- |
+| `id` | `uuid` | PK |
+| `title` | `text` | 1–200, trimmed |
+| `category` | `text` | `forms` · `templates` · `guidelines` · `others` |
+| `description` | `text` | nullable, ≤ 1000 |
+| `file_path` | `text` | UNIQUE, path in `pacd-files` (`<category>/<timestamp>-<random>.<ext>`) — never a URL |
+| `file_name` / `mime_type` / `size_bytes` | `text` / `text` / `bigint` | original name; PDF, DOCX or XLSX; 1 B – 20 MB. Fixed after insert (`touch_pacd_file` trigger) |
+| `uploaded_by` | `uuid` | FK → profiles ON DELETE SET NULL, defaults to the caller |
+| `created_at` / `updated_at` | `timestamptz` | |
+
 ### `gip_evaluations`
 
 A supervisor's monthly evaluation of an active GIP in their office. `UNIQUE (profile_id, period_month)`.
@@ -250,6 +266,7 @@ Full rules in SECURITY.md §4. Policy names are prefixed with the table (`"atten
 | `core.accomplishment_reports` | own · admin all · supervisor same office        | insert: own · update: own (not Reviewed) or reviewer (status/remarks only, trigger) · delete: own unreviewed, admin |
 | `core.evaluation_questions` | admin all · supervisor active only                | admin |
 | `core.gip_evaluations`    | admin all · supervisor same office (GIPs: none)         | insert: supervisor same office · update: supervisor, Draft only · delete: admin, supervisor own-office Draft |
+| `core.pacd_files`         | admin                                                   | admin (bucket `pacd-files`: admin read / upload / delete) |
 
 ---
 
@@ -322,6 +339,8 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261118000100_accomplishment_reports_current_month.sql` | New reports (or changed dates) must fall within the current month (PHT); older reports keep their dates |
 | `20261118000200_profile_photos.sql` | `profiles.avatar_path`; private Storage bucket `avatars` (JPG/PNG/WebP ≤ 5 MB) + storage.objects policies (own folder; admin read / delete) |
 | `20261119000000_gip_evaluations.sql` | `core.evaluation_questions` (admin CRUD) + `core.gip_evaluations` (monthly supervisor evaluation of active GIPs) + RLS + `check_gip_evaluation` trigger |
+| `20261119000100_pacd_files.sql` | `core.pacd_files` + private Storage bucket `pacd-files` (PDF / DOCX / XLSX ≤ 20 MB); table and bucket admin only |
+| `20261119000200_pacd_files_xlsx.sql` | `pacd_files` and bucket `pacd-files` also accept Excel (.xlsx) |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).

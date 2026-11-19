@@ -107,10 +107,11 @@ When asked to add one:
    own records; walk-in records are visible to admins and supervisors only.
 2. **Select only the columns a screen shows** when reading other people's records — every selected column is visible in
    DevTools' Network tab.
-3. **Files go in private buckets.** The only bucket is `avatars` (profile pictures, migration
+3. **Files go in private buckets.** The buckets are `avatars` (profile pictures, migration
    `20261118000200_profile_photos.sql`): private, opened by 1-hour signed URLs, the path (never a URL) stored on the
    profile, each user limited to their own folder, admins read / delete. New uploads follow the same pattern. A photo
-   picked only for a GIP ID stays in the browser and is never uploaded.
+   picked only for a GIP ID stays in the browser and is never uploaded. `pacd-files` (the admin Files page: office forms,
+   not personal data) is admin-only and opened by 10-minute signed URLs.
 4. **The kiosk device** runs an admin session; the office must keep it physically supervised (SECURITY.md §5).
 
 ---

@@ -206,6 +206,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pacd_files: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          id: string
+          mime_type: string
+          size_bytes: number
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          mime_type: string
+          size_bytes: number
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          mime_type?: string
+          size_bytes?: number
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       walkin_attendances: {
         Row: {
           barangay: string
