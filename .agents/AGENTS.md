@@ -146,8 +146,6 @@ supabase/
 └── migrations/              # Versioned SQL (baseline schema + RLS). See DATABASE.md §9
 ```
 
-> `_reference/` holds a copy of another project for reference only. Never import from it or edit it.
-
 ---
 
 ## 3. Universal Architectural Constraints
