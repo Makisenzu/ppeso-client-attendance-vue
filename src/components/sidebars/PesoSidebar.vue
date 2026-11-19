@@ -37,7 +37,7 @@ const {
   userEmail,
   isVerified,
   isDashboard,
-  operationsItems,
+  navGroups,
   handleSignOut,
   accountRoute,
 } = usePesoSidebar()
@@ -114,23 +114,26 @@ const {
               </RouterLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
-
-          <div class="my-1 h-px bg-sidebar-border" />
-
-          <SidebarGroupLabel>Operations</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem v-for="item in operationsItems" :key="item.title">
-                <SidebarMenuButton as-child :tooltip="item.title">
-                  <RouterLink :to="item.to">
-                    <component :is="item.icon" />
-                    <span>{{ item.title }}</span>
-                  </RouterLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
         </SidebarGroup>
+
+        <template v-for="group in navGroups" :key="group.label">
+          <div class="mx-2 h-px bg-sidebar-border" />
+          <SidebarGroup>
+            <SidebarGroupLabel>{{ group.label }}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem v-for="item in group.items" :key="item.title">
+                  <SidebarMenuButton as-child :tooltip="item.title">
+                    <RouterLink :to="item.to">
+                      <component :is="item.icon" />
+                      <span>{{ item.title }}</span>
+                    </RouterLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </template>
       </SidebarContent>
 
       <SidebarFooter>
