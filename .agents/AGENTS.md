@@ -103,15 +103,16 @@ src/
 ├── components/
 │   ├── ui/                  # shadcn-vue primitives (DO NOT edit manually)
 │   ├── sidebars/            # PesoSidebar, SupervisorSidebar, BeneficiarySidebar (+ index.ts)
-│   ├── peso/                # Admin screens: Dashboard/, attendance/, ClientRecords/, Offices/,
+│   ├── peso/                # Admin screens: Dashboard/, attendance/, ClientRecords/, Offices/, Evaluations/,
 │   │                        #   UserManagement/, UserKiosk/, Calendar/
-│   ├── supervisor/          # Supervisor screens (Dashboard/, TeamAttendance/, TeamAccomplishments/) — read-only, own office
+│   ├── supervisor/          # Supervisor screens (Dashboard/, TeamAttendance/, TeamAccomplishments/, TeamEvaluations/) — own office
 │   └── beneficiary/         # Beneficiary screens (Dashboard/)
 ├── composables/
 │   ├── common/              # usePsgc, useSidebarUser
 │   ├── peso/                # useAttendance, useKiosk, useDtrGenerator, useDtrSlip, useClientRecords,
 │   │                        #   useClientRecordSheet, useOffice, useUserManagement, useDashboard
-│   ├── supervisor/          # useSupervisorSidebar, useSupervisorDashboard, useTeamAttendance, useTeamAccomplishments
+│   ├── supervisor/          # useSupervisorSidebar, useSupervisorDashboard, useTeamAttendance, useTeamAccomplishments,
+│   │                        #   useTeamEvaluations
 │   ├── beneficiary/         # useBeneficiarySidebar
 │   └── useAuthForm.ts       # Shared login/signup form state
 ├── helpers/

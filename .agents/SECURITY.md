@@ -112,6 +112,10 @@ Defined in `supabase/migrations/20261113000100_rls_policies.sql`. Verified on th
 Reviewed; admins read all, review and delete; a supervisor reads and reviews reports of people in their office.
 Reviewers can change only status and remarks (`core.check_accomplishment_report`). `profiles.funding` is admin-only.
 
+**GIP evaluations** (`core.gip_evaluations`, `core.evaluation_questions`): admins manage the questions and read / delete
+every evaluation; a supervisor reads the active questions and writes this month's evaluations of active GIPs in their
+office (drafts editable, submitted ones locked — `core.check_gip_evaluation`). GIPs can't read evaluations or questions.
+
 **Profile pictures** (Storage bucket `avatars`, private): each user reads / writes only `<their id>/…`; admins read
 (GIP IDs) and delete (account deletion — done from the client, since SQL can't delete storage files).
 | **anon**        | —                                   | —                         | —                    | —                    |

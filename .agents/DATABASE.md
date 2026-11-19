@@ -171,6 +171,38 @@ vue-agsurjobs). One row per date range; one person's reports never overlap.
 (funding, overlap, entries, submit completeness; saving a Returned report keeps it Returned) and lets a reviewer
 (admin, or the supervisor of the person's office) change only `status` / `review_remarks`.
 
+### `evaluation_questions`
+
+Questions supervisors rate GIPs on, written by admins (migration `20261119000000_gip_evaluations.sql`).
+
+| Column | Type | Notes |
+| ------ | ---- | ----- |
+| `id` | `uuid` | PK |
+| `category` | `text` | `performance` / `attitude` |
+| `question` | `text` | 3–500 chars, trimmed by `trg_touch_evaluation_question` |
+| `sort_order` | `integer` | order within the category |
+| `is_active` | `boolean` | only active questions are asked (and visible to supervisors) |
+| `created_at` / `updated_at` | `timestamptz` | |
+
+### `gip_evaluations`
+
+A supervisor's monthly evaluation of an active GIP in their office. `UNIQUE (profile_id, period_month)`.
+
+| Column | Type | Notes |
+| ------ | ---- | ----- |
+| `id` | `uuid` | PK |
+| `profile_id` | `uuid` | NOT NULL, FK → `public.profiles(id)` ON DELETE CASCADE |
+| `evaluator_id` | `uuid` | FK → profiles ON DELETE SET NULL; set to the caller by the trigger |
+| `period_month` | `date` | first day of the month; the trigger sets the current month (PHT) on insert |
+| `answers` | `jsonb` | `[{ question_id, category, question, rating 1–5 }]` — rebuilt by the trigger from the active questions (a copy of the text, so editing / deleting a question never changes it) |
+| `performance_score` / `attitude_score` / `overall_score` | `numeric(3,2)` | averages, computed by the trigger |
+| `remarks` | `text` | ≤ 1000 |
+| `status` | `text` | `Draft` → `Submitted` (locked); submitting needs every active question rated |
+| `submitted_at`, `created_at`, `updated_at` | `timestamptz` | |
+
+`core.check_gip_evaluation()` (BEFORE INSERT/UPDATE, **SECURITY INVOKER**): only the supervisor of the GIP's office,
+only active GIPs (`position = gip`), only the current month, no changes once Submitted.
+
 ### Core Enums
 
 | Enum               | Values                                                        |
@@ -216,6 +248,8 @@ Full rules in SECURITY.md §4. Policy names are prefixed with the table (`"atten
 | `core.attendances`        | own rows · admin all · supervisor same office           | admin                    |
 | `core.walkin_attendances` | admin, supervisor                                       | admin                    |
 | `core.accomplishment_reports` | own · admin all · supervisor same office        | insert: own · update: own (not Reviewed) or reviewer (status/remarks only, trigger) · delete: own unreviewed, admin |
+| `core.evaluation_questions` | admin all · supervisor active only                | admin |
+| `core.gip_evaluations`    | admin all · supervisor same office (GIPs: none)         | insert: supervisor same office · update: supervisor, Draft only · delete: admin, supervisor own-office Draft |
 
 ---
 
@@ -287,6 +321,7 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261118000000_accomplishment_reports.sql` | `profiles.funding` (admin-only); `core.accomplishment_reports` + RLS + validation trigger |
 | `20261118000100_accomplishment_reports_current_month.sql` | New reports (or changed dates) must fall within the current month (PHT); older reports keep their dates |
 | `20261118000200_profile_photos.sql` | `profiles.avatar_path`; private Storage bucket `avatars` (JPG/PNG/WebP ≤ 5 MB) + storage.objects policies (own folder; admin read / delete) |
+| `20261119000000_gip_evaluations.sql` | `core.evaluation_questions` (admin CRUD) + `core.gip_evaluations` (monthly supervisor evaluation of active GIPs) + RLS + `check_gip_evaluation` trigger |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).

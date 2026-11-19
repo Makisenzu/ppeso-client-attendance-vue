@@ -74,6 +74,7 @@ Organizational duties outside the code (remind the user; don't invent the docume
 | Walk-in client: full name, gender, contact number, province / municipality / barangay / purok, purpose of visit, visit times | `core.walkin_attendances` | Not sensitive under Sec. 3(l), but the **purpose** can reveal program participation (e.g. OFW, GIP, SPES) — confidential |
 | Accomplishment reports: daily work entries, activities, pay for the period (PGAS), signatory names, review remarks | `core.accomplishment_reports` | No, but confidential employment and pay data; visible to the writer, admins and their office supervisor |
 | GIP / TUPAD funding (DOLE / PGAS) | `public.profiles.funding` | No |
+| GIP evaluations: monthly 1–5 ratings of performance and attitude, average scores, supervisor remarks, evaluator | `core.gip_evaluations` | No, but confidential performance data; visible to the writing office's supervisor and admins only — **not** to the GIP |
 | Profile picture (face photo) | Storage bucket `avatars` (private), path in `public.profiles.avatar_path` | No, but identifies the person; visible to them and admins only; printed on the GIP ID; deleted with the account |
 | Offices | `public.offices` | No personal data |
 | Office directory: office name, code, **office head's name**, status | `public.directories` | No — but the head's name is personal data; readable by every signed-in user |
