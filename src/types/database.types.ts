@@ -97,6 +97,7 @@ export type Database = {
           pm_in_status: Database["core"]["Enums"]["punch_status"] | null
           pm_out_status: Database["core"]["Enums"]["punch_status"] | null
           profile_id: string
+          recorded_by: string | null
         }
         Insert: {
           am_check_in?: string | null
@@ -111,6 +112,7 @@ export type Database = {
           pm_in_status?: Database["core"]["Enums"]["punch_status"] | null
           pm_out_status?: Database["core"]["Enums"]["punch_status"] | null
           profile_id: string
+          recorded_by?: string | null
         }
         Update: {
           am_check_in?: string | null
@@ -125,6 +127,7 @@ export type Database = {
           pm_in_status?: Database["core"]["Enums"]["punch_status"] | null
           pm_out_status?: Database["core"]["Enums"]["punch_status"] | null
           profile_id?: string
+          recorded_by?: string | null
         }
         Relationships: []
       }
@@ -203,6 +206,24 @@ export type Database = {
           status?: string
           submitted_at?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      kiosk_failed_attempts: {
+        Row: {
+          attempted_at: string
+          id: number
+          kiosk_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: never
+          kiosk_id: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: never
+          kiosk_id?: string
         }
         Relationships: []
       }
@@ -307,6 +328,41 @@ export type Database = {
       flag_daily_absences: {
         Args: { target_date?: string }
         Returns: undefined
+      }
+      kiosk_today_punches: {
+        Args: never
+        Returns: {
+          am_check_in: string
+          am_check_out: string
+          am_in_status: string
+          am_out_status: string
+          attendance_id: string
+          firstname: string
+          lastname: string
+          middlename: string
+          pm_check_in: string
+          pm_check_out: string
+          pm_in_status: string
+          pm_out_status: string
+          position: string
+          profile_id: string
+        }[]
+      }
+      list_kiosk_accounts: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          label: string
+          last_punch_at: string
+          office_id: string
+          status: string
+        }[]
+      }
+      record_punch: {
+        Args: { p_mode?: string; p_passcode: string }
+        Returns: Json
       }
     }
     Enums: {
@@ -484,7 +540,7 @@ export type Database = {
     }
     Enums: {
       profile_position: "employee" | "gip" | "tupad" | "client" | "admin"
-      profile_roles: "admin" | "beneficiary" | "supervisor"
+      profile_roles: "admin" | "beneficiary" | "supervisor" | "kiosk"
       profile_status: "active" | "inactive" | "pending"
     }
     CompositeTypes: {
@@ -629,7 +685,7 @@ export const Constants = {
   public: {
     Enums: {
       profile_position: ["employee", "gip", "tupad", "client", "admin"],
-      profile_roles: ["admin", "beneficiary", "supervisor"],
+      profile_roles: ["admin", "beneficiary", "supervisor", "kiosk"],
       profile_status: ["active", "inactive", "pending"],
     },
   },

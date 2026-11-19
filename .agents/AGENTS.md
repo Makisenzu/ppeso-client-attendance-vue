@@ -70,7 +70,8 @@ Office (PPESO), Province of Agusan del Sur, Philippines. It records:
 - **Walk-in client visits** (name, gender, address, purpose of visit: GIP, SPES, Job Start, OFW, CEA, Skills, Others).
 - **Offices** that personnel and beneficiaries are assigned to, and the **user accounts** themselves.
 
-It serves 3 user roles (`public.profile_roles`): **Admin**, **Supervisor**, and **Beneficiary**.
+It serves 4 user roles (`public.profile_roles`): **Admin**, **Supervisor**, **Beneficiary**, and **Kiosk** (an
+office's PACD computer that records attendance for that office only — SECURITY.md §5).
 
 ### Technology Stack — DO NOT CHANGE
 
@@ -169,6 +170,7 @@ Component (.vue) ──► Composable (useXxx) ──► [Store (xxxStore)] ─�
 | Admin         | `/dashboard`        | `PesoLayout`        | `['admin']`         |
 | Supervisor    | `/supervisor`       | `SupervisorLayout`  | `['supervisor']`    |
 | Beneficiary   | `/beneficiary`      | `BeneficiaryLayout` | `['beneficiary']`   |
+| Kiosk         | `/office-kiosk`     | `KioskLayout`       | `['kiosk']`         |
 
 `/kiosk` redirects to `/dashboard/kiosk` — the kiosk always runs under an **admin** session (see SECURITY.md §5).
 

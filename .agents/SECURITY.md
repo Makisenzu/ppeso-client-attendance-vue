@@ -179,21 +179,32 @@ admins pass.
 
 ## 5. The Kiosk
 
-The kiosk (`/dashboard/kiosk`, `AttendanceKiosk.vue` → `useKiosk` → `kioskService`) looks up a profile by its 6-digit
-passcode and records a punch. It runs **inside an admin session** on the office device, which is what allows it to read
-passcodes and write `core.attendances`.
+There are two kiosks, and both record punches **only** through `core.record_punch(passcode, mode)` (migration
+`20261119000400_office_kiosks.sql`). That `SECURITY DEFINER` function looks up the passcode, applies the punch rules
+(next punch, 5-minute cooldown, on-time / late in Philippine time) and returns just the result and the person's name.
+The browser never reads passcodes or writes `core.attendances` for a punch.
+
+- **Admin kiosk** (`/dashboard/kiosk`): runs in an admin session at the PESO office and accepts anyone with a passcode.
+- **Office kiosks** (`/office-kiosk`, `KioskLayout` → `AttendanceKiosk.vue`): an office's PACD computer, signed in with
+  a **kiosk account** — a profile with role `kiosk` and an office, created on PACD → Office Kiosks. `record_punch`
+  refuses anyone whose office isn't the kiosk's ("not assigned to this office"). A kiosk account has no passcode, is
+  never flagged absent, and RLS gives it only its own profile and the shared lists (offices, directories, holidays);
+  today's punch list comes from `core.kiosk_today_punches()` (its office only). Disabling the account (status
+  inactive) stops it at once — `private.user_role()` ignores inactive profiles.
 
 > [!CAUTION]
-> 1. **Never move the kiosk to a public / anon route** without first replacing direct table access with a narrow
->    `SECURITY DEFINER` RPC (e.g. `core.record_punch(passcode)`) that returns only the punch result — anon must never
->    read `profiles` or passcodes.
-> 2. **Only kiosk users have passcodes** — admins and supervisors have none (NULL, enforced by `set_profile_passcode`).
-> 3. **Passcodes are credentials**: never log them, show them in lists other than User Management, put them in URLs, or
+> 1. **Never record a punch any other way** (no direct inserts / updates of `core.attendances` from a kiosk), and never
+>    move a kiosk to a public / anon route.
+> 2. **Wrong passcodes lock the kiosk**: 5 failures within 5 minutes (unknown passcode, or someone from another office)
+>    are counted in `core.kiosk_failed_attempts` and block that kiosk for 5 minutes. Both failures return the same kind
+>    of answer so a kiosk can't be used to find valid passcodes of other offices. Keep it that way.
+> 3. **Only kiosk users have passcodes** — admins, supervisors and kiosk accounts have none (NULL, enforced by
+>    `set_profile_passcode`).
+> 4. **Passcodes are credentials**: never log them, show them in lists other than User Management, put them in URLs, or
 >    cache them.
-> 3. **Lock the kiosk device**: the admin session it runs under can open every admin screen. Recommend a dedicated
->    kiosk admin account to the user rather than a personal one.
-> 4. Passcodes are 6 digits (1,000,000 combinations) and the kiosk has no attempt limit — don't expose it beyond the
->    office device.
+> 5. **The admin kiosk device** still runs an admin session that can open every admin screen: keep it physically
+>    supervised, ideally with a dedicated kiosk admin account. Office PCs use kiosk accounts, never an admin session.
+> 6. `core.attendances.recorded_by` records which kiosk account (or admin) recorded the latest punch of the day.
 
 ---
 

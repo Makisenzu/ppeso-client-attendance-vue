@@ -89,7 +89,7 @@ One row per auth user. Created by the `on_auth_user_created` trigger — never i
 | `firstname`  | `text`             | NOT NULL                                            |
 | `middlename` | `text`             | nullable                                            |
 | `lastname`   | `text`             | NOT NULL                                            |
-| `passcode`   | `text`             | UNIQUE, nullable — 6-digit kiosk code, auto-generated; **NULL for admins and supervisors** |
+| `passcode`   | `text`             | UNIQUE, nullable — 6-digit kiosk code, auto-generated; **NULL for admins, supervisors and kiosk accounts** |
 | `status`     | `profile_status`   | NOT NULL, default `'active'`                         |
 | `position`   | `profile_position` | NOT NULL                                            |
 | `role`       | `profile_roles`    | nullable, default `'beneficiary'`                    |
@@ -103,7 +103,7 @@ One row per auth user. Created by the `on_auth_user_created` trigger — never i
 
 | Enum               | Values                                   |
 | ------------------ | ---------------------------------------- |
-| `profile_roles`    | `admin`, `beneficiary`, `supervisor`     |
+| `profile_roles`    | `admin`, `beneficiary`, `supervisor`, `kiosk` |
 | `profile_position` | `employee`, `gip`, `tupad`, `client`, `admin` |
 | `profile_status`   | `active`, `inactive`, `pending`          |
 
@@ -238,7 +238,7 @@ only active GIPs (`position = gip`), only the current month, no changes once Sub
 | `public.guard_profile_update()` | `BEFORE UPDATE ON profiles` (`trg_guard_profile_update`), DEFINER | Non-admin API callers may change only their own name fields; sets `updated_at` |
 | `public.admin_delete_user(uuid)` | DEFINER, RPC for `authenticated` | Admin-only (not self): deletes the `auth.users` row; profile and attendance cascade |
 | `core.calculate_punch_status()` | `BEFORE INSERT OR UPDATE ON attendances` | 5-minute cooldown between punches (`'Already Recorded'`); fills statuses left null |
-| `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles that use the kiosk (not admins / supervisors); skips dates in `public.holidays` |
+| `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles that use the kiosk (not admins / supervisors / kiosk accounts); skips dates in `public.holidays` |
 | `private.user_role()`, `user_office_id()`, `is_admin()`, `is_supervisor()`, `supervises(uuid)` | DEFINER, `private` schema | RLS helpers (SECURITY.md §4.3) |
 
 | pg_cron job | Schedule | Command |
@@ -341,6 +341,8 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261119000000_gip_evaluations.sql` | `core.evaluation_questions` (admin CRUD) + `core.gip_evaluations` (monthly supervisor evaluation of active GIPs) + RLS + `check_gip_evaluation` trigger |
 | `20261119000100_pacd_files.sql` | `core.pacd_files` + private Storage bucket `pacd-files` (PDF / DOCX / XLSX ≤ 20 MB); table and bucket admin only |
 | `20261119000200_pacd_files_xlsx.sql` | `pacd_files` and bucket `pacd-files` also accept Excel (.xlsx) |
+| `20261119000300_kiosk_role.sql` | `profile_roles` gains `kiosk` (an office's PACD computer) |
+| `20261119000400_office_kiosks.sql` | `core.record_punch()` (the only punch path; office kiosks: own office only, wrong-passcode lockout), `core.kiosk_today_punches()`, `core.list_kiosk_accounts()` (admin), `core.kiosk_failed_attempts`, `core.attendances.recorded_by`; kiosk accounts get no passcode and are never flagged absent |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).
