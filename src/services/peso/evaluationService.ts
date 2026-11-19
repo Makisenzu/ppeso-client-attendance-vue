@@ -141,11 +141,11 @@ export const evaluationService = {
     }
 
     const officeIds = [...new Set([...people.values()].map((p) => p.officeId).filter((id): id is string => !!id))]
-    const offices = new Map<string, string>()
+    const offices = new Map<string, { name: string; code: string | null }>()
     for (const ids of chunks(officeIds)) {
-      const { data: officeRows, error: officeError } = await supabase.from('offices').select('id, name').in('id', ids)
+      const { data: officeRows, error: officeError } = await supabase.from('offices').select('id, name, code').in('id', ids)
       if (officeError) throw new Error('Failed to load the evaluations.')
-      for (const o of officeRows ?? []) offices.set(o.id, o.name)
+      for (const o of officeRows ?? []) offices.set(o.id, { name: o.name, code: o.code })
     }
 
     return rows.map((row) => {
@@ -162,7 +162,8 @@ export const evaluationService = {
         updatedAt: row.updated_at,
         gipName: gip?.name ?? 'Deleted account',
         officeId: gip?.officeId ?? null,
-        officeName: (gip?.officeId && offices.get(gip.officeId)) || '—',
+        officeName: (gip?.officeId && offices.get(gip.officeId)?.name) || '—',
+        officeCode: (gip?.officeId && offices.get(gip.officeId)?.code) || null,
         evaluatorName: (row.evaluator_id && people.get(row.evaluator_id)?.name) || '—',
       }
     })

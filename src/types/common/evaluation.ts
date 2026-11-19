@@ -59,5 +59,6 @@ export interface EvaluationRecord extends GipEvaluation {
   /** The GIP's current office (null when they have none) */
   officeId: string | null
   officeName: string
+  officeCode: string | null
   evaluatorName: string
 }

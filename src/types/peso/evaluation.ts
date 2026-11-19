@@ -3,10 +3,8 @@ export interface OfficeEvaluationRow {
   /** Office id, or 'none' for GIPs without an office */
   key: string
   officeName: string
-  evaluations: number
+  officeCode: string | null
   gips: number
-  /** Average of the evaluations' overall scores (null when none) */
-  averageOverall: number | null
   /** Newest evaluated month (yyyy-mm-01) and newest submission */
   latestMonth: string
   latestSubmittedAt: string | null

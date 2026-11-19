@@ -25,8 +25,6 @@ const {
   backToOffices,
   selectedOfficeName,
   officeRecordCount,
-  getOfficeAverage,
-  getOfficeAverageLabel,
   records,
   filteredRecords,
   paginatedRecords,
@@ -80,7 +78,7 @@ const {
 } = useEvaluationRecords()
 
 const COLUMN_COUNT = 8
-const OFFICE_COLUMN_COUNT = 6
+const OFFICE_COLUMN_COUNT = 5
 
 const checkboxClass =
   'h-4 w-4 cursor-pointer rounded border-input accent-primary align-middle disabled:cursor-not-allowed disabled:opacity-50'
@@ -120,7 +118,7 @@ const checkboxClass =
         <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div class="relative sm:col-span-2">
             <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input v-model="officeSearch" placeholder="Search offices..." class="h-9 pl-9 pr-8 text-base md:text-xs" />
+            <Input v-model="officeSearch" placeholder="Search by office name or code..." class="h-9 pl-9 pr-8 text-base md:text-xs" />
             <button
               v-if="officeSearch"
               type="button"
@@ -141,9 +139,8 @@ const checkboxClass =
             <TableHeader class="bg-muted/40">
               <TableRow>
                 <TableHead class="min-w-56 pl-4 text-xs font-semibold">Office</TableHead>
-                <TableHead class="min-w-24 text-xs font-semibold">Evaluations</TableHead>
+                <TableHead class="min-w-24 text-xs font-semibold">Office Code</TableHead>
                 <TableHead class="min-w-24 text-xs font-semibold">GIPs</TableHead>
-                <TableHead class="min-w-40 text-xs font-semibold">Average Overall</TableHead>
                 <TableHead class="min-w-32 text-xs font-semibold">Latest Month</TableHead>
                 <TableHead class="min-w-24 pr-4 text-right text-xs font-semibold">Actions</TableHead>
               </TableRow>
@@ -171,12 +168,16 @@ const checkboxClass =
                       <span class="truncate text-xs font-semibold text-foreground sm:text-sm">{{ office.officeName }}</span>
                     </div>
                   </TableCell>
-                  <TableCell class="py-3 font-mono text-xs text-foreground">{{ office.evaluations }}</TableCell>
-                  <TableCell class="py-3 font-mono text-xs text-foreground">{{ office.gips }}</TableCell>
-                  <TableCell class="py-3 text-xs whitespace-nowrap">
-                    <span class="font-mono font-semibold text-foreground">{{ getOfficeAverage(office) }}</span>
-                    <span class="text-muted-foreground"> · {{ getOfficeAverageLabel(office) }}</span>
+                  <TableCell class="py-3">
+                    <span
+                      v-if="office.officeCode"
+                      class="inline-flex rounded border border-border/50 bg-muted/70 px-2 py-0.5 font-mono text-xs font-medium text-foreground"
+                    >
+                      {{ office.officeCode }}
+                    </span>
+                    <span v-else class="font-mono text-xs text-muted-foreground">—</span>
                   </TableCell>
+                  <TableCell class="py-3 font-mono text-xs text-foreground">{{ office.gips }}</TableCell>
                   <TableCell class="py-3 text-xs text-foreground whitespace-nowrap">{{ formatPeriodMonth(office.latestMonth) }}</TableCell>
                   <TableCell class="py-3 pr-4 text-right">
                     <Button

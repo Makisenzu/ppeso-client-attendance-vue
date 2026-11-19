@@ -20,7 +20,6 @@ export function buildOfficeEvaluationRows(records: EvaluationRecord[]): OfficeEv
 
   return [...groups.entries()]
     .map(([key, list]) => {
-      const scores = list.map((r) => r.scores.overall).filter((s): s is number => s !== null)
       const latestMonth = list.reduce((max, r) => (r.periodMonth > max ? r.periodMonth : max), '')
       const latestSubmittedAt = list.reduce<string | null>(
         (max, r) => (r.submittedAt && (!max || r.submittedAt > max) ? r.submittedAt : max),
@@ -29,9 +28,8 @@ export function buildOfficeEvaluationRows(records: EvaluationRecord[]): OfficeEv
       return {
         key,
         officeName: key === NO_OFFICE_KEY ? 'No office' : (list[0]?.officeName ?? '—'),
-        evaluations: list.length,
+        officeCode: list[0]?.officeCode ?? null,
         gips: new Set(list.map((r) => r.profileId)).size,
-        averageOverall: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100 : null,
         latestMonth,
         latestSubmittedAt,
       }

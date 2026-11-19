@@ -64,7 +64,10 @@ export function useEvaluationRecords() {
   const officeRows = computed(() => buildOfficeEvaluationRows(monthRecords.value))
   const filteredOfficeRows = computed(() => {
     const q = officeSearch.value.trim().toLowerCase()
-    return q ? officeRows.value.filter((o) => o.officeName.toLowerCase().includes(q)) : officeRows.value
+    if (!q) return officeRows.value
+    return officeRows.value.filter(
+      (o) => o.officeName.toLowerCase().includes(q) || (o.officeCode ?? '').toLowerCase().includes(q),
+    )
   })
 
   const OFFICE_PAGE_SIZE = 10
@@ -107,8 +110,6 @@ export function useEvaluationRecords() {
     void router.push({ query: { ...route.query, office: undefined } })
   }
 
-  const getOfficeAverage = (row: OfficeEvaluationRow) => formatScore(row.averageOverall)
-  const getOfficeAverageLabel = (row: OfficeEvaluationRow) => formatScoreLabel(row.averageOverall)
 
   // ─── Evaluations of the selected office (the table) ───
   const filteredRecords = computed(() => {
@@ -309,8 +310,6 @@ export function useEvaluationRecords() {
     backToOffices,
     selectedOfficeName,
     officeRecordCount,
-    getOfficeAverage,
-    getOfficeAverageLabel,
     // evaluations of one office
     records,
     filteredRecords,
