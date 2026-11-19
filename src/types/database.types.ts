@@ -128,6 +128,84 @@ export type Database = {
         }
         Relationships: []
       }
+      evaluation_questions: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gip_evaluations: {
+        Row: {
+          answers: Json
+          attitude_score: number | null
+          created_at: string
+          evaluator_id: string | null
+          id: string
+          overall_score: number | null
+          performance_score: number | null
+          period_month: string
+          profile_id: string
+          remarks: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          attitude_score?: number | null
+          created_at?: string
+          evaluator_id?: string | null
+          id?: string
+          overall_score?: number | null
+          performance_score?: number | null
+          period_month: string
+          profile_id: string
+          remarks?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          attitude_score?: number | null
+          created_at?: string
+          evaluator_id?: string | null
+          id?: string
+          overall_score?: number | null
+          performance_score?: number | null
+          period_month?: string
+          profile_id?: string
+          remarks?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       walkin_attendances: {
         Row: {
           barangay: string
