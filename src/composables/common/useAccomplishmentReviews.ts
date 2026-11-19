@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, watch, type Ref } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/authStore'
@@ -24,6 +24,9 @@ import { useToastAlert } from '@/composables/common/useToastAlert'
 
 type ReviewAction = 'Reviewed' | 'Returned' | 'Submitted'
 
+/** Narrows the loaded reports (the admin's open office and GIP — see useAccomplishmentOffices) */
+export type ReportScope = (report: ReviewReport) => boolean
+
 /**
  * Accomplishment Reports review screen, shared by admins (every office) and supervisors (their own office —
  * RLS decides which rows load). Only admins delete; supervisors get no selection column (DESIGN.md §11.1
@@ -31,6 +34,8 @@ type ReviewAction = 'Reviewed' | 'Returned' | 'Submitted'
  *
  * With `profileId` it lists one person's reports (supervisor → GIP list → View); the header then shows their
  * name with a way back to the list, and every status is shown at first.
+ *
+ * Without it (admins), the page first lists offices; `reportScope` then narrows the table to one office.
  */
 export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
   const toast = useToastAlert()
@@ -40,6 +45,8 @@ export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
   const canDelete = computed(() => isAdmin.value)
 
   const isPersonView = computed(() => Boolean(profileId?.value))
+  /** Admin, every office: the page starts on the office list (useAccomplishmentOffices) */
+  const isOfficeMode = computed(() => isAdmin.value && !isPersonView.value)
   const personName = ref('')
   /** Table columns: selection (admins) + beneficiary (all-people view) + period, form, status, submitted, actions */
   const columnCount = computed(() => 5 + (canDelete.value ? 1 : 0) + (isPersonView.value ? 0 : 1))
@@ -47,8 +54,15 @@ export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
   const reports = ref<ReviewReport[]>([])
   const isLoading = ref(false)
   const searchQuery = ref('')
-  const statusFilter = ref<string>(isPersonView.value ? 'ALL' : 'Submitted')
+  const statusFilter = ref<string>('ALL')
   const fundingFilter = ref<string>('ALL')
+
+  const reportScope = shallowRef<ReportScope | null>(null)
+  /** The reports the counts and the table are built from */
+  const scopedReports = computed(() => {
+    const scope = reportScope.value
+    return scope ? reports.value.filter(scope) : reports.value
+  })
 
   const fetchReports = async () => {
     isLoading.value = true
@@ -71,11 +85,11 @@ export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
   // ─── Stats (also act as status filters) ───
   const counts = computed(() => {
     const c = { Submitted: 0, Returned: 0, Reviewed: 0 }
-    for (const r of reports.value) if (r.status in c) c[r.status as keyof typeof c]++
+    for (const r of scopedReports.value) if (r.status in c) c[r.status as keyof typeof c]++
     return c
   })
   const statCards = computed(() => [
-    { key: 'ALL', label: 'All Reports', value: reports.value.length },
+    { key: 'ALL', label: 'All Reports', value: scopedReports.value.length },
     { key: 'Submitted', label: isAdmin.value ? 'To Review' : 'Pending', value: counts.value.Submitted },
     { key: 'Returned', label: 'Returned', value: counts.value.Returned },
     { key: 'Reviewed', label: 'Reviewed', value: counts.value.Reviewed },
@@ -87,7 +101,7 @@ export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
   // ─── Filters ───
   const filteredReports = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
-    return reports.value.filter((r) => {
+    return scopedReports.value.filter((r) => {
       if (statusFilter.value !== 'ALL' && r.status !== statusFilter.value) return false
       if (fundingFilter.value !== 'ALL' && r.funding !== fundingFilter.value) return false
       if (!q) return true
@@ -121,7 +135,7 @@ export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
   const setPage = (page: number) => {
     if (page >= 1 && page <= totalPages.value) currentPage.value = page
   }
-  watch([searchQuery, statusFilter, fundingFilter], () => {
+  watch([searchQuery, statusFilter, fundingFilter, reportScope], () => {
     currentPage.value = 1
   })
   watch(totalPages, (total) => {
@@ -322,6 +336,9 @@ export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
 
   return {
     isPersonView,
+    isOfficeMode,
+    reportScope,
+    scopedReports,
     personName,
     columnCount,
     goBackToList,

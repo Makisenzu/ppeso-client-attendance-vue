@@ -74,6 +74,8 @@ export interface AccomplishmentReport {
 export interface ReviewReport extends AccomplishmentReport {
   fullName: string
   position: string | null
+  /** The writer's current office (null when they have none) */
+  officeId: string | null
   officeName: string | null
   officeCode: string | null
 }

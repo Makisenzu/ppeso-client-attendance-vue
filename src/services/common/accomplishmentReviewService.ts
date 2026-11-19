@@ -65,6 +65,7 @@ export const accomplishmentReviewService = {
         ...toAccomplishmentReport(row),
         fullName: profile ? formatNameWithMiddleInitial(profile.firstname, profile.middlename, profile.lastname) : 'Unknown',
         position: profile?.position ?? null,
+        officeId: profile?.office_id ?? null,
         officeName: office?.name ?? null,
         officeCode: office?.code ?? null,
       }

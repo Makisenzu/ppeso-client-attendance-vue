@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toRef } from 'vue'
-import { ArrowLeft, Check, ClipboardList, Eye, Filter, Loader2, Printer, RefreshCw, Search, Trash2, Undo2, X } from '@lucide/vue'
+import { ArrowLeft, Building2, Check, ChevronRight, ClipboardList, Eye, Filter, Loader2, Printer, RefreshCw, Search, Trash2, Undo2, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import SearchSelect from '@/components/common/SearchSelect.vue'
 import AccomplishmentDocumentPreview from '@/components/common/Accomplishments/AccomplishmentDocumentPreview.vue'
 import { useAccomplishmentReviews } from '@/composables/common/useAccomplishmentReviews'
+import { useAccomplishmentOffices } from '@/composables/peso/useAccomplishmentOffices'
 
 const props = defineProps<{
   /** One person's reports (supervisor → GIP list → View); omitted = every report the user may review */
@@ -27,6 +28,9 @@ const props = defineProps<{
 
 const {
   isPersonView,
+  isOfficeMode,
+  reportScope,
+  scopedReports,
   personName,
   columnCount,
   goBackToList,
@@ -97,6 +101,29 @@ const {
   getReportDayBadgeClass,
 } = useAccomplishmentReviews(toRef(props, 'profileId'))
 
+// Admins: offices first, then one office's reports
+const {
+  isOfficeList,
+  isOfficeView,
+  filteredOfficeRows,
+  paginatedOfficeRows,
+  officeRows,
+  officeSearch,
+  clearOfficeSearch,
+  officePage,
+  officeTotalPages,
+  officePageRange,
+  officeVisiblePages,
+  setOfficePage,
+  openOffice,
+  backToOffices,
+  selectedOfficeName,
+  selectedOfficeCode,
+} = useAccomplishmentOffices({ reports, reportScope, enabled: isOfficeMode, resetFilters })
+
+/** Office list columns: office, code, people, reports, to review, latest submission, actions */
+const OFFICE_COLUMN_COUNT = 7
+
 const checkboxClass =
   'h-4 w-4 cursor-pointer rounded border-input accent-primary align-middle disabled:cursor-not-allowed disabled:opacity-50'
 // Native textarea until the shadcn `textarea` primitive is added (the CLI needs a newer Node).
@@ -126,9 +153,32 @@ const textareaClass =
           <p class="text-sm text-muted-foreground">Their submitted accomplishment reports. Open one to review it.</p>
         </div>
       </div>
+      <div v-else-if="isOfficeView" class="flex items-start gap-3 min-w-0">
+        <Button
+          variant="outline"
+          size="icon"
+          class="h-9 w-9 shrink-0 cursor-pointer"
+          title="Back to the offices"
+          aria-label="Back to the offices"
+          @click="backToOffices"
+        >
+          <ArrowLeft class="h-4 w-4" />
+        </Button>
+        <div class="space-y-1 min-w-0">
+          <div class="flex items-center gap-2 min-w-0">
+            <h1 class="text-2xl font-bold tracking-tight sm:text-3xl text-foreground truncate">
+              {{ isLoading && !selectedOfficeCode ? 'Loading...' : selectedOfficeName }}
+            </h1>
+            <Badge v-if="selectedOfficeCode" variant="secondary" class="font-mono text-[11px] shrink-0">{{ selectedOfficeCode }}</Badge>
+          </div>
+          <p class="text-sm text-muted-foreground">Accomplishment reports submitted by the people in this office.</p>
+        </div>
+      </div>
       <div v-else class="space-y-1">
         <h1 class="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">Accomplishment Reports</h1>
-        <p class="text-sm text-muted-foreground">Review submitted reports, or return them with remarks.</p>
+        <p class="text-sm text-muted-foreground">
+          {{ isOfficeList ? 'Reports grouped by office. Open an office to see its reports.' : 'Review submitted reports, or return them with remarks.' }}
+        </p>
       </div>
       <Button variant="outline" size="sm" class="gap-1.5 text-xs cursor-pointer self-start sm:self-auto" :disabled="isLoading" @click="fetchReports">
         <RefreshCw :class="['h-3.5 w-3.5', isLoading && 'animate-spin']" />
@@ -136,8 +186,140 @@ const textareaClass =
       </Button>
     </div>
 
-    <!-- ─── Counts (click to filter) ─── -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <!-- ─── Office list (admins) ─── -->
+    <Card v-if="isOfficeList" class="border shadow-xs">
+      <CardHeader class="pb-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle class="text-lg font-semibold">Offices</CardTitle>
+            <CardDescription class="text-xs">Showing {{ filteredOfficeRows.length }} of {{ officeRows.length }} offices</CardDescription>
+          </div>
+          <div class="relative w-full sm:w-72">
+            <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input v-model="officeSearch" placeholder="Search by office or code..." class="pl-9 pr-8 h-9 text-base md:text-xs" />
+            <button
+              v-if="officeSearch"
+              type="button"
+              class="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground cursor-pointer"
+              aria-label="Clear search"
+              @click="clearOfficeSearch"
+            >
+              <X class="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent class="p-0">
+        <div class="relative overflow-x-auto border-t">
+          <Table>
+            <TableHeader class="bg-muted/40">
+              <TableRow>
+                <TableHead class="min-w-52 pl-4 text-xs font-semibold">Office</TableHead>
+                <TableHead class="min-w-24 text-xs font-semibold">Office Code</TableHead>
+                <TableHead class="min-w-20 text-xs font-semibold text-right">People</TableHead>
+                <TableHead class="min-w-20 text-xs font-semibold text-right">Reports</TableHead>
+                <TableHead class="min-w-24 text-xs font-semibold text-right">To Review</TableHead>
+                <TableHead class="min-w-44 text-xs font-semibold">Latest Submission</TableHead>
+                <TableHead class="min-w-24 pr-4 text-right text-xs font-semibold">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-if="isLoading">
+                <TableCell :colspan="OFFICE_COLUMN_COUNT" class="h-40 text-center">
+                  <div class="flex flex-col items-center justify-center gap-2 py-6">
+                    <Loader2 class="h-8 w-8 animate-spin text-primary" />
+                    <p class="text-xs text-muted-foreground">Loading reports...</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+
+              <template v-else-if="paginatedOfficeRows.length > 0">
+                <TableRow
+                  v-for="office in paginatedOfficeRows"
+                  :key="office.key"
+                  class="cursor-pointer hover:bg-muted/30"
+                  @click="openOffice(office)"
+                >
+                  <TableCell class="py-3 pl-4">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <Building2 class="h-4 w-4" />
+                      </div>
+                      <span class="text-xs sm:text-sm font-semibold text-foreground truncate">{{ office.officeName }}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell class="py-3 text-xs font-mono text-muted-foreground">{{ office.officeCode || '—' }}</TableCell>
+                  <TableCell class="py-3 text-xs font-mono text-right">{{ office.people }}</TableCell>
+                  <TableCell class="py-3 text-xs font-mono text-right">{{ office.total }}</TableCell>
+                  <TableCell class="py-3 text-right">
+                    <Badge v-if="office.toReview > 0" variant="outline" :class="[getReportStatusBadgeClass('Submitted'), 'text-[10px] font-mono']">
+                      {{ office.toReview }}
+                    </Badge>
+                    <span v-else class="text-xs text-muted-foreground font-mono">0</span>
+                  </TableCell>
+                  <TableCell class="py-3 text-xs text-muted-foreground whitespace-nowrap">
+                    {{ formatDisplayDateTimeLong(office.latestSubmittedAt) }}
+                  </TableCell>
+                  <TableCell class="py-3 pr-4 text-right">
+                    <Button variant="ghost" size="sm" class="h-8 gap-1 text-xs cursor-pointer" @click.stop="openOffice(office)">
+                      <span>View</span>
+                      <ChevronRight class="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              </template>
+
+              <TableEmpty v-else :colspan="OFFICE_COLUMN_COUNT">
+                <Empty class="border-0 p-6 md:p-8">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <ClipboardList v-if="officeRows.length === 0" class="size-5 text-muted-foreground" />
+                      <Filter v-else class="size-5 text-muted-foreground" />
+                    </EmptyMedia>
+                    <EmptyTitle>{{ officeRows.length === 0 ? 'No reports yet' : 'No matching offices' }}</EmptyTitle>
+                    <EmptyDescription>
+                      {{ officeRows.length === 0 ? 'Offices appear here once their people submit accomplishment reports.' : 'No office matches your search.' }}
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent v-if="officeRows.length > 0">
+                    <Button size="sm" variant="outline" class="text-xs cursor-pointer" @click="clearOfficeSearch">Clear Search</Button>
+                  </EmptyContent>
+                </Empty>
+              </TableEmpty>
+            </TableBody>
+          </Table>
+        </div>
+
+        <div
+          v-if="filteredOfficeRows.length > 0"
+          class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 border-t text-xs text-muted-foreground bg-muted/10"
+        >
+          <div>
+            Showing <span class="font-medium text-foreground">{{ officePageRange.start }}</span>
+            to <span class="font-medium text-foreground">{{ officePageRange.end }}</span>
+            of <span class="font-medium text-foreground">{{ filteredOfficeRows.length }}</span> offices
+          </div>
+          <div class="flex items-center gap-1">
+            <Button
+              v-for="p in officeVisiblePages"
+              :key="p"
+              size="sm"
+              :variant="officePage === p ? 'default' : 'outline'"
+              class="h-7 w-7 p-0 text-xs cursor-pointer"
+              @click="setOfficePage(p)"
+            >
+              {{ p }}
+            </Button>
+            <span v-if="officeTotalPages > officeVisiblePages.length" class="px-1">of {{ officeTotalPages }}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <template v-else>
+    <!-- ─── Counts (click to filter; not on the admin's office view) ─── -->
+    <div v-if="!isOfficeView" class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <Card
         v-for="card in statCards"
         :key="card.key"
@@ -157,7 +339,7 @@ const textareaClass =
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle class="text-lg font-semibold">Reports</CardTitle>
-            <CardDescription class="text-xs">Showing {{ filteredReports.length }} of {{ reports.length }} reports</CardDescription>
+            <CardDescription class="text-xs">Showing {{ filteredReports.length }} of {{ scopedReports.length }} reports</CardDescription>
           </div>
           <Button
             v-if="hasActiveFilters"
@@ -173,7 +355,7 @@ const textareaClass =
         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <div class="sm:col-span-2 relative">
             <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input v-model="searchQuery" :placeholder="isPersonView ? 'Search by month...' : 'Search by name, office or month...'" class="pl-9 h-9 text-base md:text-xs" />
+            <Input v-model="searchQuery" :placeholder="isPersonView ? 'Search by month...' : isOfficeView ? 'Search by name or month...' : 'Search by name, office or month...'" class="pl-9 h-9 text-base md:text-xs" />
           </div>
           <SearchSelect v-model="statusFilter" :options="statusOptions" :searchable="false" />
           <SearchSelect v-model="fundingFilter" :options="fundingOptions" :searchable="false" />
@@ -292,15 +474,15 @@ const textareaClass =
                 <Empty class="border-0 p-6 md:p-8">
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
-                      <ClipboardList v-if="reports.length === 0" class="size-5 text-muted-foreground" />
+                      <ClipboardList v-if="scopedReports.length === 0" class="size-5 text-muted-foreground" />
                       <Filter v-else class="size-5 text-muted-foreground" />
                     </EmptyMedia>
-                    <EmptyTitle>{{ reports.length === 0 ? 'No reports yet' : 'No matching reports' }}</EmptyTitle>
+                    <EmptyTitle>{{ scopedReports.length === 0 ? 'No reports yet' : 'No matching reports' }}</EmptyTitle>
                     <EmptyDescription>
-                      {{ reports.length === 0 ? (isPersonView ? 'Reports this GIP submits will appear here.' : 'Submitted accomplishment reports will appear here.') : 'No reports match your search or filters.' }}
+                      {{ scopedReports.length === 0 ? (isPersonView ? 'Reports this GIP submits will appear here.' : 'Submitted accomplishment reports will appear here.') : 'No reports match your search or filters.' }}
                     </EmptyDescription>
                   </EmptyHeader>
-                  <EmptyContent v-if="reports.length > 0">
+                  <EmptyContent v-if="scopedReports.length > 0">
                     <Button size="sm" variant="outline" class="text-xs cursor-pointer" @click="resetFilters">Clear Filters</Button>
                   </EmptyContent>
                 </Empty>
@@ -334,6 +516,7 @@ const textareaClass =
         </div>
       </CardContent>
     </Card>
+    </template>
 
     <!-- ─── Review sheet ─── -->
     <Sheet :open="isReviewOpen" @update:open="onReviewOpenChange">
