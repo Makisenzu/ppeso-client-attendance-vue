@@ -7,12 +7,14 @@ import { loginRoutes } from './routes/Login'
 import { pesoRoutes } from './routes/Peso/peso'
 import { supervisorRoutes } from './routes/Supervisor/supervisor'
 import { beneficiaryRoutes } from './routes/Beneficiary/beneficiary'
+import { kioskRoutes } from './routes/Kiosk/kiosk'
 
 const routes: RouteRecordRaw[] = [
   ...loginRoutes,
   ...pesoRoutes,
   ...supervisorRoutes,
   ...beneficiaryRoutes,
+  ...kioskRoutes,
 ]
 
 const router = createRouter({

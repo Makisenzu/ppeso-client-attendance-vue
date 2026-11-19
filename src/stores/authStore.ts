@@ -53,6 +53,8 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin = computed(() => userRole.value === 'admin')
   const isSupervisor = computed(() => userRole.value === 'supervisor')
   const isBeneficiary = computed(() => userRole.value === 'beneficiary')
+  /** An office's PACD computer: only the office kiosk page */
+  const isKiosk = computed(() => userRole.value === 'kiosk')
 
   return {
     userRole,
@@ -63,6 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     isSupervisor,
     isBeneficiary,
+    isKiosk,
   }
 })
 
@@ -78,6 +81,8 @@ export function getDashboardByRole(role: ProfileRole | null): string {
       return 'supervisor-dashboard'
     case 'beneficiary':
       return 'beneficiary-dashboard'
+    case 'kiosk':
+      return 'office-kiosk'
     default:
       return 'login'
   }
