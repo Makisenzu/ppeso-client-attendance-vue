@@ -4,7 +4,7 @@ import PesoLayout from '@/layouts/PesoLayout.vue'
 
 /**
  * Admin area. Admins can open only these pages — the ones in PesoSidebar
- * (Dashboard, Attendance/kiosk, Daily Time Record, Accomplishments, Evaluations, Client Records, Offices,
+ * (Dashboard, Attendance/kiosk, Daily Time Record, Accomplishments, Evaluations, Files, Client Records, Offices,
  * User Management, Calendar) plus Generate DTR, Office Details and Account. Unknown /dashboard URLs go to the dashboard.
  */
 export const pesoRoutes: RouteRecordRaw[] = [
@@ -40,6 +40,13 @@ export const pesoRoutes: RouteRecordRaw[] = [
         name: 'evaluations',
         component: () => import('@/components/peso/Evaluations/Evaluations.vue'),
         meta: { title: 'Evaluations' },
+      },
+      {
+        // PACD file container: printable forms, templates and guidelines (admins only)
+        path: 'files',
+        name: 'files',
+        component: () => import('@/components/peso/Files/PacdFiles.vue'),
+        meta: { title: 'Files' },
       },
       {
         path: 'attendance/dtr',

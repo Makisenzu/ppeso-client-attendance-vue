@@ -7,10 +7,13 @@ import { onUnmounted, ref } from 'vue'
 export function usePrintDocument() {
   const isPrinting = ref(false)
   let frame: HTMLIFrameElement | null = null
+  let blobUrl: string | null = null
 
   const removeFrame = () => {
     frame?.remove()
     frame = null
+    if (blobUrl) URL.revokeObjectURL(blobUrl)
+    blobUrl = null
   }
 
   const printHtml = (html: string) => {
@@ -59,7 +62,41 @@ export function usePrintDocument() {
     document.body.appendChild(iframe)
   }
 
+  /**
+   * Prints a PDF through the browser's own viewer in a hidden iframe. The file is loaded as a same-origin blob URL:
+   * the browser refuses to print a frame from another origin (e.g. a storage link).
+   */
+  const printPdf = (pdf: Blob) => {
+    removeFrame()
+    isPrinting.value = true
+    const iframe = document.createElement('iframe')
+    iframe.setAttribute('aria-hidden', 'true')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    frame = iframe
+    blobUrl = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' }))
+
+    iframe.onload = () => {
+      // Give the PDF viewer a moment to render before the dialog opens
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus()
+          iframe.contentWindow?.print()
+        } finally {
+          isPrinting.value = false
+        }
+      }, 300)
+    }
+
+    iframe.src = blobUrl
+    document.body.appendChild(iframe)
+  }
+
   onUnmounted(removeFrame)
 
-  return { isPrinting, printHtml }
+  return { isPrinting, printHtml, printPdf }
 }
