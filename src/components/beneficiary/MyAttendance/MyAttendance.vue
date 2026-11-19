@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Calendar, CalendarX2, Clock, Eye, FileText, Filter, Loader2, RefreshCw, Search, X } from '@lucide/vue'
+import DtrPrintSheet from '@/components/peso/attendance/DtrPrintSheet.vue'
+import { Calendar, CalendarX2, Eye, FileText, Filter, Loader2, RefreshCw, Search, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -74,13 +75,16 @@ const {
   selectedRecord,
   isDetailsOpen,
   openDetails,
+  previewData,
+  previewMonth,
+  isPreviewLoading,
+  previewError,
   onDetailsOpenChange,
   closeDetails,
   punchSlots,
   getPunchCell,
   isRecordAbsent,
   formatAttendanceDate,
-  formatDisplayDateTime,
   formatPunchStatusLabel,
   getPunchStatusBadgeClass,
   openMyDtr,
@@ -378,50 +382,22 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
 
     <!-- ─── Details dialog ─── -->
     <Dialog :open="isDetailsOpen" @update:open="onDetailsOpenChange">
-      <DialogContent class="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent class="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle class="text-base sm:text-lg">Daily Time Record Details</DialogTitle>
-          <DialogDescription class="text-xs">
-            {{ selectedRecord ? formatAttendanceDate(selectedRecord.attendanceDate) : '' }}
-          </DialogDescription>
+          <DialogTitle class="text-base sm:text-lg">Daily Time Record</DialogTitle>
+          <DialogDescription class="text-xs">{{ previewMonth }} · Civil Service Form No. 48, as printed</DialogDescription>
         </DialogHeader>
 
-        <div v-if="selectedRecord" class="space-y-4 py-2 text-xs">
-          <Badge
-            v-if="isRecordAbsent(selectedRecord)"
-            variant="outline"
-            :class="[getPunchStatusBadgeClass('absent'), 'text-[10px] uppercase font-mono']"
-          >
-            Absent
-          </Badge>
-
-          <div class="grid gap-3 sm:grid-cols-2">
-            <div class="p-3 rounded-lg border bg-card space-y-2 sm:col-span-2">
-              <p class="font-semibold text-xs text-foreground flex items-center gap-1.5">
-                <Clock class="h-3.5 w-3.5 text-primary shrink-0" />
-                <span>Punches</span>
-              </p>
-              <div class="grid grid-cols-2 gap-3 pt-1">
-                <div v-for="slot in punchSlots" :key="slot.key">
-                  <p class="text-[11px] text-muted-foreground">{{ slot.label }}</p>
-                  <p class="font-medium font-mono text-foreground mt-0.5">
-                    {{ getPunchCell(selectedRecord, slot.key).time ?? '—' }}
-                  </p>
-                  <Badge
-                    v-if="getPunchCell(selectedRecord, slot.key).status"
-                    variant="outline"
-                    :class="[getPunchStatusBadgeClass(getPunchCell(selectedRecord, slot.key).status), 'mt-1 text-[10px] font-mono capitalize']"
-                  >
-                    {{ formatPunchStatusLabel(getPunchCell(selectedRecord, slot.key).status) }}
-                  </Badge>
-                </div>
-              </div>
-            </div>
+        <div v-if="selectedRecord" class="py-2">
+          <div v-if="isPreviewLoading" class="flex flex-col items-center justify-center gap-2 py-16 text-xs text-muted-foreground">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+            <span>Loading the daily time record...</span>
           </div>
-
-          <div class="flex justify-between p-3 rounded-lg border bg-muted/20 text-[11px] text-muted-foreground">
-            <span>Recorded:</span>
-            <span class="text-foreground font-mono">{{ formatDisplayDateTime(selectedRecord.createdAt) }}</span>
+          <p v-else-if="previewError" class="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6 text-center text-xs text-destructive">
+            {{ previewError }}
+          </p>
+          <div v-else-if="previewData" class="rounded-lg border bg-muted/30 p-2 sm:p-4">
+            <DtrPrintSheet :data="previewData" :dual-copy="false" :right-copy-has-name="false" />
           </div>
         </div>
 

@@ -14,6 +14,7 @@ import {
   recordMatchesStatus,
 } from '@/helpers/peso/attendanceHelper'
 import { useToastAlert } from '@/composables/common/useToastAlert'
+import { useDtrPreview } from '@/composables/common/useDtrPreview'
 
 export function useAttendance() {
   const attendances = ref<AttendanceRecord[]>([])
@@ -238,14 +239,21 @@ export function useAttendance() {
     searchQuery.value = ''
   }
 
+  // View shows the person's printed DTR (CS Form 48) for the record's month, not the raw punches
+  const dtrPreview = useDtrPreview((profileId, startDate, endDate) =>
+    attendanceService.getAttendancesByProfileAndDateRange(profileId, startDate, endDate),
+  )
+
   const openDetails = (record: AttendanceRecord) => {
     selectedRecord.value = record
     isDetailsOpen.value = true
+    void dtrPreview.loadPreview({ profileId: record.profileId, fullName: record.fullName, date: record.attendanceDate })
   }
 
   const closeDetails = () => {
     isDetailsOpen.value = false
     selectedRecord.value = null
+    dtrPreview.clearPreview()
   }
 
   const exportCsv = () => {
@@ -487,6 +495,7 @@ export function useAttendance() {
     bulkDeleteOverflow,
     openDtrPage,
     generateDtrFromDetails,
+    ...dtrPreview,
     selectedCount,
     selectedRecords,
     isAllPageSelected,

@@ -75,7 +75,6 @@ const {
   onDeleteDialogChange,
   confirmDelete,
   selectedReport,
-  showPrintedForm,
   selectedDocument,
   isReviewOpen,
   remarks,
@@ -93,12 +92,9 @@ const {
   printReport,
   printSelected,
   formatPeriodRange,
-  formatWeekday,
-  formatPesoAmount,
   formatDisplayDateTimeLong,
   fundingFormTitle,
   getReportStatusBadgeClass,
-  getReportDayBadgeClass,
 } = useAccomplishmentReviews(toRef(props, 'profileId'))
 
 // Admins: offices first, then one office's reports
@@ -520,7 +516,7 @@ const textareaClass =
 
     <!-- ─── Review sheet ─── -->
     <Sheet :open="isReviewOpen" @update:open="onReviewOpenChange">
-      <SheetContent class="flex h-full flex-col p-0" :class="showPrintedForm ? 'sm:max-w-3xl' : 'sm:max-w-xl'">
+      <SheetContent class="flex h-full flex-col p-0 sm:max-w-3xl">
         <SheetHeader class="shrink-0 px-6 pt-6 pb-2">
           <SheetTitle>{{ selectedReport ? fundingFormTitle(selectedReport.funding) : 'Report' }}</SheetTitle>
           <SheetDescription v-if="selectedReport" class="text-xs">
@@ -536,71 +532,12 @@ const textareaClass =
             <span v-if="selectedReport.reviewedAt">· Reviewed {{ formatDisplayDateTimeLong(selectedReport.reviewedAt) }}</span>
           </div>
 
-          <!-- Supervisors: the report on its official form, exactly as printed -->
+          <!-- The report on its official form, exactly as printed (never the raw entries) -->
           <AccomplishmentDocumentPreview
-            v-if="showPrintedForm"
             :document="selectedDocument"
             :title="`${fundingFormTitle(selectedReport.funding)} of ${selectedReport.fullName}, as printed`"
           />
 
-          <template v-else>
-          <!-- PGAS activities -->
-          <section v-if="selectedReport.funding === 'PGAS'" class="grid gap-2">
-            <h3 class="text-xs font-semibold uppercase text-muted-foreground">Activities</h3>
-            <div class="overflow-x-auto rounded-lg border">
-              <table class="w-full text-xs">
-                <thead class="bg-muted/40">
-                  <tr>
-                    <th class="px-3 py-2 text-left font-semibold">Activity</th>
-                    <th class="px-3 py-2 text-left font-semibold">Output</th>
-                    <th class="px-3 py-2 text-left font-semibold">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y">
-                  <tr v-for="(row, index) in selectedReport.activities" :key="index">
-                    <td class="px-3 py-2 align-top whitespace-pre-line">{{ row.activity }}</td>
-                    <td class="px-3 py-2 align-top whitespace-pre-line">{{ row.output || '—' }}</td>
-                    <td class="px-3 py-2 align-top">{{ row.remarks || '—' }}</td>
-                  </tr>
-                  <tr v-if="!selectedReport.activities.length">
-                    <td colspan="3" class="px-3 py-3 text-center text-muted-foreground">No activities.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="text-xs">
-              <span class="text-muted-foreground">Payment:</span>
-              <span class="font-mono font-semibold">₱{{ formatPesoAmount(selectedReport.amount) || '—' }}</span>
-              <span v-if="selectedReport.amountInWords" class="text-muted-foreground"> · {{ selectedReport.amountInWords }}</span>
-            </p>
-          </section>
-
-          <!-- Daily entries (DOLE only) -->
-          <section v-if="selectedReport.funding === 'DOLE'" class="grid gap-2">
-            <h3 class="text-xs font-semibold uppercase text-muted-foreground">Daily entries</h3>
-            <ul class="divide-y rounded-lg border">
-              <li v-for="day in selectedReport.dailyEntries" :key="day.date" class="grid gap-1 px-3 py-2">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-xs font-medium font-mono">{{ formatWeekday(day.date) }}</span>
-                  <Badge variant="outline" :class="[getReportDayBadgeClass(day.status), 'text-[10px]']">{{ day.status }}</Badge>
-                </div>
-                <p v-if="day.entry" class="text-xs text-foreground whitespace-pre-line">{{ day.entry }}</p>
-              </li>
-              <li v-if="!selectedReport.dailyEntries.length" class="px-3 py-3 text-center text-xs text-muted-foreground">No daily entries.</li>
-            </ul>
-          </section>
-
-          <!-- Signatories -->
-          <section class="grid gap-1 text-xs">
-            <h3 class="font-semibold uppercase text-muted-foreground">Signatories</h3>
-            <p v-if="selectedReport.funding === 'PGAS'"><span class="text-muted-foreground">Designation:</span> {{ selectedReport.designation || '—' }}</p>
-            <p><span class="text-muted-foreground">Supervisor:</span> {{ selectedReport.supervisorName || '—' }}</p>
-            <p>
-              <span class="text-muted-foreground">Office head:</span> {{ selectedReport.approverName || '—' }}
-              <span v-if="selectedReport.approverPosition" class="text-muted-foreground">({{ selectedReport.approverPosition }})</span>
-            </p>
-          </section>
-          </template>
 
           <!-- Remarks -->
           <section class="grid gap-1.5">

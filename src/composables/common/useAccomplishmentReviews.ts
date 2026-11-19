@@ -6,10 +6,7 @@ import { accomplishmentReviewService } from '@/services/common/accomplishmentRev
 import { REPORT_REVIEW_REMARKS_MAX, type ReviewReport } from '@/types/common/accomplishment'
 import {
   formatPeriodRange,
-  formatPesoAmount,
-  formatWeekday,
   fundingFormTitle,
-  getReportDayBadgeClass,
   getReportStatusBadgeClass,
   formatReviewStatusLabel,
   REPORT_FUNDING_FILTER_OPTIONS,
@@ -305,11 +302,8 @@ export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
       window.location.origin,
     )
 
-  /** Supervisors review the report as it will be printed; admins keep the itemised view. */
-  const showPrintedForm = computed(() => !isAdmin.value)
-  const selectedDocument = computed(() =>
-    showPrintedForm.value && selectedReport.value ? buildReportDocument(selectedReport.value) : '',
-  )
+  /** Everyone reviews the report as it will be printed, whatever its status */
+  const selectedDocument = computed(() => (selectedReport.value ? buildReportDocument(selectedReport.value) : ''))
 
   const printReport = (report: ReviewReport) => {
     printHtml(buildReportDocument(report))
@@ -384,7 +378,6 @@ export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
     onDeleteDialogChange,
     confirmDelete,
     selectedReport,
-    showPrintedForm,
     selectedDocument,
     isReviewOpen,
     remarks,
@@ -402,11 +395,8 @@ export function useAccomplishmentReviews(profileId?: Ref<string | undefined>) {
     printReport,
     printSelected,
     formatPeriodRange,
-    formatWeekday,
-    formatPesoAmount,
     formatDisplayDateTimeLong,
     fundingFormTitle,
     getReportStatusBadgeClass,
-    getReportDayBadgeClass,
   }
 }

@@ -1,19 +1,6 @@
 <script setup lang="ts">
-import {
-  Building2,
-  Calendar,
-  CalendarX2,
-  Clock,
-  Download,
-  Eye,
-  FileText,
-  Filter,
-  Loader2,
-  RefreshCw,
-  Search,
-  Trash2,
-  X,
-} from '@lucide/vue'
+import DtrPrintSheet from '@/components/peso/attendance/DtrPrintSheet.vue'
+import { Building2, Calendar, CalendarX2, Download, Eye, FileText, Filter, Loader2, RefreshCw, Search, Trash2, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -47,7 +34,6 @@ import {
 import { useAttendance } from '@/composables/peso/useAttendance'
 import {
   formatDateDisplay,
-  formatDateTimeDisplay,
   formatPunchStatusLabel,
   formatTimeDisplay,
   getInitials,
@@ -88,6 +74,10 @@ const {
   prevPage,
   nextPage,
   openDetails,
+  previewData,
+  previewMonth,
+  isPreviewLoading,
+  previewError,
   closeDetails,
   exportCsv,
   selectedCount,
@@ -875,153 +865,22 @@ const checkboxClass =
 
     <!-- ─── Attendance Details Modal ─── -->
     <Dialog :open="isDetailsOpen" @update:open="(val: boolean) => { if (!val) closeDetails() }">
-      <DialogContent class="max-w-[95vw] sm:max-w-lg">
+      <DialogContent class="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2 text-base sm:text-lg">
-            Daily Time Record Details
-          </DialogTitle>
-          <DialogDescription class="text-xs">
-            Detailed view of attendance entry.
-          </DialogDescription>
+          <DialogTitle class="flex items-center gap-2 text-base sm:text-lg">Daily Time Record</DialogTitle>
+          <DialogDescription class="text-xs">{{ previewMonth }} · Civil Service Form No. 48, as printed</DialogDescription>
         </DialogHeader>
 
-        <div v-if="selectedRecord" class="space-y-4 py-2 text-xs">
-          <!-- Personnel Card -->
-          <div class="flex items-center gap-3 p-3 rounded-lg border bg-muted/20">
-            <Avatar class="h-10 w-10 text-sm font-semibold">
-              <AvatarFallback class="bg-primary/10 text-primary">
-                {{ getInitials(selectedRecord.fullName) }}
-              </AvatarFallback>
-            </Avatar>
-            <div class="min-w-0 space-y-0.5">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="font-semibold text-sm text-foreground">
-                  {{ selectedRecord.fullName }}
-                </span>
-                <Badge
-                  variant="outline"
-                  :class="getPositionBadgeClass(selectedRecord.position)"
-                  class="text-[10px] uppercase font-mono"
-                >
-                  {{ selectedRecord.position || 'Employee' }}
-                </Badge>
-                <Badge
-                  v-if="isRecordAbsent(selectedRecord)"
-                  variant="outline"
-                  :class="getPunchStatusBadgeClass('absent')"
-                  class="text-[10px] uppercase font-mono"
-                >
-                  Absent
-                </Badge>
-              </div>
-              <p class="text-muted-foreground text-[11px] font-mono">
-                Date: <span class="font-semibold text-foreground">{{ formatDateDisplay(selectedRecord.attendanceDate) }}</span>
-              </p>
-              <p class="text-muted-foreground text-[11px] flex items-center gap-1.5 pt-0.5">
-                <Building2 class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span>Office:</span>
-                <span class="font-semibold text-foreground">
-                  {{ selectedRecord.officeName || 'Unassigned' }}
-                </span>
-                <span v-if="selectedRecord.officeCode" class="text-[10px] text-muted-foreground font-mono">
-                  ({{ selectedRecord.officeCode }})
-                </span>
-              </p>
-            </div>
+        <div v-if="selectedRecord" class="py-2">
+          <div v-if="isPreviewLoading" class="flex flex-col items-center justify-center gap-2 py-16 text-xs text-muted-foreground">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+            <span>Loading the daily time record...</span>
           </div>
-
-          <!-- AM Session Punches -->
-          <div class="p-3 rounded-lg border bg-card space-y-2">
-            <p class="font-semibold text-xs text-foreground flex items-center gap-1.5">
-              <Clock class="h-3.5 w-3.5 text-primary" />
-              <span>Morning Session (AM)</span>
-            </p>
-            <div class="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <p class="text-[11px] text-muted-foreground">AM Check-In</p>
-                <p class="font-medium font-mono text-foreground mt-0.5">
-                  {{ formatTimeDisplay(selectedRecord.amCheckIn) }}
-                </p>
-                <Badge
-                  v-if="selectedRecord.amInStatus"
-                  variant="outline"
-                  :class="[getPunchStatusBadgeClass(selectedRecord.amInStatus), 'mt-1 text-[10px] font-mono capitalize']"
-                >
-                  {{ formatPunchStatusLabel(selectedRecord.amInStatus) }}
-                </Badge>
-              </div>
-              <div>
-                <p class="text-[11px] text-muted-foreground">AM Check-Out</p>
-                <p class="font-medium font-mono text-foreground mt-0.5">
-                  {{ formatTimeDisplay(selectedRecord.amCheckOut) }}
-                </p>
-                <Badge
-                  v-if="selectedRecord.amOutStatus"
-                  variant="outline"
-                  :class="[getPunchStatusBadgeClass(selectedRecord.amOutStatus), 'mt-1 text-[10px] font-mono capitalize']"
-                >
-                  {{ formatPunchStatusLabel(selectedRecord.amOutStatus) }}
-                </Badge>
-              </div>
-            </div>
-          </div>
-
-          <!-- PM Session Punches -->
-          <div class="p-3 rounded-lg border bg-card space-y-2">
-            <p class="font-semibold text-xs text-foreground flex items-center gap-1.5">
-              <Clock class="h-3.5 w-3.5 text-primary" />
-              <span>Afternoon Session (PM)</span>
-            </p>
-            <div class="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <p class="text-[11px] text-muted-foreground">PM Check-In</p>
-                <p class="font-medium font-mono text-foreground mt-0.5">
-                  {{ formatTimeDisplay(selectedRecord.pmCheckIn) }}
-                </p>
-                <Badge
-                  v-if="selectedRecord.pmInStatus"
-                  variant="outline"
-                  :class="[getPunchStatusBadgeClass(selectedRecord.pmInStatus), 'mt-1 text-[10px] font-mono capitalize']"
-                >
-                  {{ formatPunchStatusLabel(selectedRecord.pmInStatus) }}
-                </Badge>
-              </div>
-              <div>
-                <p class="text-[11px] text-muted-foreground">PM Check-Out</p>
-                <p class="font-medium font-mono text-foreground mt-0.5">
-                  {{ formatTimeDisplay(selectedRecord.pmCheckOut) }}
-                </p>
-                <Badge
-                  v-if="selectedRecord.pmOutStatus"
-                  variant="outline"
-                  :class="[getPunchStatusBadgeClass(selectedRecord.pmOutStatus), 'mt-1 text-[10px] font-mono capitalize']"
-                >
-                  {{ formatPunchStatusLabel(selectedRecord.pmOutStatus) }}
-                </Badge>
-              </div>
-            </div>
-          </div>
-
-          <!-- Metadata -->
-          <div class="p-3 rounded-lg border bg-muted/20 space-y-1.5 text-muted-foreground text-[11px] font-mono">
-            <div v-if="selectedRecord.officeName" class="flex justify-between">
-              <span>Assigned Office:</span>
-              <span class="text-foreground truncate max-w-64 font-sans font-medium">
-                {{ selectedRecord.officeName }}{{ selectedRecord.officeCode ? ` (${selectedRecord.officeCode})` : '' }}
-              </span>
-            </div>
-            <div class="flex justify-between">
-              <span>Profile ID:</span>
-              <span class="text-foreground truncate max-w-64">{{ selectedRecord.profileId }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Record ID:</span>
-              <span class="text-foreground truncate max-w-64">{{ selectedRecord.id }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Created At:</span>
-              <span class="text-foreground">{{ formatDateTimeDisplay(selectedRecord.createdAt) }}</span>
-            </div>
+          <p v-else-if="previewError" class="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6 text-center text-xs text-destructive">
+            {{ previewError }}
+          </p>
+          <div v-else-if="previewData" class="rounded-lg border bg-muted/30 p-2 sm:p-4">
+            <DtrPrintSheet :data="previewData" :dual-copy="false" :right-copy-has-name="false" />
           </div>
         </div>
 

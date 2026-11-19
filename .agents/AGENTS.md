@@ -222,3 +222,6 @@ Component (.vue) ──► Composable (useXxx) ──► [Store (xxxStore)] ─�
 > 20. **DO NOT finish a change with failing checks.** Before handing work back run `rtk npm run build`
 >     (`vue-tsc -b && vite build`, 0 errors). Keep components under ~1,500 lines: split big pages into section
 >     components that share the page composable.
+> 21. **Viewing a DTR or an accomplishment report always shows its printed form**, for every role and every status:
+>     the Civil Service Form 48 (`DtrPrintSheet`, via `useDtrPreview` for the record's month) or the report's official
+>     form (`AccomplishmentDocumentPreview`). Never show the raw punches or entries in a View dialog or sheet.

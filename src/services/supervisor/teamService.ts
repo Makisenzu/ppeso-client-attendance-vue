@@ -4,6 +4,7 @@ import type {
   TeamMember,
   TeamOffice,
 } from '@/types/supervisor/team'
+import type { DtrAttendance } from '@/types/peso/dtr'
 import { formatNameWithMiddleInitial } from '@/helpers/common/nameHelper'
 
 /**
@@ -115,5 +116,23 @@ export const teamService = {
       .eq('status', 'Submitted')
     if (error) throw new Error('Failed to load the reports waiting for review.')
     return count ?? 0
+  },
+  /** One member's punches between two dates, for their printed DTR (RLS: own office only) */
+  async getMemberDtrAttendances(profileId: string, startDate: string, endDate: string): Promise<DtrAttendance[]> {
+    const { data, error } = await supabase
+      .schema('core')
+      .from('attendances')
+      .select('attendance_date, am_check_in, am_check_out, pm_check_in, pm_check_out')
+      .eq('profile_id', profileId)
+      .gte('attendance_date', startDate)
+      .lte('attendance_date', endDate)
+    if (error) throw new Error('Failed to load the daily time record.')
+    return (data ?? []).map((row) => ({
+      attendanceDate: row.attendance_date,
+      amCheckIn: row.am_check_in,
+      amCheckOut: row.am_check_out,
+      pmCheckIn: row.pm_check_in,
+      pmCheckOut: row.pm_check_out,
+    }))
   },
 }
