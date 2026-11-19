@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Book, Building2, CalendarDays, ClipboardCheck, ClipboardList, Clock, FingerprintPattern, Users } from '@lucide/vue'
+import { Book, Building2, CalendarDays, ClipboardCheck, ClipboardList, Clock, FolderOpen, FingerprintPattern, Users } from '@lucide/vue'
 import { useSidebarUser } from '@/composables/common/useSidebarUser'
 import type { SidebarNavItem } from '@/composables/supervisor/useSupervisorSidebar'
 
@@ -21,14 +21,15 @@ export function usePesoSidebar() {
       items: [
         { title: 'Attendance', to: { name: 'kiosk' }, icon: FingerprintPattern },
         { title: 'Daily Time Record', to: { name: 'attendance' }, icon: Clock },
-        { title: 'Client Records', to: { name: 'records' }, icon: Book },
+        { title: 'Accomplishments', to: { name: 'accomplishments' }, icon: ClipboardList },
+        { title: 'Evaluations', to: { name: 'evaluations' }, icon: ClipboardCheck },
       ],
     },
     {
-      label: 'Document',
+      label: 'PACD',
       items: [
-        { title: 'Accomplishments', to: { name: 'accomplishments' }, icon: ClipboardList },
-        { title: 'Evaluations', to: { name: 'evaluations' }, icon: ClipboardCheck },
+        { title: 'Client Records', to: { name: 'records' }, icon: Book },
+        { title: 'Files', to: { name: 'files' }, icon: FolderOpen },
       ],
     },
     {
