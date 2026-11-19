@@ -25,7 +25,7 @@ export function usePesoSidebar() {
       ],
     },
     {
-      label: 'Beneficiary Programs',
+      label: 'Document',
       items: [
         { title: 'Accomplishments', to: { name: 'accomplishments' }, icon: ClipboardList },
         { title: 'Evaluations', to: { name: 'evaluations' }, icon: ClipboardCheck },
