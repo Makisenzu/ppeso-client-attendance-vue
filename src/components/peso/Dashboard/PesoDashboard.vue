@@ -344,7 +344,7 @@ const {
                 7-Day Attendance Punch Trend
               </CardTitle>
               <CardDescription>
-                Daily volume of check-in and check-out records over the past week
+                Daily volume of client visits over the past week
               </CardDescription>
             </div>
             <Badge variant="secondary" class="text-xs gap-1 font-normal">

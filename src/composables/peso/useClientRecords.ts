@@ -203,30 +203,6 @@ export function useClientRecords() {
     }
   }
 
-  // Check-out client
-  const markCheckOut = async (id: string): Promise<boolean> => {
-    try {
-      const nowIso = new Date().toISOString()
-      const updated = await clientRecordService.updateWalkinAttendance(id, {
-        check_out: nowIso,
-      })
-      if (updated) {
-        const idx = records.value.findIndex((r) => r.id === id)
-        if (idx !== -1) {
-          records.value[idx] = updated
-        }
-        if (selectedRecord.value?.id === id) {
-          selectedRecord.value = updated
-        }
-        return true
-      }
-      return false
-    } catch (err) {
-      console.error('Failed to checkout client:', err)
-      return false
-    }
-  }
-
   // ─── Feedback: toast in the top-right corner (useToastAlert) ───
   const toast = useToastAlert()
   const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
@@ -241,15 +217,6 @@ export function useClientRecords() {
       }
     } catch (err: any) {
       showFeedback(err?.message || 'Failed to save client record. Please try again.', 'error')
-    }
-  }
-
-  const handleCheckOut = async (id: string) => {
-    const success = await markCheckOut(id)
-    if (success) {
-      showFeedback('Client successfully marked as checked out.')
-    } else {
-      showFeedback('Failed to update client check-out time.', 'error')
     }
   }
 
@@ -348,9 +315,7 @@ export function useClientRecords() {
     openDetails,
     closeDetails,
     submitNewRecord,
-    markCheckOut,
     handleAddClient,
-    handleCheckOut,
     exportCsv,
   }
 }

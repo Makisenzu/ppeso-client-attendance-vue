@@ -12,7 +12,6 @@ export interface ClientRecordItem extends WalkinAttendanceRow {
   initials: string
   formattedAddress: string
   formattedCheckIn: string
-  formattedCheckOut: string | null
 }
 
 export interface ClientRecordStats {

@@ -34,28 +34,12 @@ function mapToClientRecordItem(row: WalkinAttendanceRow): ClientRecordItem {
     }
   }
 
-  let formattedCheckOut: string | null = null
-  if (row.check_out) {
-    const d = new Date(row.check_out)
-    if (!isNaN(d.getTime())) {
-      formattedCheckOut = d.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      })
-    }
-  }
-
   return {
     ...row,
     fullName,
     initials,
     formattedAddress,
     formattedCheckIn,
-    formattedCheckOut,
   }
 }
 

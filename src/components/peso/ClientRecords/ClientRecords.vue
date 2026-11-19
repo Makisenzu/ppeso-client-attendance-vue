@@ -6,7 +6,6 @@ import {
   Download,
   Eye,
   Loader2,
-  LogOut,
   MapPin,
   Phone,
   Plus,
@@ -87,7 +86,6 @@ const {
   openDetails,
   closeDetails,
   handleAddClient,
-  handleCheckOut,
   exportCsv,
   pageRange,
   malePercentage,
@@ -340,7 +338,7 @@ const {
               <TableHead class="text-xs font-semibold text-foreground w-35">Contact</TableHead>
               <TableHead class="text-xs font-semibold text-foreground min-w-50">Residential Address</TableHead>
               <TableHead class="text-xs font-semibold text-foreground w-40">Service Required</TableHead>
-              <TableHead class="text-xs font-semibold text-foreground w-37.5">Check-in</TableHead>
+              <TableHead class="text-xs font-semibold text-foreground w-37.5">Date Visited</TableHead>
               <TableHead class="text-xs font-semibold text-foreground text-right w-25">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -425,7 +423,7 @@ const {
                   </span>
                 </TableCell>
 
-                <!-- Check-in Time -->
+                <!-- Date visited -->
                 <TableCell>
                   <div class="text-xs text-foreground font-mono">
                     {{ client.formattedCheckIn || 'N/A' }}
@@ -606,38 +604,17 @@ const {
             </div>
           </div>
 
-          <!-- Timeline -->
-          <div class="space-y-2 p-3 rounded-lg border border-border/50 bg-background">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-muted-foreground flex items-center gap-1.5">
-                <Clock class="h-3.5 w-3.5 text-primary" />
-                <span>Check-in:</span>
-              </span>
-              <span class="font-medium font-mono text-foreground">{{ selectedRecord.formattedCheckIn }}</span>
-            </div>
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-muted-foreground flex items-center gap-1.5">
-                <LogOut class="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Check-out:</span>
-              </span>
-              <span class="font-medium font-mono text-foreground">
-                {{ selectedRecord.formattedCheckOut || 'Still in office' }}
-              </span>
-            </div>
+          <!-- Visit -->
+          <div class="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-background text-xs">
+            <span class="text-muted-foreground flex items-center gap-1.5">
+              <Clock class="h-3.5 w-3.5 text-primary" />
+              <span>Date Visited:</span>
+            </span>
+            <span class="font-medium font-mono text-foreground">{{ selectedRecord.formattedCheckIn }}</span>
           </div>
         </div>
 
-        <DialogFooter class="flex sm:flex-row gap-2">
-          <Button
-            v-if="selectedRecord && !selectedRecord.check_out"
-            variant="outline"
-            size="sm"
-            class="text-xs gap-1.5 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
-            @click="handleCheckOut(selectedRecord.id)"
-          >
-            <LogOut class="h-3.5 w-3.5" />
-            <span>Mark as Checked Out</span>
-          </Button>
+        <DialogFooter>
           <Button
             variant="default"
             size="sm"
@@ -683,7 +660,7 @@ const {
             <span class="text-foreground truncate max-w-56">{{ recordToDelete.formattedAddress || 'N/A' }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-muted-foreground">Check-in:</span>
+            <span class="text-muted-foreground">Date Visited:</span>
             <span class="font-mono text-foreground">{{ recordToDelete.formattedCheckIn || 'N/A' }}</span>
           </div>
         </div>

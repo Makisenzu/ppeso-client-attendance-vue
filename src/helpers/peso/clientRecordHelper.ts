@@ -150,8 +150,7 @@ export function exportClientRecordsToCsv(records: ClientRecordItem[]): void {
     'Province',
     'Full Address',
     'Service Required',
-    'Check-in Time',
-    'Check-out Time',
+    'Date Visited',
     'Created At',
   ]
 
@@ -170,7 +169,6 @@ export function exportClientRecordsToCsv(records: ClientRecordItem[]): void {
     r.formattedAddress,
     formatPurposeLabel(r.purpose),
     r.formattedCheckIn || r.check_in,
-    r.formattedCheckOut || r.check_out || '',
     r.created_at,
   ])
 
