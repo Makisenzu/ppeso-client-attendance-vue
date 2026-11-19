@@ -43,7 +43,7 @@ const COLUMN_COUNT = 5
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="space-y-1">
         <h1 class="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">Accomplishment Reports</h1>
-        <p class="text-sm text-muted-foreground">The GIPs in your office. Select View to see and review their reports.</p>
+        <p class="text-sm text-muted-foreground">GIPs in your office and their reports.</p>
       </div>
       <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
         <Badge v-if="officeLabel" variant="outline" class="gap-1.5 h-8 px-2.5 text-xs font-medium">
