@@ -74,8 +74,10 @@ export function useDtrGenerator() {
   const loadProfiles = async () => {
     isLoadingProfiles.value = true
     try {
-      // Employees (position "employee") have no DTR here: only program beneficiaries are listed
-      const list = (await userManagementService.getProfiles()).filter((p) => p.position !== 'employee')
+      // Employees and admin accounts have no DTR here: only program beneficiaries are listed
+      const list = (await userManagementService.getProfiles()).filter(
+        (p) => p.position !== 'employee' && p.position !== 'admin' && p.role !== 'admin',
+      )
       profiles.value = list
       const requestedExists = list.some((p) => p.id === selectedProfileId.value)
       if (!requestedExists && list.length > 0) {
