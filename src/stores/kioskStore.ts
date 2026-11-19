@@ -15,7 +15,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
   // Real-time recent punches today
   const recentPunches = ref<KioskRecentPunch[]>([])
   const loadingPunches = ref(false)
-  let realtimeChannel: any = null
+  let realtimeChannel: ReturnType<typeof attendanceService.subscribeToTodayPunches> | null = null
+  /** Office kiosks get no realtime events (RLS), so the list also refreshes every 30 seconds */
+  let refreshTimer: ReturnType<typeof setInterval> | null = null
 
   let autoClearTimer: ReturnType<typeof setInterval> | null = null
 
@@ -97,16 +99,26 @@ export const useAttendanceStore = defineStore('attendance', () => {
   }
 
   const initRealtime = () => {
-    if (realtimeChannel) return
-    realtimeChannel = attendanceService.subscribeToTodayPunches(() => {
-      fetchTodayPunches()
-    })
+    if (!realtimeChannel) {
+      realtimeChannel = attendanceService.subscribeToTodayPunches(() => {
+        fetchTodayPunches()
+      })
+    }
+    if (!refreshTimer) {
+      refreshTimer = setInterval(() => {
+        void fetchTodayPunches()
+      }, 30_000)
+    }
   }
 
   const cleanupRealtime = () => {
     if (realtimeChannel) {
       supabase.removeChannel(realtimeChannel)
       realtimeChannel = null
+    }
+    if (refreshTimer) {
+      clearInterval(refreshTimer)
+      refreshTimer = null
     }
   }
 
