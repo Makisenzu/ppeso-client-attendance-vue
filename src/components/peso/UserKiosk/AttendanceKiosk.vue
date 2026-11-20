@@ -114,7 +114,7 @@ const {
           Enter 6-Digit Passcode
         </p>
         <p class="text-xs text-muted-foreground">
-          Type your employee passcode to automatically log attendance
+          Type your passcode to automatically log attendance
         </p>
       </div>
 
