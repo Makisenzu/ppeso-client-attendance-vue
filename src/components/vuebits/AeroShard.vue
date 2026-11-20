@@ -31,6 +31,11 @@ export interface AeroShardsProps {
   parallax?: number;
   paused?: boolean;
   dpr?: number;
+  /**
+   * Picks a starting quality from the device (cores, memory, touch screen) and steps it down while frames run slow,
+   * so phones and low-end PCs keep a steady frame rate. Off: always full quality.
+   */
+  adaptiveQuality?: boolean;
   className?: string;
   style?: StyleValue;
   onError?: (error: Error) => void;
@@ -1063,7 +1068,7 @@ const createShards = (count: number, seed: number): Shard[] => {
   return shards;
 };
 
-type SettingsInput = Required<Omit<AeroShardsProps, 'className' | 'style' | 'onError'>>;
+type SettingsInput = Required<Omit<AeroShardsProps, 'className' | 'style' | 'onError' | 'adaptiveQuality'>>;
 
 const resolveSettings = (p: SettingsInput) => ({
   shard: parseColor(p.shardColor, [0.42, 0.74, 0.54]) ?? [0.42, 0.74, 0.54],
@@ -1095,6 +1100,49 @@ const resolveSettings = (p: SettingsInput) => ({
 });
 
 type Settings = ReturnType<typeof resolveSettings>;
+
+/**
+ * Quality tiers, best first. Each caps the render resolution and scales the shard count (fewer shards also means
+ * less CPU simulation and sorting). `blur: false` drops depth of field, which skips the two blur passes per layer;
+ * `glow: false` skips the bloom passes.
+ */
+const QUALITY_TIERS = [
+  { dpr: 2, count: 1, blur: true, glow: true },
+  { dpr: 1.25, count: 0.7, blur: true, glow: true },
+  { dpr: 1, count: 0.5, blur: false, glow: true },
+  { dpr: 0.75, count: 0.35, blur: false, glow: false }
+] as const;
+
+/** A window averaging longer frames than this (under ~48 fps) drops one tier. */
+const SLOW_FRAME_MS = 1000 / 48;
+/** Frames averaged per check. */
+const FRAME_WINDOW = 90;
+/** Seconds ignored after start (shader compile) and after each tier change (resources rebuild). */
+const SETTLE_SECONDS = 1.5;
+
+/** Starting tier from what the browser reports; the frame monitor corrects it from there. */
+const initialTier = (): number => {
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const cores = nav.hardwareConcurrency || 4;
+  const memory = nav.deviceMemory ?? 8;
+  const touch = window.matchMedia('(pointer: coarse)').matches;
+  const small = Math.min(window.screen.width, window.screen.height) < 768;
+  if (cores <= 2 || memory <= 2) return 3;
+  if (cores <= 4 || memory <= 4) return 2;
+  if (touch || small) return 1;
+  return 0;
+};
+
+const applyTier = (s: Settings, tier: number): Settings => {
+  const q = QUALITY_TIERS[tier];
+  return {
+    ...s,
+    dpr: Math.min(s.dpr, q.dpr),
+    count: Math.max(100, Math.round(s.count * q.count)),
+    depthOfField: q.blur ? s.depthOfField : 0,
+    glow: q.glow ? s.glow : 0
+  };
+};
 </script>
 
 <script setup lang="ts">
@@ -1127,18 +1175,21 @@ const props = withDefaults(defineProps<AeroShardsProps>(), {
   parallax: 0.5,
   paused: false,
   dpr: 2,
+  adaptiveQuality: true,
   className: '',
   style: undefined,
   onError: undefined
 });
 
 const containerRef = ref<HTMLDivElement | null>(null);
-const settings = computed<Settings>(() => resolveSettings(props as SettingsInput));
+const tier = ref(0);
+const settings = computed<Settings>(() => applyTier(resolveSettings(props as SettingsInput), tier.value));
 let teardown: (() => void) | undefined;
 
 const setup = (): (() => void) | undefined => {
   const container = containerRef.value;
   if (!container) return undefined;
+  tier.value = props.adaptiveQuality ? initialTier() : 0;
   const canvas = document.createElement('canvas');
   canvas.className = CANVAS;
   container.appendChild(canvas);
@@ -2159,12 +2210,34 @@ const setup = (): (() => void) | undefined => {
       });
     };
 
+    // Frame-time monitor for adaptiveQuality. Only steps down: stepping back up would oscillate on borderline hardware.
+    const frames = { previous: 0, total: 0, count: 0, settleUntil: SETTLE_SECONDS };
+    const watchFrames = (now: number) => {
+      const gap = frames.previous ? now - frames.previous : 0;
+      frames.previous = now;
+      if (!props.adaptiveQuality || tier.value >= QUALITY_TIERS.length - 1) return;
+      // First frame, or a stall that isn't rendering cost (tab switch, route change, GC pause)
+      if (gap <= 0 || gap > 250 || state.clock < frames.settleUntil) return;
+      frames.total += gap;
+      frames.count += 1;
+      if (frames.count < FRAME_WINDOW) return;
+      const average = frames.total / frames.count;
+      frames.total = 0;
+      frames.count = 0;
+      if (average > SLOW_FRAME_MS) {
+        tier.value += 1;
+        frames.settleUntil = state.clock + SETTLE_SECONDS;
+      }
+    };
+
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
       if (!state.visible || document.hidden) {
         state.last = now;
+        frames.previous = 0;
         return;
       }
+      watchFrames(now);
       const s = settings.value;
       const dt = state.last ? Math.min((now - state.last) / 1000, 0.05) : 0;
       state.last = now;

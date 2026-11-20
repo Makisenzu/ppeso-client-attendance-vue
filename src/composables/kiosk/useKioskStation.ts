@@ -1,16 +1,23 @@
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { kioskStationService } from '@/services/kiosk/kioskStationService'
 import { authService } from '@/services/common/authService'
 import { useAuthStore } from '@/stores/authStore'
-import { useThemeToggle } from '@/composables/common/useLayoutHeader'
 import type { KioskStation } from '@/types/kiosk/kioskStation'
 
-/** Office kiosk layout: the office this PACD computer belongs to, the theme toggle and sign-out. */
+/** Office kiosk layout: the office this PACD computer belongs to, the forced dark theme and sign-out. */
 export function useKioskStation() {
   const router = useRouter()
   const authStore = useAuthStore()
-  const theme = useThemeToggle()
+
+  // The kiosk is always dark. The class goes on <html> (not the layout root) so teleported dialogs are dark too;
+  // the saved theme preference is left alone and the previous class is restored when the kiosk unmounts.
+  const root = document.documentElement
+  const wasDark = root.classList.contains('dark')
+  root.classList.add('dark')
+  onBeforeUnmount(() => {
+    if (!wasDark) root.classList.remove('dark')
+  })
 
   const station = ref<KioskStation | null>(null)
   const isLoading = ref(true)
@@ -62,7 +69,6 @@ export function useKioskStation() {
   })
 
   return {
-    ...theme,
     station,
     officeLabel,
     hasOffice,
