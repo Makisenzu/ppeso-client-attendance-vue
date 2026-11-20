@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import SearchSelect from '@/components/common/SearchSelect.vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { useTeamAttendance } from '@/composables/supervisor/useTeamAttendance'
 
 // Read-only list of the office team's DTRs: no selection or delete (DESIGN.md §11.1 exemption —
@@ -235,7 +236,37 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
         </CardHeader>
 
         <CardContent class="p-0">
-          <div class="relative overflow-x-auto border-t">
+          <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
+          <div class="divide-y border-t md:hidden">
+            <div v-if="isLoading" class="flex justify-center py-10">
+              <Loader2 class="h-6 w-6 animate-spin text-primary" />
+            </div>
+            <template v-else-if="paginatedRecords.length > 0">
+              <SwipeRow
+                v-for="record in paginatedRecords"
+                :key="record.id"
+                :label="record.fullName"
+                :actions="[
+                  { id: 'view', label: 'Details', icon: Eye, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openDetails(record) },
+                ]"
+              >
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold text-foreground">{{ record.fullName }}</p>
+                  <p class="truncate text-xs text-muted-foreground">{{ formatAttendanceDate(record.attendanceDate) }}</p>
+                </div>
+                <Badge
+                  v-if="isRecordAbsent(record)"
+                  variant="outline"
+                  :class="[getPunchStatusBadgeClass('absent'), 'shrink-0 text-[10px] uppercase']"
+                >
+                  Absent
+                </Badge>
+              </SwipeRow>
+            </template>
+            <p v-else class="py-10 text-center text-xs text-muted-foreground">No attendance records found.</p>
+          </div>
+
+          <div class="relative hidden overflow-x-auto border-t md:block">
             <Table>
               <TableHeader class="bg-muted/40">
                 <TableRow>

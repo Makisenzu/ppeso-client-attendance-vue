@@ -14,6 +14,7 @@ import {
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import SearchSelect from '@/components/common/SearchSelect.vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { useMyAccomplishments } from '@/composables/beneficiary/useMyAccomplishments'
 
 const {
@@ -122,7 +123,42 @@ const checkboxClass =
           </Button>
         </div>
 
-        <div class="relative overflow-x-auto border-t">
+        <!-- Mobile: swipe rows (DESIGN.md §11.2); reviewed reports can't be removed or edited -->
+        <div class="divide-y border-t md:hidden">
+          <div v-if="isLoading" class="flex justify-center py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+          </div>
+          <template v-else-if="paginatedReports.length > 0">
+            <SwipeRow
+              v-for="report in paginatedReports"
+              :key="report.id"
+              :label="`Report ${formatPeriodRange(report.periodStart, report.periodEnd)}`"
+              :actions="[
+                ...(report.status !== 'Reviewed' ? [{ id: 'remove', label: 'Remove', icon: Trash2, onSelect: () => requestRemove(report) }] : []),
+                { id: 'open', label: report.status === 'Reviewed' ? 'View' : 'Edit', icon: report.status === 'Reviewed' ? Eye : Pencil, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openReport(report) },
+                { id: 'print', label: 'Print', icon: Printer, onSelect: () => printReport(report) },
+              ]"
+            >
+              <input
+                type="checkbox"
+                :class="[checkboxClass, 'shrink-0']"
+                :checked="isSelected(report.id)"
+                :aria-label="`Select report ${formatPeriodRange(report.periodStart, report.periodEnd)}`"
+                @change="toggleSelect(report.id)"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">{{ formatPeriodRange(report.periodStart, report.periodEnd) }}</p>
+                <p class="truncate text-xs text-muted-foreground">{{ report.funding }}</p>
+              </div>
+              <Badge variant="outline" :class="[getReportStatusBadgeClass(report.status), 'shrink-0 text-[10px]']">
+                {{ report.status }}
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">No reports yet.</p>
+        </div>
+
+        <div class="relative hidden overflow-x-auto border-t md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>

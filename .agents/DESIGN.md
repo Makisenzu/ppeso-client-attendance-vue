@@ -398,6 +398,48 @@ Bulk action bar:
 >
 > **Also compliant:** the Directory tab (`DirectoryTab.vue` + `useDirectory.ts`). **Still to bring into compliance:** Client Records, Offices tab, User Management.
 
+### 11.2 Mobile View — Swipe Rows — MANDATORY
+
+On phones (below `md`), every data table renders its rows as a list of **`SwipeRow`**s
+(`@/components/vuebits/SwipeRow.vue`) instead of the table. Reference implementation: **Attendance Records**
+(`Attendance.vue`).
+
+```vue
+<!-- Mobile: swipe rows -->
+<div class="divide-y md:hidden">
+  <SwipeRow v-for="r in paginated" :key="r.id" :label="r.fullName"
+            :actions="[
+              { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => openDeleteDialog(r) },
+              { id: 'view', label: 'View', icon: Eye, onSelect: () => openView(r) },
+            ]">
+    <input type="checkbox" class="h-4 w-4 shrink-0 cursor-pointer rounded border-input accent-primary" ... />
+    <div class="min-w-0 flex-1"><!-- primary line + muted secondary line --></div>
+    <Badge ...>status</Badge>
+  </SwipeRow>
+  <!-- loading / empty states as in the table -->
+</div>
+<!-- Desktop: the table -->
+<div class="relative hidden overflow-x-auto md:block"><Table>…</Table></div>
+```
+
+> [!CAUTION]
+> 1. **The table is `hidden md:block`; the swipe list is `md:hidden`.** Both render the same `paginated` rows, so
+>    search, filters, pagination and the bulk bar work unchanged for both.
+> 2. **Swipe actions = the row's action buttons.** The **first action is the primary** (a full swipe runs it): the
+>    destructive one (`Delete`) when the row has one, otherwise the main action. Icons are Lucide; extra actions
+>    pass `color` / `textColor` as tokens (`var(--primary)` / `var(--primary-foreground)`), never hex.
+> 3. **Swipe actions open the same dialogs as the table** (delete stays confirmed). Keep `collapseOnCommit` off —
+>    the row leaves with the refetch after a confirmed delete, not on swipe.
+> 4. **Keep the select checkbox** as the first item of each row (§11.1). Taps on checkboxes and buttons inside a row
+>    work; a drag never clicks them.
+> 5. **Row content is short:** one bold primary line (name / title), one muted line (date, office, details), and a
+>    status `Badge` on the right if the table has a status. No horizontal scroll.
+> 6. A table with **no row actions** still uses the list layout; pass `:actions="[]"` (swiping is then disabled).
+> 7. Mobile loading and empty states follow the table's conditions: a centred `Loader2` while loading, the same
+>    error + "Try Again" if the table has one, and a one-line muted empty message.
+> 8. When the primary action is **not** destructive (View / Details / Evaluate), give it
+>    `color: 'var(--primary)', textColor: 'var(--primary-foreground)'` — the default primary color is destructive red.
+
 ---
 
 ## 12. Feedback & Notifications — Toasts, Top-Right

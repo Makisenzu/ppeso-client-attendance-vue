@@ -227,3 +227,6 @@ Component (.vue) ──► Composable (useXxx) ──► [Store (xxxStore)] ─�
 > 21. **Viewing a DTR or an accomplishment report always shows its printed form**, for every role and every status:
 >     the Civil Service Form 48 (`DtrPrintSheet`, via `useDtrPreview` for the record's month) or the report's official
 >     form (`AccomplishmentDocumentPreview`). Never show the raw punches or entries in a View dialog or sheet.
+22. **On mobile, every data table renders as `SwipeRow`s** (`@/components/vuebits/SwipeRow.vue`): the table is
+    `hidden md:block`, a `md:hidden` list of swipe rows shows the same rows, and the row's actions become its swipe
+    actions (delete first). See [`DESIGN.md`](DESIGN.md) §11.2.

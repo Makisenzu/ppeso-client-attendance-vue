@@ -18,6 +18,7 @@ import {
   UserX,
   X,
 } from '@lucide/vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -340,7 +341,41 @@ const {
 
       <CardContent class="p-0">
         <!-- ─── Table ─── -->
-        <div class="relative overflow-x-auto border-t">
+        <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
+        <div class="divide-y border-t md:hidden">
+          <div v-if="isLoading" class="flex justify-center py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+          </div>
+          <template v-else-if="paginatedProfiles.length > 0">
+            <SwipeRow
+              v-for="profile in paginatedProfiles"
+              :key="profile.id"
+              :label="profile.fullName"
+              :actions="[
+                { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => openDeleteDialog(profile) },
+                { id: 'edit', label: 'Edit', icon: Pencil, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openEditUser(profile) },
+                { id: 'view', label: 'Details', icon: Eye, onSelect: () => openDetails(profile) },
+                ...(canGenerateId(profile) ? [{ id: 'id-card', label: 'ID', icon: IdCard, onSelect: () => openIdCard(profile) }] : []),
+              ]"
+            >
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">{{ profile.fullName }}</p>
+                <p class="truncate text-xs text-muted-foreground">
+                  <span class="capitalize">{{ profile.position || 'Employee' }}</span> · {{ profile.officeName || 'No office' }}
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                :class="[getStatusBadgeClass(profile.status), 'shrink-0 text-[10px] capitalize']"
+              >
+                {{ formatStatusLabel(profile.status) }}
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">No users found.</p>
+        </div>
+
+        <div class="relative hidden overflow-x-auto border-t md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>

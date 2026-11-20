@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, Users, X } from '@lucide/vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -149,7 +150,28 @@ const COLUMN_COUNT = 4
     <!-- Table card: table + pagination only -->
     <Card class="gap-0 overflow-hidden border py-0 shadow-xs">
       <CardContent class="p-0">
-        <div class="relative overflow-x-auto">
+        <!-- Mobile: swipe rows (DESIGN.md §11.2) — read-only table, so no actions -->
+        <div class="divide-y md:hidden">
+          <div v-if="isLoading" class="flex justify-center py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+          </div>
+          <template v-else-if="paginatedGips.length > 0">
+            <SwipeRow v-for="gip in paginatedGips" :key="gip.id" :label="gip.fullName" :actions="[]">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">{{ gip.fullName }}</p>
+                <p class="truncate text-xs text-muted-foreground">Added {{ formatDisplayDateLong(gip.createdAt) }}</p>
+              </div>
+              <Badge variant="outline" :class="[getProfileStatusClass(gip.status), 'shrink-0 text-[10px] capitalize']">
+                {{ formatProfileStatus(gip.status) }}
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">
+            {{ gips.length === 0 ? 'No GIP beneficiaries yet.' : 'No GIP beneficiaries match your search or filter.' }}
+          </p>
+        </div>
+
+        <div class="relative hidden overflow-x-auto md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>

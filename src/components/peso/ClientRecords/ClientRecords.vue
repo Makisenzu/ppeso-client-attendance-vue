@@ -15,6 +15,7 @@ import {
   Users,
   X,
 } from '@lucide/vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -329,7 +330,37 @@ const {
 
     <!-- ─── Client Records Data Table ─── -->
     <div class="rounded-xl border bg-card shadow-2xs overflow-hidden">
-      <div class="overflow-x-auto">
+      <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
+      <div class="divide-y md:hidden">
+        <div v-if="isLoading" class="flex justify-center py-10">
+          <Loader2 class="h-6 w-6 animate-spin text-primary" />
+        </div>
+        <template v-else-if="paginatedRecords.length > 0">
+          <SwipeRow
+            v-for="client in paginatedRecords"
+            :key="client.id"
+            :label="client.fullName"
+            :actions="[
+              { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => openDeleteDialog(client) },
+              { id: 'view', label: 'View', icon: Eye, onSelect: () => openDetails(client) },
+            ]"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-foreground">{{ client.fullName }}</p>
+              <p class="truncate text-xs text-muted-foreground">{{ client.formattedCheckIn || 'N/A' }}</p>
+            </div>
+            <span
+              class="inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-[11px] font-medium"
+              :class="getPurposeBadgeClass(client.purpose)"
+            >
+              {{ formatPurposeShortLabel(client.purpose) }}
+            </span>
+          </SwipeRow>
+        </template>
+        <p v-else class="py-10 text-center text-xs text-muted-foreground">No client records found.</p>
+      </div>
+
+      <div class="hidden overflow-x-auto md:block">
         <Table>
           <TableHeader class="bg-muted/40">
             <TableRow class="hover:bg-transparent">

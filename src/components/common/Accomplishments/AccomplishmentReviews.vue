@@ -17,6 +17,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import SearchSelect from '@/components/common/SearchSelect.vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import AccomplishmentDocumentPreview from '@/components/common/Accomplishments/AccomplishmentDocumentPreview.vue'
 import { useAccomplishmentReviews } from '@/composables/common/useAccomplishmentReviews'
 import { useAccomplishmentOffices } from '@/composables/peso/useAccomplishmentOffices'
@@ -207,7 +208,38 @@ const textareaClass =
       </CardHeader>
 
       <CardContent class="p-0">
-        <div class="relative overflow-x-auto border-t">
+        <!-- Mobile: swipe rows (DESIGN.md §11.2); tapping a row opens the office like the table -->
+        <div class="divide-y border-t md:hidden">
+          <div v-if="isLoading" class="flex justify-center py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+          </div>
+          <template v-else-if="paginatedOfficeRows.length > 0">
+            <SwipeRow
+              v-for="office in paginatedOfficeRows"
+              :key="office.key"
+              :label="office.officeName"
+              :actions="[
+                { id: 'view', label: 'View', icon: Eye, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openOffice(office) },
+              ]"
+            >
+              <button type="button" class="min-w-0 flex-1 cursor-pointer text-left" @click="openOffice(office)">
+                <p class="truncate text-sm font-semibold text-foreground">{{ office.officeName }}</p>
+                <p class="truncate text-xs text-muted-foreground">
+                  {{ office.people }} {{ office.people === 1 ? 'person' : 'people' }} · {{ office.total }}
+                  {{ office.total === 1 ? 'report' : 'reports' }}
+                </p>
+              </button>
+              <Badge v-if="office.toReview > 0" variant="outline" :class="[getReportStatusBadgeClass('Submitted'), 'shrink-0 text-[10px]']">
+                {{ office.toReview }} to review
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">
+            {{ officeRows.length === 0 ? 'No reports yet.' : 'No matching offices.' }}
+          </p>
+        </div>
+
+        <div class="relative hidden overflow-x-auto border-t md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>
@@ -377,7 +409,47 @@ const textareaClass =
           </Button>
         </div>
 
-        <div class="relative overflow-x-auto border-t">
+        <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
+        <div class="divide-y border-t md:hidden">
+          <div v-if="isLoading" class="flex justify-center py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+          </div>
+          <template v-else-if="paginatedReports.length > 0">
+            <SwipeRow
+              v-for="report in paginatedReports"
+              :key="report.id"
+              :label="`Report of ${report.fullName}`"
+              :actions="[
+                ...(canDelete ? [{ id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => requestDelete(report) }] : []),
+                { id: 'view', label: report.status === 'Submitted' ? 'Review' : 'View', icon: Eye, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openReview(report) },
+                { id: 'print', label: 'Print', icon: Printer, onSelect: () => printReport(report) },
+              ]"
+            >
+              <input
+                v-if="canDelete"
+                type="checkbox"
+                :class="[checkboxClass, 'shrink-0']"
+                :checked="isSelected(report.id)"
+                :aria-label="`Select report of ${report.fullName}`"
+                @change="toggleSelect(report.id)"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">
+                  {{ isPersonView ? formatPeriodRange(report.periodStart, report.periodEnd) : report.fullName }}
+                </p>
+                <p class="truncate text-xs text-muted-foreground">
+                  <template v-if="!isPersonView">{{ formatPeriodRange(report.periodStart, report.periodEnd) }} · </template>{{ report.funding }}
+                </p>
+              </div>
+              <Badge variant="outline" :class="[getReportStatusBadgeClass(report.status), 'shrink-0 text-[10px]']">
+                {{ formatStatus(report.status) }}
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">No reports found.</p>
+        </div>
+
+        <div class="relative hidden overflow-x-auto border-t md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>

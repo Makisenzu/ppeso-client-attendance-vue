@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import SearchSelect from '@/components/common/SearchSelect.vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import PasswordInput from '@/components/common/PasswordInput.vue'
 import { useOfficeKiosks } from '@/composables/peso/useOfficeKiosks'
 
@@ -137,7 +138,50 @@ const checkboxClass =
           </Button>
         </div>
 
-        <div class="relative overflow-x-auto border-t">
+        <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
+        <div class="divide-y border-t md:hidden">
+          <div v-if="isLoading" class="flex justify-center py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+          </div>
+          <div v-else-if="loadError" class="flex flex-col items-center gap-3 py-8">
+            <p class="text-xs text-destructive">{{ loadError }}</p>
+            <Button size="sm" variant="outline" class="text-xs cursor-pointer" @click="fetchKiosks">Try Again</Button>
+          </div>
+          <template v-else-if="paginatedKiosks.length > 0">
+            <SwipeRow
+              v-for="kiosk in paginatedKiosks"
+              :key="kiosk.id"
+              :label="kiosk.label"
+              :disabled="togglingId === kiosk.id"
+              :actions="[
+                { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => requestDelete(kiosk) },
+                { id: 'toggle', label: kiosk.isActive ? 'Disable' : 'Enable', icon: Power, onSelect: () => toggleActive(kiosk) },
+              ]"
+            >
+              <input
+                type="checkbox"
+                :class="[checkboxClass, 'shrink-0']"
+                :checked="isSelected(kiosk.id)"
+                :aria-label="`Select ${kiosk.label}`"
+                @change="toggleSelect(kiosk.id)"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">{{ kiosk.officeName }}</p>
+                <p class="truncate text-xs text-muted-foreground">{{ kiosk.label }}</p>
+              </div>
+              <Badge
+                variant="outline"
+                class="shrink-0 text-[10px]"
+                :class="kiosk.isActive ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'border-border bg-muted text-muted-foreground'"
+              >
+                {{ kiosk.isActive ? 'Active' : 'Disabled' }}
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">No kiosks found.</p>
+        </div>
+
+        <div class="relative hidden overflow-x-auto border-t md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>

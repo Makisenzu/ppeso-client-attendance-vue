@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { AlertCircle, ArrowRight, Building2, ClipboardList, Loader2, RefreshCw, UsersRound } from '@lucide/vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -153,7 +154,30 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
         </CardHeader>
 
         <CardContent class="p-0">
-          <div class="relative overflow-x-auto border-t">
+          <!-- Mobile: swipe rows (DESIGN.md §11.2) — no row actions -->
+          <div class="divide-y border-t md:hidden">
+            <div v-if="isLoading && todayRows.length === 0" class="flex justify-center py-10">
+              <Loader2 class="h-6 w-6 animate-spin text-primary" />
+            </div>
+            <template v-else-if="todayRows.length > 0">
+              <SwipeRow v-for="row in todayRows" :key="row.member.id" :label="row.member.fullName" :actions="[]">
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold text-foreground">{{ row.member.fullName }}</p>
+                  <p class="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+                    <span v-for="slot in punchSlots" :key="slot.key">
+                      {{ slot.label }}: <span class="font-mono text-foreground">{{ (row.record && getPunchCell(row.record, slot.key).time) || '—' }}</span>
+                    </span>
+                  </p>
+                </div>
+                <Badge variant="outline" :class="[getTodayStatusBadgeClass(row.status), 'shrink-0 text-[10px]']">
+                  {{ formatTodayStatusLabel(row.status) }}
+                </Badge>
+              </SwipeRow>
+            </template>
+            <p v-else class="py-10 text-center text-xs text-muted-foreground">No team members yet.</p>
+          </div>
+
+          <div class="relative hidden overflow-x-auto border-t md:block">
             <Table>
               <TableHeader class="bg-muted/40">
                 <TableRow>

@@ -11,6 +11,7 @@ import {
   Trash2,
   X,
 } from '@lucide/vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -173,7 +174,43 @@ const checkboxClass =
         </div>
 
         <!-- ─── Table ─── -->
-        <div class="relative overflow-x-auto border-t">
+        <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
+        <div class="divide-y border-t md:hidden">
+          <div v-if="isLoading" class="flex justify-center py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+          </div>
+          <template v-else-if="paginatedDirectories.length > 0">
+            <SwipeRow
+              v-for="entry in paginatedDirectories"
+              :key="entry.id"
+              :label="entry.officeName"
+              :actions="[
+                { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => openDeleteDialog(entry) },
+                { id: 'edit', label: 'Edit', icon: Pencil, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openEdit(entry) },
+              ]"
+            >
+              <input
+                type="checkbox"
+                :class="[checkboxClass, 'shrink-0']"
+                :checked="isSelected(entry.id)"
+                :aria-label="`Select ${entry.officeName}`"
+                @change="toggleSelect(entry.id)"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">{{ entry.officeName }}</p>
+                <p class="truncate text-xs text-muted-foreground">
+                  {{ entry.officeCode || 'No code' }} · {{ entry.officeHead || 'No head listed' }}
+                </p>
+              </div>
+              <Badge variant="outline" :class="[getStatusBadgeClass(entry.status), 'shrink-0 text-[10px] capitalize']">
+                {{ formatStatusLabel(entry.status) }}
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">No directory entries found.</p>
+        </div>
+
+        <div class="relative hidden overflow-x-auto border-t md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>

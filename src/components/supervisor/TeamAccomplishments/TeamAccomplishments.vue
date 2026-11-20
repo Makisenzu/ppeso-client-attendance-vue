@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import SearchSelect from '@/components/common/SearchSelect.vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { useTeamAccomplishments } from '@/composables/supervisor/useTeamAccomplishments'
 
 // A list of people, not records: nothing to select or delete here (DESIGN.md §11.1 exemption).
@@ -136,7 +137,35 @@ const COLUMN_COUNT = 5
         </CardHeader>
 
         <CardContent class="p-0">
-          <div class="relative overflow-x-auto border-t">
+          <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
+          <div class="divide-y border-t md:hidden">
+            <div v-if="isLoading && rows.length === 0" class="flex justify-center py-10">
+              <Loader2 class="h-6 w-6 animate-spin text-primary" />
+            </div>
+            <template v-else-if="filteredRows.length > 0">
+              <SwipeRow
+                v-for="row in filteredRows"
+                :key="row.member.id"
+                :label="row.member.fullName"
+                :actions="[
+                  { id: 'view', label: 'View', icon: Eye, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => viewReports(row) },
+                ]"
+              >
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold text-foreground">{{ row.member.fullName }}</p>
+                  <p class="truncate text-xs text-muted-foreground">
+                    {{ row.total }} submitted<template v-if="row.returned > 0"> · {{ row.returned }} returned</template>
+                  </p>
+                </div>
+                <Badge variant="outline" :class="[getMemberStatusBadgeClass(row.member.status), 'shrink-0 text-[10px]']">
+                  {{ formatMemberStatusLabel(row.member.status) }}
+                </Badge>
+              </SwipeRow>
+            </template>
+            <p v-else class="py-10 text-center text-xs text-muted-foreground">No GIPs found.</p>
+          </div>
+
+          <div class="relative hidden overflow-x-auto border-t md:block">
             <Table>
               <TableHeader class="bg-muted/40">
                 <TableRow>

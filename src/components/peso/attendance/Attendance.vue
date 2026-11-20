@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DtrPrintSheet from '@/components/peso/attendance/DtrPrintSheet.vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { Building2, Calendar, CalendarX2, Download, Eye, FileText, Filter, Loader2, RefreshCw, Search, Trash2, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -457,8 +458,49 @@ const checkboxClass =
           </Button>
         </div>
 
+        <!-- ─── Mobile: swipe rows (DESIGN.md §11.2) ─── -->
+        <div class="divide-y border-t md:hidden">
+          <div v-if="isLoading" class="flex flex-col items-center gap-2 py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+            <p class="text-xs text-muted-foreground">Loading records of attendances...</p>
+          </div>
+          <template v-else-if="paginatedAttendances.length > 0">
+            <SwipeRow
+              v-for="record in paginatedAttendances"
+              :key="record.id"
+              :label="record.fullName"
+              :actions="[
+                { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => openDeleteDialog(record) },
+                { id: 'view', label: 'View', icon: Eye, onSelect: () => openDetails(record) },
+              ]"
+            >
+              <input
+                type="checkbox"
+                :class="[checkboxClass, 'shrink-0']"
+                :checked="isSelected(record.id)"
+                :aria-label="`Select attendance record for ${record.fullName}`"
+                @change="toggleSelect(record.id)"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">{{ record.fullName }}</p>
+                <p class="truncate text-xs text-muted-foreground">
+                  {{ formatDateDisplay(record.attendanceDate) }} · {{ record.officeName || 'Unassigned' }}
+                </p>
+              </div>
+              <Badge
+                v-if="isRecordAbsent(record)"
+                variant="outline"
+                :class="[getPunchStatusBadgeClass('absent'), 'shrink-0 text-[10px] uppercase']"
+              >
+                Absent
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">No attendance records found.</p>
+        </div>
+
         <!-- ─── Table following core.attendances columns ─── -->
-        <div class="relative overflow-x-auto border-t">
+        <div class="relative hidden overflow-x-auto border-t md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>

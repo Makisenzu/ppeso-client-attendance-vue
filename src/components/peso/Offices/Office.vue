@@ -18,6 +18,7 @@ import {
   Users,
   X,
 } from '@lucide/vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -340,7 +341,41 @@ const {
 
       <CardContent class="p-0">
         <!-- ─── Table ─── -->
-        <div class="relative overflow-x-auto border-t">
+        <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
+        <div class="divide-y border-t md:hidden">
+          <div v-if="isLoading" class="flex justify-center py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+          </div>
+          <template v-else-if="paginatedOffices.length > 0">
+            <SwipeRow
+              v-for="office in paginatedOffices"
+              :key="office.id"
+              :label="office.name"
+              :actions="[
+                { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => openDeleteDialog(office) },
+                { id: 'edit', label: 'Edit', icon: Pencil, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openEdit(office) },
+                { id: 'view', label: 'View', icon: Eye, onSelect: () => openView(office) },
+              ]"
+            >
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">{{ office.name }}</p>
+                <p class="truncate text-xs text-muted-foreground">
+                  {{ office.code || 'No code' }} · {{ office.totalBeneficiaries }}
+                  {{ office.totalBeneficiaries === 1 ? 'beneficiary' : 'beneficiaries' }}
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                :class="[getStatusBadgeClass(office.isActive), 'shrink-0 text-[10px] capitalize']"
+              >
+                {{ formatStatusLabel(office.isActive) }}
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">No offices found.</p>
+        </div>
+
+        <div class="relative hidden overflow-x-auto border-t md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>

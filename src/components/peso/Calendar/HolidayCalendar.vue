@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Trash2,
 } from '@lucide/vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -197,7 +198,38 @@ const checkboxClass =
               </Button>
             </div>
 
-            <div class="relative overflow-x-auto">
+            <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
+            <div class="divide-y md:hidden">
+              <div v-if="isLoading" class="flex justify-center py-10">
+                <Loader2 class="h-6 w-6 animate-spin text-primary" />
+              </div>
+              <template v-else-if="yearHolidays.length > 0">
+                <SwipeRow
+                  v-for="holiday in yearHolidays"
+                  :key="holiday.id"
+                  :label="holiday.name"
+                  :actions="[
+                    { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => openDeleteDialog(holiday) },
+                    { id: 'edit', label: 'Edit', icon: Pencil, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openEdit(holiday) },
+                  ]"
+                >
+                  <input
+                    type="checkbox"
+                    :class="[checkboxClass, 'shrink-0']"
+                    :checked="isSelected(holiday.id)"
+                    :aria-label="`Select ${holiday.name}`"
+                    @change="toggleSelect(holiday.id)"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold text-foreground">{{ holiday.name }}</p>
+                    <p class="truncate text-xs text-muted-foreground">{{ holiday.displayDate }} · {{ holiday.weekday }}</p>
+                  </div>
+                </SwipeRow>
+              </template>
+              <p v-else class="py-10 text-center text-xs text-muted-foreground">No holidays this year.</p>
+            </div>
+
+            <div class="relative hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader class="bg-muted/40">
                   <TableRow>

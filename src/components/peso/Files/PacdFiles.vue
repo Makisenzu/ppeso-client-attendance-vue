@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import SearchSelect from '@/components/common/SearchSelect.vue'
+import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { usePacdFiles } from '@/composables/peso/usePacdFiles'
 
 const {
@@ -163,7 +164,50 @@ const textareaClass =
           </Button>
         </div>
 
-        <div class="relative overflow-x-auto border-t">
+        <!-- Mobile: swipe rows (DESIGN.md §11.2). Print stays desktop-only; phones open or download the file. -->
+        <div class="divide-y border-t md:hidden">
+          <div v-if="isLoading" class="flex justify-center py-10">
+            <Loader2 class="h-6 w-6 animate-spin text-primary" />
+          </div>
+          <div v-else-if="loadError" class="flex flex-col items-center gap-3 py-8">
+            <p class="text-xs text-destructive">{{ loadError }}</p>
+            <Button size="sm" variant="outline" class="text-xs cursor-pointer" @click="fetchFiles">Try Again</Button>
+          </div>
+          <template v-else-if="paginatedFiles.length > 0">
+            <SwipeRow
+              v-for="file in paginatedFiles"
+              :key="file.id"
+              :label="file.title"
+              :action-width="64"
+              :actions="[
+                { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => requestDelete(file) },
+                { id: 'edit', label: 'Edit', icon: Pencil, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openEdit(file) },
+                { id: 'download', label: 'Download', icon: Download, onSelect: () => downloadFile(file) },
+                ...(isPdf(file) ? [{ id: 'open', label: 'Open', icon: ExternalLink, onSelect: () => openFile(file) }] : []),
+              ]"
+            >
+              <input
+                type="checkbox"
+                :class="[checkboxClass, 'shrink-0']"
+                :checked="isSelected(file.id)"
+                :aria-label="`Select ${file.title}`"
+                @change="toggleSelect(file.id)"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">{{ file.title }}</p>
+                <p class="truncate text-xs text-muted-foreground">
+                  {{ formatFileType(file.mimeType) }} · {{ formatFileSize(file.sizeBytes) }}
+                </p>
+              </div>
+              <Badge variant="outline" :class="[getPacdCategoryBadgeClass(file.category), 'shrink-0 text-[10px]']">
+                {{ formatPacdCategory(file.category) }}
+              </Badge>
+            </SwipeRow>
+          </template>
+          <p v-else class="py-10 text-center text-xs text-muted-foreground">No files found.</p>
+        </div>
+
+        <div class="relative hidden overflow-x-auto border-t md:block">
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>
