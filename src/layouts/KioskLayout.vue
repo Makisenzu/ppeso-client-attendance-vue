@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Building2, Loader2, LogOut, Moon, Sun } from '@lucide/vue'
+import { Building2, Loader2, LogOut } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { defineAsyncComponent } from 'vue'
 // Lazy: AeroShard pulls in vgpu (~260 kB); KioskLayout is imported eagerly by the router, so a static import put
@@ -9,8 +9,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useKioskStation } from '@/composables/kiosk/useKioskStation'
 
 const {
-  isDark,
-  toggleTheme,
   station,
   officeLabel,
   hasOffice,
@@ -27,23 +25,35 @@ const {
 <template>
   <div class="flex min-h-screen flex-col bg-background text-foreground">
     <!--
-      AeroShard background. Needs WebGPU; where it isn't available the canvas stays empty and the plain
-      bg-background shows. Tuned for a PACD computer: fewer shards, 1x resolution, no pointer effects (the kiosk is
-      used from the keypad). Re-keyed on theme change so the token colors are re-read. Reduced motion freezes it.
+      AeroShard background, "Emerald" preset. Needs WebGPU; where it isn't available the canvas stays empty and the
+      plain bg-background shows. Reduced motion freezes it. Shard / accent colors are the component's Emerald
+      defaults (#6abd89 / #7cff67), left unset so no hex values live here (AGENTS.md rule 11). The wrapper ignores
+      pointer events so the keypad stays clickable; cursor, click-pulse and hold-to-gather listen on the window.
     -->
-    <div class="pointer-events-none fixed inset-0 z-0 opacity-70" aria-hidden="true">
+    <div class="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
       <AeroShard
-        :key="isDark ? 'dark' : 'light'"
-        shard-color="var(--chart-2)"
-        accent-color="var(--chart-1)"
-        :light-mode="!isDark"
-        :count="500"
-        :dpr="1"
-        :speed="0.6"
-        markers="none"
-        :mouse-interaction="false"
-        :pulse-on-click="false"
-        :hold-to-gather="false"
+        placement="full"
+        material="glass"
+        markers="plus"
+        :count="1300"
+        :shard-size="1"
+        :spread="1"
+        :twist="1"
+        :billow="1"
+        :speed="1"
+        :scale="1"
+        :depth-of-field="0.75"
+        :glow="0.35"
+        :grain="0.06"
+        :vignette="0.3"
+        :mouse-strength="0.6"
+        :parallax="0.5"
+        :intro="true"
+        :mouse-interaction="true"
+        :pulse-on-click="true"
+        :hold-to-gather="true"
+        :light-mode="false"
+        :paused="false"
       />
     </div>
 
@@ -62,14 +72,6 @@ const {
 
       <div class="ml-auto flex items-center gap-1">
         <span v-if="station?.label" class="mr-2 hidden text-xs text-muted-foreground sm:inline">{{ station.label }}</span>
-        <button
-          type="button"
-          class="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          title="Toggle color theme"
-          @click="toggleTheme"
-        >
-          <component :is="isDark ? Sun : Moon" class="size-4 shrink-0" />
-        </button>
         <button
           type="button"
           class="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"

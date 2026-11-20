@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { StyleValue } from 'vue';
-import { draw, frame, init, sampler, storage, surface, target, uniforms } from 'vgpu';
+import { draw, frame, init, initFromDevice, sampler, storage, surface, target, uniforms } from 'vgpu';
 import { prepareShader } from '@vgpu/wgsl/prepare';
 import type { ShaderSource } from 'vgpu';
 
@@ -75,6 +75,15 @@ interface Ring {
 }
 
 type Pass = ReturnType<typeof draw>;
+
+/*
+ * WebGPU types without relying on the global `GPUDevice` / `navigator.gpu` declarations: those come from
+ * @webgpu/types, which vue-tsc picks up through vgpu but the editor's TS server may not, so it flagged them.
+ */
+type NativeDevice = Parameters<typeof initFromDevice>[0];
+type WebGpuNavigator = Navigator & {
+  gpu: { requestAdapter(): Promise<{ requestDevice(): Promise<NativeDevice> } | null> };
+};
 
 const ROOT = 'aero-shards';
 const CANVAS = 'aero-shards-canvas';
@@ -1136,24 +1145,46 @@ const setup = (): (() => void) | undefined => {
 
   let disposed = false;
   let gpu: Awaited<ReturnType<typeof init>> | null = null;
+  /** Device created in createGpu(); vgpu never destroys a device it did not create. */
+  let ownedDevice: NativeDevice | null = null;
   let raf = 0;
   const cleanups: Array<() => void> = [];
+
+  const releaseGpu = () => {
+    gpu?.dispose();
+    gpu = null;
+    ownedDevice?.destroy();
+    ownedDevice = null;
+  };
 
   const fail = (error: unknown) => {
     if (disposed) return;
     disposed = true;
     cancelAnimationFrame(raf);
-    gpu?.dispose();
-    gpu = null;
+    releaseGpu();
     props.onError?.(error instanceof Error ? error : new Error(String(error)));
+  };
+
+  /**
+   * Chrome on Windows ignores powerPreference and warns on every requestAdapter() call whose options contain the
+   * key (https://crbug.com/369219127). vgpu's init() always passes `{ powerPreference }`, even when undefined, so
+   * the adapter and device are requested here with no options and handed to vgpu. This is done on every platform:
+   * sniffing for Windows failed under DevTools device emulation (the emulated user agent hides Windows), and the
+   * default adapter is fine for this background.
+   */
+  const createGpu = async () => {
+    const adapter = await (navigator as WebGpuNavigator).gpu.requestAdapter();
+    if (!adapter) throw new Error('navigator.gpu.requestAdapter() returned null');
+    ownedDevice = await adapter.requestDevice();
+    return initFromDevice(ownedDevice);
   };
 
   const start = async () => {
     if (typeof navigator === 'undefined' || !('gpu' in navigator)) throw new Error('WebGPU is not available');
-    const instance = await init({ powerPreference: 'high-performance' });
+    const instance = await createGpu();
     gpu = instance;
     if (disposed) {
-      instance.dispose();
+      releaseGpu();
       return;
     }
     cleanups.push(instance.onError(fail));
@@ -2323,7 +2354,7 @@ const setup = (): (() => void) | undefined => {
     disposed = true;
     cancelAnimationFrame(raf);
     cleanups.forEach(cleanup => cleanup());
-    gpu?.dispose();
+    releaseGpu();
     canvas.remove();
   };
 };
