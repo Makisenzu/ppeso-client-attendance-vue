@@ -2,6 +2,7 @@ import { computed, type Component } from 'vue'
 import { useRoute } from 'vue-router'
 import { FingerprintPattern, Clock, ClipboardList } from '@lucide/vue'
 import { useSidebarUser } from '@/composables/common/useSidebarUser'
+import { useCloseSidebarOnNavigate } from '@/composables/common/useCloseSidebarOnNavigate'
 
 export interface SidebarNavItem {
   title: string
@@ -12,6 +13,7 @@ export interface SidebarNavItem {
 export function useBeneficiarySidebar() {
   const route = useRoute()
   const sidebarUser = useSidebarUser()
+  useCloseSidebarOnNavigate()
 
   const myRecordsItems: SidebarNavItem[] = [
     { title: 'My Attendance', to: { name: 'beneficiary-attendance' }, icon: FingerprintPattern },

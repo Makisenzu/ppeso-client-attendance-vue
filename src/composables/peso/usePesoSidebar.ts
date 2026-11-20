@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Book, Building2, CalendarDays, ClipboardCheck, ClipboardList, Clock, FolderOpen, FingerprintPattern, MonitorSmartphone, Users } from '@lucide/vue'
 import { useSidebarUser } from '@/composables/common/useSidebarUser'
+import { useCloseSidebarOnNavigate } from '@/composables/common/useCloseSidebarOnNavigate'
 import type { SidebarNavItem } from '@/composables/supervisor/useSupervisorSidebar'
 
 export interface SidebarNavGroup {
@@ -13,6 +14,7 @@ export interface SidebarNavGroup {
 export function usePesoSidebar() {
   const route = useRoute()
   const sidebarUser = useSidebarUser()
+  useCloseSidebarOnNavigate()
 
   /** The admin pages, grouped into labelled sidebar sections. */
   const navGroups: SidebarNavGroup[] = [
