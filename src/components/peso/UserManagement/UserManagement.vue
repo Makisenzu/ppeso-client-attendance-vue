@@ -364,7 +364,7 @@ const {
               <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-semibold text-foreground">{{ profile.fullName }}</p>
                 <p class="truncate text-xs text-muted-foreground">
-                  <span class="capitalize">{{ profile.position || 'Employee' }}</span> · {{ profile.officeName || 'No office' }}
+                  <span class="capitalize">{{ profile.position || 'Employee' }}</span> · {{ profile.officeCode || profile.officeName || 'No office' }}
                 </p>
               </div>
               <Badge

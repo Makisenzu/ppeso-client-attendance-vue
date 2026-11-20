@@ -487,7 +487,7 @@ const checkboxClass =
               <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-semibold text-foreground">{{ record.fullName }}</p>
                 <p class="truncate text-xs text-muted-foreground">
-                  {{ formatDateDisplay(record.attendanceDate) }} · {{ record.officeName || 'Unassigned' }}
+                  {{ formatDateDisplay(record.attendanceDate) }} · {{ record.officeCode || record.officeName || 'Unassigned' }}
                 </p>
               </div>
               <Badge

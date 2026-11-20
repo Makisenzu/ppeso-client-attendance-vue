@@ -166,7 +166,7 @@ const checkboxClass =
                 @change="toggleSelect(kiosk.id)"
               />
               <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-foreground">{{ kiosk.officeName }}</p>
+                <p class="truncate text-sm font-semibold text-foreground">{{ kiosk.officeCode || kiosk.officeName }}</p>
                 <p class="truncate text-xs text-muted-foreground">{{ kiosk.label }}</p>
               </div>
               <Badge

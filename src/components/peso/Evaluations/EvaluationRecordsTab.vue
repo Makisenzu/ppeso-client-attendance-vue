@@ -150,7 +150,7 @@ const checkboxClass =
               ]"
             >
               <button type="button" class="min-w-0 flex-1 cursor-pointer text-left" @click="openOffice(office)">
-                <p class="truncate text-sm font-semibold text-foreground">{{ office.officeName }}</p>
+                <p class="truncate text-sm font-semibold text-foreground">{{ office.officeCode || office.officeName }}</p>
                 <p class="truncate text-xs text-muted-foreground">
                   {{ office.gips }} {{ office.gips === 1 ? 'GIP' : 'GIPs' }} · Latest {{ formatPeriodMonth(office.latestMonth) }}
                 </p>
