@@ -315,7 +315,7 @@ const textareaClass =
 
     <template v-else>
     <!-- ─── Counts (click to filter; not on the admin's office view) ─── -->
-    <div v-if="!isOfficeView" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div v-if="!isOfficeView" class="hidden md:grid grid-cols-2 md:grid-cols-4 gap-4">
       <Card
         v-for="card in statCards"
         :key="card.key"

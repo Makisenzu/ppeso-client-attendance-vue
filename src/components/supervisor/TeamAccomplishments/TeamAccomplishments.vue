@@ -74,7 +74,7 @@ const COLUMN_COUNT = 5
 
     <template v-else>
       <!-- ─── Counts ─── -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="hidden md:grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card class="border shadow-xs bg-card/60">
           <CardContent class="p-4">
             <p class="text-xs font-medium text-muted-foreground">Current GIPs</p>

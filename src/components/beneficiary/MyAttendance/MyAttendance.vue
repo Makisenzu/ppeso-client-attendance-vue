@@ -121,7 +121,7 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
     </div>
 
     <!-- ─── Stat cards (click to filter) ─── -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="hidden md:grid grid-cols-2 md:grid-cols-5 gap-4">
       <Card
         v-for="card in statCards"
         :key="card.key"

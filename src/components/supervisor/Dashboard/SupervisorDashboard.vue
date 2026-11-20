@@ -94,7 +94,7 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
 
     <template v-else>
       <!-- ─── Stat cards ─── -->
-      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="hidden md:grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card v-for="card in statCards" :key="card.key" class="border shadow-xs bg-card/60">
           <CardContent class="p-4">
             <div class="space-y-0.5 min-w-0">

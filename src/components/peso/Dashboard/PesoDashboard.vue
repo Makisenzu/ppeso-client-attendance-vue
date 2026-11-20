@@ -66,7 +66,7 @@ const {
     </div>
 
     <!-- ─── Row 1: KPI Summary Cards ─── -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <!-- Card 1: Clients Checked In Today -->
       <Card class="relative overflow-hidden border shadow-xs transition-all hover:shadow-md hover:border-primary/30">
         <CardHeader class="flex flex-row items-center justify-between pb-2 space-y-0">

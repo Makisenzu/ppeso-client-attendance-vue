@@ -89,7 +89,7 @@ const COLUMN_COUNT = 5
       </div>
 
       <!-- ─── Counts ─── -->
-      <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div class="hidden md:grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card class="border shadow-xs bg-card/60">
           <CardContent class="p-4">
             <p class="text-xs font-medium text-muted-foreground">Active GIPs</p>

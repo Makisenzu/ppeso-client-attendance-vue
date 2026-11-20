@@ -194,7 +194,7 @@ const {
       class="flex flex-col gap-6"
     >
     <!-- ─── Metric Cards Grid ─── -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="hidden md:grid grid-cols-2 md:grid-cols-4 gap-4">
       <!-- 1. Total Offices -->
       <Card
         class="border shadow-xs bg-card/60 backdrop-blur-xs hover:border-primary/40 transition-all cursor-pointer"
