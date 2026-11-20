@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { Building2, Loader2, LogOut, Moon, Sun } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
+import { defineAsyncComponent } from 'vue'
+// Lazy: AeroShard pulls in vgpu (~260 kB); KioskLayout is imported eagerly by the router, so a static import put
+// it in the main bundle for every user.
+const AeroShard = defineAsyncComponent(() => import('@/components/vuebits/AeroShard.vue'))
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useKioskStation } from '@/composables/kiosk/useKioskStation'
 
@@ -22,6 +26,27 @@ const {
 
 <template>
   <div class="flex min-h-screen flex-col bg-background text-foreground">
+    <!--
+      AeroShard background. Needs WebGPU; where it isn't available the canvas stays empty and the plain
+      bg-background shows. Tuned for a PACD computer: fewer shards, 1x resolution, no pointer effects (the kiosk is
+      used from the keypad). Re-keyed on theme change so the token colors are re-read. Reduced motion freezes it.
+    -->
+    <div class="pointer-events-none fixed inset-0 z-0 opacity-70" aria-hidden="true">
+      <AeroShard
+        :key="isDark ? 'dark' : 'light'"
+        shard-color="var(--chart-2)"
+        accent-color="var(--chart-1)"
+        :light-mode="!isDark"
+        :count="500"
+        :dpr="1"
+        :speed="0.6"
+        markers="none"
+        :mouse-interaction="false"
+        :pulse-on-click="false"
+        :hold-to-gather="false"
+      />
+    </div>
+
     <!-- Office kiosk: no sidebar, only the office it belongs to -->
     <header class="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-3 border-b border-border/60 bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
       <img src="/agsur.png" alt="AGSURJOBS Logo" class="size-9 object-contain">
@@ -57,7 +82,7 @@ const {
       </div>
     </header>
 
-    <main class="flex-1 p-4 sm:p-6">
+    <main class="relative z-10 flex-1 p-4 sm:p-6">
       <div
         v-if="!isLoading && (loadError || !hasOffice)"
         class="mx-auto mb-6 max-w-xl rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"
