@@ -19,6 +19,7 @@ import {
   X,
 } from '@lucide/vue'
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
+import MobileFilters from '@/components/common/MobileFilters.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -311,6 +312,7 @@ const {
             </button>
           </div>
 
+          <MobileFilters :active="selectedPositionFilter !== 'ALL' || selectedStatusFilter !== 'ALL'">
           <!-- Position Filter -->
           <div>
             <select
@@ -336,6 +338,7 @@ const {
               <option value="pending">Pending</option>
             </select>
           </div>
+          </MobileFilters>
         </div>
       </CardHeader>
 

@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableR
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import SearchSelect from '@/components/common/SearchSelect.vue'
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
+import MobileFilters from '@/components/common/MobileFilters.vue'
 import AccomplishmentDocumentPreview from '@/components/common/Accomplishments/AccomplishmentDocumentPreview.vue'
 import { useAccomplishmentReviews } from '@/composables/common/useAccomplishmentReviews'
 import { useAccomplishmentOffices } from '@/composables/peso/useAccomplishmentOffices'
@@ -385,8 +386,10 @@ const textareaClass =
             <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input v-model="searchQuery" :placeholder="isPersonView ? 'Search by month...' : isOfficeView ? 'Search by name or month...' : 'Search by name, office or month...'" class="pl-9 h-9 text-base md:text-xs" />
           </div>
-          <SearchSelect v-model="statusFilter" :options="statusOptions" :searchable="false" />
-          <SearchSelect v-model="fundingFilter" :options="fundingOptions" :searchable="false" />
+          <MobileFilters :active="hasActiveFilters">
+            <SearchSelect v-model="statusFilter" :options="statusOptions" :searchable="false" />
+            <SearchSelect v-model="fundingFilter" :options="fundingOptions" :searchable="false" />
+          </MobileFilters>
         </div>
       </CardHeader>
 

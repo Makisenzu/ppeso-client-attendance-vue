@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/empty'
 import SearchSelect from '@/components/common/SearchSelect.vue'
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
+import MobileFilters from '@/components/common/MobileFilters.vue'
 import { useMyAttendance } from '@/composables/beneficiary/useMyAttendance'
 
 // Read-only list of the user's own DTRs: no selection or delete (DESIGN.md §11.1 exemption —
@@ -183,8 +184,10 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
               <X class="h-4 w-4" />
             </button>
           </div>
-          <SearchSelect v-model="statusFilter" :options="statusOptions" :searchable="false" />
-          <SearchSelect v-model="dateFilter" :options="dateOptions" :searchable="false" />
+          <MobileFilters :active="hasActiveFilters">
+            <SearchSelect v-model="statusFilter" :options="statusOptions" :searchable="false" />
+            <SearchSelect v-model="dateFilter" :options="dateOptions" :searchable="false" />
+          </MobileFilters>
         </div>
 
         <!-- Custom date -->
@@ -197,7 +200,7 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
         </div>
 
         <!-- Active filter badges -->
-        <div v-if="hasActiveFilters" class="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t text-xs">
+        <div v-if="hasActiveFilters" class="mt-3 hidden flex-wrap items-center gap-1.5 pt-2 border-t text-xs md:flex">
           <span class="text-[11px] text-muted-foreground font-medium mr-1">Active filters:</span>
           <Badge v-if="searchQuery.trim()" variant="secondary" class="gap-1 text-[11px] font-normal py-0.5">
             <span>Search: "{{ searchQuery }}"</span>

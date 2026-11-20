@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DtrPrintSheet from '@/components/peso/attendance/DtrPrintSheet.vue'
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
+import MobileFilters from '@/components/common/MobileFilters.vue'
 import { Building2, Calendar, CalendarX2, Download, Eye, FileText, Filter, Loader2, RefreshCw, Search, Trash2, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -299,6 +300,7 @@ const checkboxClass =
             </button>
           </div>
 
+          <MobileFilters :active="hasActiveFilters">
           <!-- Position Filter -->
           <div>
             <select
@@ -340,6 +342,7 @@ const checkboxClass =
               <option value="custom">Custom Date...</option>
             </select>
           </div>
+          </MobileFilters>
         </div>
 
         <!-- Custom Date Picker row when 'custom' is selected -->
@@ -362,7 +365,7 @@ const checkboxClass =
         </div>
 
         <!-- Active Filter Badges -->
-        <div v-if="hasActiveFilters" class="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t text-xs">
+        <div v-if="hasActiveFilters" class="mt-3 hidden flex-wrap items-center gap-1.5 pt-2 border-t text-xs md:flex">
           <span class="text-[11px] text-muted-foreground font-medium mr-1">Active filters:</span>
 
           <Badge

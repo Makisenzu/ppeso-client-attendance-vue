@@ -16,6 +16,7 @@ import {
   X,
 } from '@lucide/vue'
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
+import MobileFilters from '@/components/common/MobileFilters.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -255,6 +256,7 @@ const {
           </button>
         </div>
 
+        <MobileFilters :active="selectedPurposeFilter !== 'ALL' || selectedGenderFilter !== 'ALL'">
         <!-- Purpose Filter -->
         <div class="w-full sm:w-47.5">
           <select
@@ -280,6 +282,7 @@ const {
             </option>
           </select>
         </div>
+        </MobileFilters>
       </div>
 
       <!-- Date Filter Pills & Reset Button -->

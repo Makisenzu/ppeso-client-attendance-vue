@@ -340,6 +340,29 @@ Page header pattern (inside a screen): `<h1 class="text-2xl font-bold tracking-t
 >    for phone numbers and passcodes.
 > 8. **Check every screen at 360px wide** — no horizontal page scroll, no clipped text.
 
+### 10.1 Table Filters on Mobile — MANDATORY
+
+A table toolbar with **two or more filter controls** (besides search) folds them on phones with
+**`MobileFilters`** (`@/components/common/MobileFilters.vue`). Search stays visible; the filters sit behind one
+full-width **Filters** button that shows a dot while any filter is set.
+
+```vue
+<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+  <div class="sm:col-span-2 relative"><!-- search --></div>
+  <MobileFilters :active="hasActiveFilters">
+    <SearchSelect v-model="statusFilter" ... />
+    <SearchSelect v-model="dateFilter" ... />
+  </MobileFilters>
+</div>
+```
+
+> [!CAUTION]
+> 1. Put `MobileFilters` **inside** the existing filter grid / flex row, around the filter controls only. It uses
+>    `md:contents`, so desktop layout is unchanged — don't add wrappers that break the grid.
+> 2. The "Active filters" badge row is **desktop-only** (`hidden md:flex`); on phones the dot on the Filters button
+>    and the header's "Clear filters" button replace it.
+> 3. A toolbar with a single filter control keeps it visible (a Filters button would take the same space).
+
 ---
 
 ## 11. Data Table Design
