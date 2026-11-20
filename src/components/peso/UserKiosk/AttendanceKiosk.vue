@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { AlertCircle, CalendarDays, CheckCircle2, X } from '@lucide/vue'
-import { Card, CardContent } from '@/components/ui/card'
+import GlassSurface from '@/components/vuebits/GlassSurface.vue'
 import { Badge } from '@/components/ui/badge'
 import { useAttendanceKiosk } from '@/composables/peso/useKiosk'
 
@@ -20,8 +20,8 @@ const {
 <template>
   <div class="mx-auto max-w-xl space-y-6 pb-12">
     <!-- ─── Live Clock & Station Banner ─── -->
-    <Card class="overflow-hidden border-primary/20 bg-linear-to-br from-card via-card to-primary/5 shadow-sm">
-      <CardContent class="p-5 sm:p-6 text-center space-y-3">
+    <GlassSurface width="100%" height="auto" :border-radius="16" :background-opacity="0.1">
+      <div class="w-full p-5 sm:p-6 text-center space-y-3">
         <!-- Live Digital Time Display -->
         <div class="flex items-baseline justify-center gap-2 font-mono">
           <span class="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
@@ -37,8 +37,8 @@ const {
           <CalendarDays class="size-4 text-primary" />
           <span>{{ currentDate || 'Loading date...' }}</span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </GlassSurface>
 
     <!-- Already Recorded Banner -->
     <div
