@@ -178,5 +178,26 @@ html.dark {
     background-color: #18181b;
     color: #fafafa;
   }
+
+  /*
+   * iOS Safari gives native date/time inputs an intrinsic min-width and its own height, and ignores `w-full`,
+   * so two of them side by side overflow their grid (seen on the My DTR date range on an iPhone 12).
+   * Dropping the native appearance lets them shrink to their column and take the Input's height.
+   * The browser's picker still opens on tap, and Chrome keeps its calendar icon.
+   */
+  input[type='date'],
+  input[type='time'],
+  input[type='month'],
+  input[type='datetime-local'] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* iOS centres the value once the native appearance is gone; keep it aligned like other inputs. */
+  input::-webkit-date-and-time-value {
+    text-align: left;
+  }
 }
 
