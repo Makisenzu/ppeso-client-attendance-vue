@@ -58,7 +58,6 @@ const {
   offices,
   filteredOffices,
   paginatedOffices,
-  statsSummary,
   isLoading,
   searchQuery,
   selectedStatusFilter,
@@ -85,7 +84,6 @@ const {
   nextPage,
   resetFilters,
   clearSearch,
-  filterByStatus,
   openCreate,
   openEdit,
   closeAddEdit,
@@ -194,104 +192,6 @@ const {
       aria-labelledby="office-tab-offices"
       class="flex flex-col gap-6"
     >
-    <!-- ─── Metric Cards Grid ─── -->
-    <div class="hidden md:grid grid-cols-2 md:grid-cols-4 gap-4">
-      <!-- 1. Total Offices -->
-      <Card
-        class="border shadow-xs bg-card/60 backdrop-blur-xs hover:border-primary/40 transition-all cursor-pointer"
-        :class="
-          selectedStatusFilter === 'ALL'
-            ? 'border-primary ring-2 ring-primary/20 shadow-sm'
-            : ''
-        "
-        @click="resetFilters"
-      >
-        <CardContent class="p-4 flex items-center justify-between">
-          <div class="space-y-0.5 min-w-0">
-            <p class="text-xs font-medium text-muted-foreground truncate">Total Offices</p>
-            <p class="text-2xl font-bold tracking-tight font-mono text-foreground">
-              {{ statsSummary.total.toLocaleString() }}
-            </p>
-            <p class="text-[11px] text-muted-foreground truncate">
-              All registered offices
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- 2. Active Offices -->
-      <Card
-        class="border shadow-xs bg-card/60 backdrop-blur-xs hover:border-emerald-500/40 transition-all cursor-pointer"
-        :class="
-          selectedStatusFilter === 'active'
-            ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm'
-            : ''
-        "
-        @click="filterByStatus('active')"
-      >
-        <CardContent class="p-4 flex items-center justify-between">
-          <div class="space-y-0.5 min-w-0">
-            <p class="text-xs font-medium text-muted-foreground truncate">Active Offices</p>
-            <p
-              class="text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400"
-            >
-              {{ statsSummary.activeCount.toLocaleString() }}
-            </p>
-            <p class="text-[11px] text-muted-foreground truncate">
-              Currently operational
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- 3. Inactive Offices -->
-      <Card
-        class="border shadow-xs bg-card/60 backdrop-blur-xs hover:border-rose-500/40 transition-all cursor-pointer"
-        :class="
-          selectedStatusFilter === 'inactive'
-            ? 'border-rose-500 ring-2 ring-rose-500/20 shadow-sm'
-            : ''
-        "
-        @click="filterByStatus('inactive')"
-      >
-        <CardContent class="p-4 flex items-center justify-between">
-          <div class="space-y-0.5 min-w-0">
-            <p class="text-xs font-medium text-muted-foreground truncate">Inactive Offices</p>
-            <p
-              class="text-2xl font-bold tracking-tight font-mono text-rose-600 dark:text-rose-400"
-            >
-              {{ statsSummary.inactiveCount.toLocaleString() }}
-            </p>
-            <p class="text-[11px] text-muted-foreground truncate">
-              Deactivated or archived
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- 4. Total Beneficiaries -->
-      <Card
-        class="border shadow-xs bg-card/60 backdrop-blur-xs hover:border-blue-500/40 transition-all"
-      >
-        <CardContent class="p-4 flex items-center justify-between">
-          <div class="space-y-0.5 min-w-0">
-            <p class="text-xs font-medium text-muted-foreground truncate">
-              Total Beneficiaries
-            </p>
-            <p
-              class="text-2xl font-bold tracking-tight font-mono text-blue-600 dark:text-blue-400"
-            >
-              {{ statsSummary.totalBeneficiaries.toLocaleString() }}
-            </p>
-            <p class="text-[11px] text-muted-foreground truncate">
-              Assigned across offices
-            </p>
-          </div>
-
-        </CardContent>
-      </Card>
-    </div>
-
     <!-- ─── Main Data Table Card ─── -->
     <Card class="border shadow-xs">
       <CardHeader class="pb-4">
