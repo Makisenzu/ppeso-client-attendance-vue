@@ -33,6 +33,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { useAttendance } from '@/composables/peso/useAttendance'
+import { formatDisplayDateLong } from '@/helpers/common/dateFormatHelper'
 import {
   formatDateDisplay,
   formatPunchStatusLabel,
@@ -992,9 +993,8 @@ const checkboxClass =
               <DialogTitle class="text-base font-semibold text-foreground">Edit DTR</DialogTitle>
               <DialogDescription class="text-xs text-muted-foreground mt-0.5">
                 <template v-if="recordToEdit">
-                  {{ recordToEdit.fullName }} · {{ formatDateDisplay(recordToEdit.attendanceDate) }}.
+                  {{ recordToEdit.fullName }} · {{ formatDisplayDateLong(recordToEdit.attendanceDate) }}
                 </template>
-                Statuses are recalculated from the times. Leave a punch empty to clear it.
               </DialogDescription>
             </div>
           </div>
