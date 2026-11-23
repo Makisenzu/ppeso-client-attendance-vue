@@ -5,6 +5,8 @@ import type { DtrGenerationResult, DtrOptions } from '@/types/peso/dtr'
 import { attendanceService } from '@/services/peso/attendanceService'
 import { userManagementService } from '@/services/peso/userManagementService'
 import { holidayService } from '@/services/peso/holidayService'
+import { specialDayService } from '@/services/common/specialDayService'
+import { withSpecialDays } from '@/helpers/common/specialDayHelper'
 import {
   DTR_DEFAULT_SUPERVISOR_NAME,
   DTR_DEFAULT_SUPERVISOR_TITLE,
@@ -128,14 +130,15 @@ export function useDtrGenerator() {
     isGenerating.value = true
 
     try {
-      // Holidays set on the Calendar page print on the DTR.
-      const [records, holidays] = await Promise.all([
+      // Holidays set on the Calendar page and special days set on Fix DTR print on the DTR.
+      const [records, holidays, specialDays] = await Promise.all([
         attendanceService.getAttendancesByProfileAndDateRange(
           selectedProfileId.value,
           startDate.value,
           endDate.value,
         ),
         holidayService.getHolidaysInRange(startDate.value, endDate.value),
+        specialDayService.getForProfile(selectedProfileId.value, startDate.value, endDate.value),
       ])
 
       const options: DtrOptions = {
@@ -149,7 +152,7 @@ export function useDtrGenerator() {
         duplicateLayout: dualCopy.value,
       }
 
-      generatedData.value = generateDtrData(options, records, holidays)
+      generatedData.value = generateDtrData(options, records, withSpecialDays(holidays, specialDays))
     } catch (err: unknown) {
       console.error('Error generating DTR:', err)
       fetchError.value =

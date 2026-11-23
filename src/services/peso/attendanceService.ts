@@ -245,7 +245,7 @@ export const attendanceService = {
   async getGipBeneficiaries(): Promise<GipBeneficiary[]> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, firstname, middlename, lastname, avatar_path, offices(name)')
+      .select('id, firstname, middlename, lastname, avatar_path, office_id, offices(name)')
       .eq('role', 'beneficiary')
       .eq('position', 'gip')
       .order('lastname', { ascending: true })
@@ -255,6 +255,7 @@ export const attendanceService = {
       id: p.id,
       fullName: [p.firstname, p.middlename, p.lastname].filter(Boolean).join(' ').trim() || 'Unknown',
       avatarPath: p.avatar_path,
+      officeId: p.office_id,
       officeName: p.offices?.name ?? null,
     }))
   },

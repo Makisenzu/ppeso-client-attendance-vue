@@ -1,4 +1,6 @@
 import { onMounted, ref } from 'vue'
+import { specialDayService } from '@/services/common/specialDayService'
+import { withSpecialDays } from '@/helpers/common/specialDayHelper'
 import { useRouter } from 'vue-router'
 import type { DtrGenerationResult, DtrOptions } from '@/types/peso/dtr'
 import { myDtrService } from '@/services/beneficiary/myDtrService'
@@ -81,9 +83,10 @@ export function useMyDtr() {
     fetchError.value = null
     isGenerating.value = true
     try {
-      const [records, holidays] = await Promise.all([
+      const [records, holidays, specialDays] = await Promise.all([
         myDtrService.getMyAttendancesInRange(startDate.value, endDate.value),
         holidayService.getHolidaysInRange(startDate.value, endDate.value),
+        specialDayService.getForProfile(null, startDate.value, endDate.value),
       ])
 
       const options: DtrOptions = {
@@ -98,7 +101,7 @@ export function useMyDtr() {
         duplicateLayout: dualCopy.value,
         printSignatureName: true,
       }
-      generatedData.value = generateDtrData(options, records, holidays)
+      generatedData.value = generateDtrData(options, records, withSpecialDays(holidays, specialDays))
     } catch (err) {
       console.error('Failed to generate my DTR.')
       fetchError.value =

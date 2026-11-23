@@ -73,6 +73,9 @@ const emit = defineEmits<{
           </div>
         </div>
 
+        <!-- Extra fields (Fix DTR: special day) -->
+        <slot />
+
         <p v-if="error" class="text-[11px] text-destructive">{{ error }}</p>
 
         <DialogFooter class="gap-2 pt-2">

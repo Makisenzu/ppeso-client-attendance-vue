@@ -1,3 +1,4 @@
+import type { SpecialDay } from '@/types/common/specialDay'
 import type { Database } from '../database.types'
 
 export type PunchStatus = Database['core']['Enums']['punch_status']
@@ -80,6 +81,7 @@ export interface GipBeneficiary {
   id: string
   fullName: string
   avatarPath: string | null
+  officeId: string | null
   officeName: string | null
 }
 
@@ -90,4 +92,6 @@ export interface FixDtrDay {
   isWeekend: boolean
   holidayName: string | null
   record: AttendanceRecord | null
+  /** Special day set on Fix DTR (the person's own, else their office's) */
+  specialDay: SpecialDay | null
 }

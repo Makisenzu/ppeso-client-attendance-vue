@@ -2,6 +2,8 @@ import { ref } from 'vue'
 import type { DtrAttendance, DtrGenerationResult } from '@/types/peso/dtr'
 // Holidays are readable by every signed-in user (RLS "holidays: authenticated read").
 import { holidayService } from '@/services/peso/holidayService'
+import { specialDayService } from '@/services/common/specialDayService'
+import { withSpecialDays } from '@/helpers/common/specialDayHelper'
 import { formatMonthHeader, generateDtrData, getDtrPresetDateRange } from '@/helpers/peso/dtrHelper'
 
 interface DtrPreviewSubject {
@@ -36,9 +38,10 @@ export function useDtrPreview(
     isPreviewLoading.value = true
     const id = ++requestId
     try {
-      const [records, holidays] = await Promise.all([
+      const [records, holidays, specialDays] = await Promise.all([
         loadAttendances(subject.profileId, startDate, endDate),
         holidayService.getHolidaysInRange(startDate, endDate),
+        specialDayService.getForProfile(subject.profileId || null, startDate, endDate),
       ])
       if (id !== requestId) return
       previewData.value = generateDtrData(
@@ -52,7 +55,7 @@ export function useDtrPreview(
           printSignatureName: true,
         },
         records,
-        holidays,
+        withSpecialDays(holidays, specialDays),
       )
     } catch (err) {
       if (id !== requestId) return

@@ -2,6 +2,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { attendanceService } from '@/services/peso/attendanceService'
 import { holidayService } from '@/services/peso/holidayService'
+import { specialDayService } from '@/services/common/specialDayService'
+import { SPECIAL_DAY_OPTIONS, specialDaysByDate } from '@/helpers/common/specialDayHelper'
+import type { SpecialDayScope, SpecialDayType } from '@/types/common/specialDay'
 import { getPageRange } from '@/helpers/common/paginationHelper'
 import { formatDisplayDateLong } from '@/helpers/common/dateFormatHelper'
 import {
@@ -107,19 +110,22 @@ export function useFixDtr() {
     isLoadingMonth.value = true
     monthError.value = ''
     try {
-      const [records, holidays] = await Promise.all([
+      const [records, holidays, specialDays] = await Promise.all([
         attendanceService.getAttendancesByProfileAndDateRange(gip.id, startDate, endDate),
         holidayService.getHolidaysInRange(startDate, endDate).catch(() => []),
+        specialDayService.getForProfile(gip.id, startDate, endDate),
       ])
       // ignore a slower answer for a month or person no longer shown
       if (selectedGip.value?.id !== gip.id || selectedMonth.value !== month) return
       const byDate = new Map(records.map((r) => [r.attendanceDate, r]))
       const holidayByDate = new Map(holidays.map((h) => [h.date, h.name]))
+      const specialByDate = specialDaysByDate(specialDays)
       days.value = dates.map((date) => ({
         date,
         isWeekend: isWeekendDate(date),
         holidayName: holidayByDate.get(date) ?? null,
         record: byDate.get(date) ?? null,
+        specialDay: specialByDate.get(date) ?? null,
       }))
     } catch {
       monthError.value = 'Failed to load the attendance for this month.'
@@ -185,6 +191,17 @@ export function useFixDtr() {
     { key: 'pmIn', label: 'PM Check In' },
     { key: 'pmOut', label: 'PM Check Out' },
   ]
+  // Special day: excused (never absent), printed on the DTR; for this beneficiary or their whole office
+  const specialEnabled = ref(false)
+  const specialScope = ref<SpecialDayScope>('beneficiary')
+  const specialType = ref<SpecialDayType>('office_activity')
+  const specialNote = ref('')
+  const specialDayOptions = SPECIAL_DAY_OPTIONS
+  /** The office-wide special day being edited would be removed for everyone in the office */
+  const isRemovingOfficeSpecialDay = computed(
+    () => !specialEnabled.value && Boolean(dayToEdit.value?.specialDay?.isOffice),
+  )
+
   const editDescription = computed(() =>
     selectedGip.value && dayToEdit.value
       ? `${selectedGip.value.fullName} · ${formatDisplayDateLong(dayToEdit.value.date)}`
@@ -199,6 +216,10 @@ export function useFixDtr() {
       pmIn: toManilaTimeInput(day.record?.pmCheckIn),
       pmOut: toManilaTimeInput(day.record?.pmCheckOut),
     }
+    specialEnabled.value = Boolean(day.specialDay)
+    specialScope.value = day.specialDay?.isOffice ? 'office' : 'beneficiary'
+    specialType.value = day.specialDay?.dayType ?? 'office_activity'
+    specialNote.value = day.specialDay?.note ?? ''
     editError.value = ''
     isEditDialogOpen.value = true
   }
@@ -210,6 +231,25 @@ export function useFixDtr() {
   }
   const clearEditSlot = (key: keyof AttendancePunchTimes) => {
     editForm.value[key] = ''
+  }
+
+  /** Applies the special day part of the form: set, move between beneficiary / office, or remove */
+  const saveSpecialDay = async (gip: GipBeneficiary, day: FixDtrDay) => {
+    const existing = day.specialDay
+    if (!specialEnabled.value) {
+      if (existing) await specialDayService.remove(existing.id)
+      return
+    }
+    const forOffice = specialScope.value === 'office'
+    // From the beneficiary to the whole office: drop the personal one so the office's shows
+    if (existing && !existing.isOffice && forOffice) await specialDayService.remove(existing.id)
+    await specialDayService.set({
+      date: day.date,
+      dayType: specialType.value,
+      note: specialNote.value.trim() || null,
+      profileId: forOffice ? null : gip.id,
+      officeId: forOffice ? gip.officeId : null,
+    })
   }
 
   const confirmEdit = async (): Promise<boolean> => {
@@ -228,10 +268,19 @@ export function useFixDtr() {
       editError.value = problem
       return false
     }
+    if (specialEnabled.value && specialScope.value === 'office' && !gip.officeId) {
+      editError.value = 'This beneficiary has no assigned office.'
+      return false
+    }
+    if (specialNote.value.trim().length > 200) {
+      editError.value = 'The note can be at most 200 characters.'
+      return false
+    }
     isSavingEdit.value = true
     editError.value = ''
     try {
       await attendanceService.setAttendancePunches(gip.id, day.date, times)
+      await saveSpecialDay(gip, day)
       isEditDialogOpen.value = false
       dayToEdit.value = null
       toast.show(`DTR for ${gip.fullName} on ${formatDisplayDateLong(day.date)} was updated.`, 'success')
@@ -288,6 +337,12 @@ export function useFixDtr() {
     editForm,
     editSlots,
     editDescription,
+    specialEnabled,
+    specialScope,
+    specialType,
+    specialNote,
+    specialDayOptions,
+    isRemovingOfficeSpecialDay,
     openEditDialog,
     closeEditDialog,
     clearEditSlot,

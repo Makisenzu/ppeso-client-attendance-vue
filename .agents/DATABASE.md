@@ -132,6 +132,25 @@ One row per profile per day (`unique_daily_attendance`).
 
 Constraint: `UNIQUE (profile_id, attendance_date)`.
 
+### `special_days`
+
+Special days set on Fix DTR (migration `20261123000300`): one beneficiary **or** one whole office per row.
+
+| Column            | Type                    | Constraints                                                    |
+| ----------------- | ----------------------- | -------------------------------------------------------------- |
+| `id`              | `uuid`                  | PK                                                             |
+| `attendance_date` | `date`                  | NOT NULL; indexed                                              |
+| `day_type`        | `core.special_day_type` | NOT NULL: `office_activity`, `official_business`, `training`, `leave` |
+| `note`            | `text`                  | nullable, ≤ 200 chars                                          |
+| `profile_id` / `office_id` | `uuid`         | exactly one set (`special_days_one_target`); FK ON DELETE CASCADE; unique per date |
+| `created_by`      | `uuid`                  | FK → `profiles`, ON DELETE SET NULL                            |
+| `created_at`      | `timestamptz`           | NOT NULL, default `now()`                                      |
+
+A special day is excused: setting one clears that date's `absent` statuses, `flag_daily_absences` skips it, and the
+DTR prints its label across the row like a holiday (the person's own special day wins over their office's, and over a
+holiday). Written only through `core.admin_set_special_day()` / `core.admin_delete_special_day()`; read with
+`core.get_special_days(profile, start, end)` (security invoker, so RLS applies).
+
 ### `walkin_attendances`
 
 Walk-in client log (not linked to an account).
@@ -240,7 +259,9 @@ only active GIPs (`position = gip`), only the current month, no changes once Sub
 | `core.calculate_punch_status()` | `BEFORE INSERT OR UPDATE ON attendances` | 5-minute cooldown between punches (`'Already Recorded'`); fills statuses left null. Cooldown skipped inside `core.admin_update_attendance` |
 | `core.admin_update_attendance(uuid, time×4)` | DEFINER, RPC for `authenticated` | Admin-only Edit DTR: sets a day's four punches (Philippine times, null clears), checks their order, recomputes statuses like `record_punch`; cleared absent punches stay `absent` |
 | `core.admin_set_attendance(uuid, date, time×4)` | DEFINER, RPC for `authenticated` | Admin-only Fix DTR: a beneficiary's punches on a past or current date; creates the day's row when missing, then applies `admin_update_attendance` |
-| `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles that use the kiosk (not admins / supervisors / kiosk accounts); skips dates in `public.holidays` |
+| `core.admin_set_special_day(date, type, note, profile?, office?)` / `core.admin_delete_special_day(uuid)` | DEFINER, RPC for `authenticated` | Admin-only special days for one beneficiary or a whole office; setting one clears the date's `absent` statuses |
+| `core.get_special_days(uuid, date, date)` | INVOKER (RLS), RPC for `authenticated` | A person's special days in a range: their own first, then their office's |
+| `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles that use the kiosk (not admins / supervisors / kiosk accounts); skips dates in `public.holidays` and people with a special day (own or office) |
 | `private.user_role()`, `user_office_id()`, `is_admin()`, `is_supervisor()`, `supervises(uuid)` | DEFINER, `private` schema | RLS helpers (SECURITY.md §4.3) |
 
 | pg_cron job | Schedule | Command |
@@ -265,6 +286,7 @@ Full rules in SECURITY.md §4. Policy names are prefixed with the table (`"atten
 | `public.holidays`         | any signed-in user                                      | admin                    |
 | `core.attendances`        | own rows · admin all · supervisor same office           | admin                    |
 | `core.walkin_attendances` | admin, supervisor                                       | admin                    |
+| `core.special_days`       | own / own office · admin all · supervisor own office    | admin (RPCs only)        |
 | `core.accomplishment_reports` | own · admin all · supervisor same office        | insert: own · update: own (not Reviewed) or reviewer (status/remarks only, trigger) · delete: own unreviewed, admin |
 | `core.evaluation_questions` | admin all · supervisor active only                | admin |
 | `core.gip_evaluations`    | admin all · supervisor same office (GIPs: none)         | insert: supervisor same office · update: supervisor, Draft only · delete: admin, supervisor own-office Draft |
@@ -348,6 +370,7 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261123000000_admin_edit_attendance.sql` | `core.admin_update_attendance()` (admin Edit DTR); punch trigger skips its cooldown for that edit |
 | `20261123000100_avatars_supervisor_read.sql` | `avatars` read policy also lets supervisors open their own office members' photos (DTR tables) |
 | `20261123000200_admin_set_attendance.sql` | `core.admin_set_attendance()` (Fix DTR: any date, creates the row when missing) |
+| `20261123000300_special_days.sql` | `core.special_days` + `special_day_type`, admin set / delete RPCs, `get_special_days`; `flag_daily_absences` skips special days |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).

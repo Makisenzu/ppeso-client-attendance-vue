@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Loader2, Pencil, Search, Users, Wrench, X } from '@lucide/vue'
+import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Loader2, Pencil, Search, Sparkles, Users, Wrench, X } from '@lucide/vue'
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import PersonAvatar from '@/components/common/PersonAvatar.vue'
 import EditPunchesDialog from './EditPunchesDialog.vue'
@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { useFixDtr } from '@/composables/peso/useFixDtr'
 import { formatDisplayDateLong } from '@/helpers/common/dateFormatHelper'
+import { formatSpecialDayLabel } from '@/helpers/common/specialDayHelper'
 import {
   formatPunchStatusLabel,
   getInitials,
@@ -63,6 +64,12 @@ const {
   editForm,
   editSlots,
   editDescription,
+  specialEnabled,
+  specialScope,
+  specialType,
+  specialNote,
+  specialDayOptions,
+  isRemovingOfficeSpecialDay,
   openEditDialog,
   closeEditDialog,
   clearEditSlot,
@@ -333,6 +340,15 @@ const weekendText = 'text-yellow-600 dark:text-yellow-400'
                     <span class="text-xs font-normal" :class="day.isWeekend ? weekendText : 'text-muted-foreground'">· {{ getWeekdayShort(day.date) }}</span>
                   </p>
                   <p v-if="day.holidayName" class="truncate text-[11px] text-muted-foreground">{{ day.holidayName }}</p>
+                  <Badge
+                    v-if="day.specialDay"
+                    variant="outline"
+                    class="h-5 w-fit gap-1 border-primary/30 bg-primary/10 px-1.5 text-[10px] font-medium text-primary"
+                    :title="day.specialDay.note || undefined"
+                  >
+                    <Sparkles class="h-3 w-3" />
+                    {{ formatSpecialDayLabel(day.specialDay.dayType) }}<template v-if="day.specialDay.isOffice"> · Office</template>
+                  </Badge>
                   <div class="grid grid-cols-4 gap-1 text-[11px] font-mono">
                     <span v-for="cell in dayPunches(day)" :key="cell.key" class="truncate">
                       <template v-if="cell.time">{{ cell.time }}</template>
@@ -366,6 +382,15 @@ const weekendText = 'text-yellow-600 dark:text-yellow-400'
                         <span class="text-[11px]" :class="day.isWeekend ? weekendText : 'text-muted-foreground'">
                           {{ getWeekdayShort(day.date) }}<template v-if="day.holidayName"> · {{ day.holidayName }}</template>
                         </span>
+                        <Badge
+                          v-if="day.specialDay"
+                          variant="outline"
+                          class="mt-1 h-5 w-fit gap-1 border-primary/30 bg-primary/10 px-1.5 text-[10px] font-medium text-primary"
+                          :title="day.specialDay.note || undefined"
+                        >
+                          <Sparkles class="h-3 w-3" />
+                          {{ formatSpecialDayLabel(day.specialDay.dayType) }}<template v-if="day.specialDay.isOffice"> · Office</template>
+                        </Badge>
                       </div>
                     </TableCell>
                     <TableCell v-for="cell in dayPunches(day)" :key="cell.key" class="py-2.5">
@@ -419,6 +444,83 @@ const weekendText = 'text-yellow-600 dark:text-yellow-400'
       @close="closeEditDialog"
       @save="confirmEdit"
       @clear="clearEditSlot"
-    />
+    >
+      <div class="space-y-3 rounded-lg border bg-muted/20 p-3">
+        <label class="flex cursor-pointer items-start gap-2.5">
+          <input
+            v-model="specialEnabled"
+            type="checkbox"
+            class="mt-0.5 h-4 w-4 cursor-pointer rounded border-input accent-primary"
+            :disabled="isSavingEdit"
+          />
+          <span class="space-y-0.5">
+            <span class="block text-xs font-medium text-foreground">Special day</span>
+            <span class="block text-[11px] text-muted-foreground">
+              Excused, never counted as absent, and printed on the DTR. Punches stay optional.
+            </span>
+          </span>
+        </label>
+
+        <template v-if="specialEnabled">
+          <div class="space-y-1.5">
+            <span class="text-xs font-medium text-foreground">Applies to</span>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label
+                class="flex cursor-pointer items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs"
+                :class="specialScope === 'beneficiary' ? 'border-primary ring-1 ring-primary/30' : 'border-input'"
+              >
+                <input v-model="specialScope" type="radio" value="beneficiary" class="accent-primary" :disabled="isSavingEdit" />
+                <span class="min-w-0 truncate">{{ selectedGip?.fullName || 'This beneficiary' }}</span>
+              </label>
+              <label
+                class="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs"
+                :class="[
+                  specialScope === 'office' ? 'border-primary ring-1 ring-primary/30' : 'border-input',
+                  selectedGip?.officeId ? 'cursor-pointer' : 'cursor-not-allowed opacity-50',
+                ]"
+              >
+                <input
+                  v-model="specialScope"
+                  type="radio"
+                  value="office"
+                  class="accent-primary"
+                  :disabled="isSavingEdit || !selectedGip?.officeId"
+                />
+                <span class="min-w-0 truncate">Whole office<template v-if="selectedGip?.officeName"> ({{ selectedGip.officeName }})</template></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <label for="fix-dtr-special-type" class="text-xs font-medium text-foreground">Type</label>
+            <select
+              id="fix-dtr-special-type"
+              v-model="specialType"
+              class="h-9 w-full rounded-md border border-input bg-background px-3 text-base md:text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              :disabled="isSavingEdit"
+            >
+              <option v-for="option in specialDayOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label for="fix-dtr-special-note" class="text-xs font-medium text-foreground">Note <span class="font-normal text-muted-foreground">(optional)</span></label>
+            <Input
+              id="fix-dtr-special-note"
+              v-model="specialNote"
+              maxlength="200"
+              placeholder="e.g. Provincial job fair"
+              class="h-9 text-base md:text-xs"
+              :disabled="isSavingEdit"
+            />
+            <p class="text-[11px] text-muted-foreground">Don't write medical or other sensitive details.</p>
+          </div>
+        </template>
+
+        <p v-else-if="isRemovingOfficeSpecialDay" class="text-[11px] text-destructive">
+          This removes the special day for everyone in the office.
+        </p>
+      </div>
+    </EditPunchesDialog>
   </div>
 </template>

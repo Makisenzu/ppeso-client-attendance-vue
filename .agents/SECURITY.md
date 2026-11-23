@@ -108,6 +108,10 @@ Defined in `supabase/migrations/20261113000100_rls_policies.sql`. Verified on th
 | **Supervisor**  | read users in **own office**        | read                      | read **own office**  | read                 |
 | **Beneficiary** | read own; edit own **name only**    | read                      | read own             | —                    |
 
+**Special days** (`core.special_days`): admins set and remove them only through the DEFINER RPCs
+`core.admin_set_special_day` / `core.admin_delete_special_day` (no direct table writes for anyone); a beneficiary reads
+their own and their office's, a supervisor reads their office's, admins read all.
+
 **Accomplishment reports** (`core.accomplishment_reports`): the owner reads, writes and deletes their own until
 Reviewed; admins read all, review and delete; a supervisor reads and reviews reports of people in their office.
 Reviewers can change only status and remarks (`core.check_accomplishment_report`). `profiles.funding` is admin-only.
