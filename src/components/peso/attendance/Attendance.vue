@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import DtrPrintSheet from '@/components/peso/attendance/DtrPrintSheet.vue'
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import MobileFilters from '@/components/common/MobileFilters.vue'
 import { Building2, Calendar, CalendarX2, Download, Eye, FileText, Filter, Loader2, RefreshCw, Search, Trash2, X } from '@lucide/vue'
@@ -76,10 +75,7 @@ const {
   prevPage,
   nextPage,
   openDetails,
-  previewData,
-  previewMonth,
-  isPreviewLoading,
-  previewError,
+  detailPunches,
   closeDetails,
   exportCsv,
   selectedCount,
@@ -756,18 +752,9 @@ const checkboxClass =
                     <span v-else class="text-muted-foreground/60 text-xs font-mono">—</span>
                   </TableCell>
 
-                  <!-- 7. Actions / Details, DTR & Delete -->
+                  <!-- 7. Actions / Delete (no Details here: the row already shows every punch; mobile keeps View) -->
                   <TableCell class="py-3 text-right">
                     <div class="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        class="h-8 gap-1.5 text-xs cursor-pointer"
-                        @click="openDetails(record)"
-                      >
-                        <Eye class="h-3.5 w-3.5" />
-                        <span class="hidden sm:inline">Details</span>
-                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -908,24 +895,52 @@ const checkboxClass =
       </CardContent>
     </Card>
 
-    <!-- ─── Attendance Details Modal ─── -->
+    <!-- ─── Attendance Details Modal: the selected day only ─── -->
     <Dialog :open="isDetailsOpen" @update:open="(val: boolean) => { if (!val) closeDetails() }">
-      <DialogContent class="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent class="max-w-[95vw] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle class="flex items-center gap-2 text-base sm:text-lg">Daily Time Record</DialogTitle>
-          <DialogDescription class="text-xs">{{ previewMonth }} · Civil Service Form No. 48, as printed</DialogDescription>
+          <DialogTitle class="text-base sm:text-lg">Attendance Details</DialogTitle>
+          <DialogDescription class="text-xs">
+            {{ selectedRecord ? formatDateDisplay(selectedRecord.attendanceDate) : '' }}
+          </DialogDescription>
         </DialogHeader>
 
-        <div v-if="selectedRecord" class="py-2">
-          <div v-if="isPreviewLoading" class="flex flex-col items-center justify-center gap-2 py-16 text-xs text-muted-foreground">
-            <Loader2 class="h-6 w-6 animate-spin text-primary" />
-            <span>Loading the daily time record...</span>
+        <div v-if="selectedRecord" class="space-y-4 py-2">
+          <div class="flex items-center gap-3">
+            <Avatar class="h-10 w-10 shrink-0 text-sm font-medium">
+              <AvatarFallback class="bg-primary/10 text-primary">{{ getInitials(selectedRecord.fullName) }}</AvatarFallback>
+            </Avatar>
+            <div class="min-w-0 space-y-1">
+              <p class="truncate text-sm font-semibold text-foreground">{{ selectedRecord.fullName }}</p>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <Badge
+                  variant="outline"
+                  :class="[getPositionBadgeClass(selectedRecord.position), 'h-4 px-1.5 py-0 font-mono text-[10px] uppercase']"
+                >
+                  {{ selectedRecord.position || 'Beneficiary' }}
+                </Badge>
+                <span class="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                  <Building2 class="h-3.5 w-3.5 shrink-0" />
+                  <span class="truncate">{{ selectedRecord.officeName || 'Unassigned' }}</span>
+                </span>
+              </div>
+            </div>
           </div>
-          <p v-else-if="previewError" class="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6 text-center text-xs text-destructive">
-            {{ previewError }}
-          </p>
-          <div v-else-if="previewData" class="rounded-lg border bg-muted/30 p-2 sm:p-4">
-            <DtrPrintSheet :data="previewData" :dual-copy="false" :right-copy-has-name="false" />
+
+          <div class="grid grid-cols-2 gap-2">
+            <div v-for="punch in detailPunches" :key="punch.label" class="space-y-1.5 rounded-lg border bg-muted/30 p-3">
+              <p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{{ punch.label }}</p>
+              <p class="font-mono text-sm font-semibold" :class="punch.time ? 'text-foreground' : 'text-muted-foreground/60'">
+                {{ punch.time || '—' }}
+              </p>
+              <Badge
+                v-if="punch.status"
+                variant="outline"
+                :class="[getPunchStatusBadgeClass(punch.status), 'h-4 px-1.5 py-0 font-mono text-[10px] capitalize']"
+              >
+                {{ formatPunchStatusLabel(punch.status) }}
+              </Badge>
+            </div>
           </div>
         </div>
 

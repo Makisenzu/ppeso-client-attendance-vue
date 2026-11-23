@@ -28,9 +28,6 @@ import {
 import { formatDisplayDateLong, formatDisplayDateTime } from '@/helpers/common/dateFormatHelper'
 import { getPageRange, getVisiblePages } from '@/helpers/common/paginationHelper'
 import { useToastAlert } from '@/composables/common/useToastAlert'
-import { useDtrPreview } from '@/composables/common/useDtrPreview'
-import { myDtrService } from '@/services/beneficiary/myDtrService'
-import type { MyDtrProfile } from '@/types/beneficiary/myDtr'
 
 /**
  * My Attendance (beneficiary): the signed-in user's own DTR logs, with the same stats, filters
@@ -166,32 +163,14 @@ export function useMyAttendance() {
   const nextPage = () => setPage(currentPage.value + 1)
 
   // ─── Details dialog ───
-  // View shows my printed DTR (CS Form 48) for the record's month, signed by my office head
-  const dtrPreview = useDtrPreview((_profileId, startDate, endDate) =>
-    myDtrService.getMyAttendancesInRange(startDate, endDate),
-  )
-  let myDtrProfile: MyDtrProfile | null = null
-  const openDetails = async (record: MyAttendanceRecord) => {
+  // Details shows only the selected day's punches; the whole month is on the My DTR page
+  const openDetails = (record: MyAttendanceRecord) => {
     selectedRecord.value = record
     isDetailsOpen.value = true
-    try {
-      myDtrProfile ??= await myDtrService.getMyDtrProfile()
-    } catch {
-      console.error('Failed to load my profile for the DTR.')
-    }
-    if (selectedRecord.value?.id !== record.id) return
-    void dtrPreview.loadPreview({
-      profileId: '',
-      fullName: myDtrProfile?.fullName ?? '',
-      date: record.attendanceDate,
-      supervisorName: myDtrProfile?.supervisorName,
-      supervisorTitle: myDtrProfile?.supervisorTitle,
-    })
   }
   const closeDetails = () => {
     isDetailsOpen.value = false
     selectedRecord.value = null
-    dtrPreview.clearPreview()
   }
   const onDetailsOpenChange = (open: boolean) => {
     if (!open) closeDetails()
@@ -246,7 +225,6 @@ export function useMyAttendance() {
     selectedRecord,
     isDetailsOpen,
     openDetails,
-    ...dtrPreview,
     onDetailsOpenChange,
     closeDetails,
     // display helpers

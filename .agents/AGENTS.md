@@ -227,6 +227,10 @@ Component (.vue) ──► Composable (useXxx) ──► [Store (xxxStore)] ─�
 > 21. **Viewing a DTR or an accomplishment report always shows its printed form**, for every role and every status:
 >     the Civil Service Form 48 (`DtrPrintSheet`, via `useDtrPreview` for the record's month) or the report's official
 >     form (`AccomplishmentDocumentPreview`). Never show the raw punches or entries in a View dialog or sheet.
+>     **Exception:** the attendance "Details" dialogs (admin Attendance Records, supervisor Team Attendance,
+>     beneficiary My Attendance) are about one day's record, so they show only that day's four punches and statuses;
+>     the full month stays on the DTR pages. On desktop those tables have no Details button (the row already shows
+>     every punch); on mobile the swipe action opens the dialog.
 22. **On mobile, every data table renders as `SwipeRow`s** (`@/components/vuebits/SwipeRow.vue`): the table is
     `hidden md:block`, a `md:hidden` list of swipe rows shows the same rows, and the row's actions become its swipe
     actions (delete first). See [`DESIGN.md`](DESIGN.md) §11.2.

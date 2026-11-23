@@ -10,11 +10,11 @@ import {
   formatPunchStatusLabel,
   formatTimeDisplay,
   getRecordStatuses,
+  isRecordAbsent,
   recordMatchesDate,
   recordMatchesStatus,
 } from '@/helpers/peso/attendanceHelper'
 import { useToastAlert } from '@/composables/common/useToastAlert'
-import { useDtrPreview } from '@/composables/common/useDtrPreview'
 
 export function useAttendance() {
   const attendances = ref<AttendanceRecord[]>([])
@@ -239,21 +239,33 @@ export function useAttendance() {
     searchQuery.value = ''
   }
 
-  // View shows the person's printed DTR (CS Form 48) for the record's month, not the raw punches
-  const dtrPreview = useDtrPreview((profileId, startDate, endDate) =>
-    attendanceService.getAttendancesByProfileAndDateRange(profileId, startDate, endDate),
-  )
-
+  // Details shows only the selected day's four punches; the whole month is on the Generate DTR page
   const openDetails = (record: AttendanceRecord) => {
     selectedRecord.value = record
     isDetailsOpen.value = true
-    void dtrPreview.loadPreview({ profileId: record.profileId, fullName: record.fullName, date: record.attendanceDate })
   }
+
+  /** The selected day's punches, one per slot. A missing punch on an absent day reads as absent, as in the table. */
+  const detailPunches = computed(() => {
+    const r = selectedRecord.value
+    if (!r) return []
+    const absentDay = isRecordAbsent(r)
+    const slot = (label: string, time: string | null, status: AttendanceRecord['amInStatus']) => ({
+      label,
+      time: time ? formatTimeDisplay(time) : null,
+      status: time ? status : status ?? (absentDay ? 'absent' : null),
+    })
+    return [
+      slot('AM Check In', r.amCheckIn, r.amInStatus),
+      slot('AM Check Out', r.amCheckOut, r.amOutStatus),
+      slot('PM Check In', r.pmCheckIn, r.pmInStatus),
+      slot('PM Check Out', r.pmCheckOut, r.pmOutStatus),
+    ]
+  })
 
   const closeDetails = () => {
     isDetailsOpen.value = false
     selectedRecord.value = null
-    dtrPreview.clearPreview()
   }
 
   const exportCsv = () => {
@@ -495,7 +507,7 @@ export function useAttendance() {
     bulkDeleteOverflow,
     openDtrPage,
     generateDtrFromDetails,
-    ...dtrPreview,
+    detailPunches,
     selectedCount,
     selectedRecords,
     isAllPageSelected,

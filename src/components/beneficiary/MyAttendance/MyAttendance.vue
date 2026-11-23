@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import DtrPrintSheet from '@/components/peso/attendance/DtrPrintSheet.vue'
 import { Calendar, CalendarX2, Eye, FileText, Filter, Loader2, RefreshCw, Search, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -77,10 +76,6 @@ const {
   selectedRecord,
   isDetailsOpen,
   openDetails,
-  previewData,
-  previewMonth,
-  isPreviewLoading,
-  previewError,
   onDetailsOpenChange,
   closeDetails,
   punchSlots,
@@ -92,7 +87,7 @@ const {
   openMyDtr,
 } = useMyAttendance()
 
-const COLUMN_COUNT = 6
+const COLUMN_COUNT = 5
 const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
 </script>
 
@@ -266,7 +261,6 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
                 <TableHead v-for="slot in punchSlots" :key="slot.key" class="min-w-28 text-xs font-semibold">
                   {{ slot.label }}
                 </TableHead>
-                <TableHead class="text-right min-w-24 pr-4 text-xs font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -312,13 +306,6 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
                       </Badge>
                     </div>
                     <span v-else class="text-muted-foreground/60 text-xs font-mono">—</span>
-                  </TableCell>
-
-                  <TableCell class="py-3 pr-4 text-right">
-                    <Button variant="ghost" size="sm" class="h-8 gap-1.5 text-xs cursor-pointer" @click="openDetails(record)">
-                      <Eye class="h-3.5 w-3.5" />
-                      <span class="hidden sm:inline">Details</span>
-                    </Button>
                   </TableCell>
                 </TableRow>
               </template>
@@ -420,22 +407,32 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
 
     <!-- ─── Details dialog ─── -->
     <Dialog :open="isDetailsOpen" @update:open="onDetailsOpenChange">
-      <DialogContent class="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent class="max-w-[95vw] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle class="text-base sm:text-lg">Daily Time Record</DialogTitle>
-          <DialogDescription class="text-xs">{{ previewMonth }} · Civil Service Form No. 48, as printed</DialogDescription>
+          <DialogTitle class="text-base sm:text-lg">Attendance Details</DialogTitle>
+          <DialogDescription class="text-xs">
+            {{ selectedRecord ? formatAttendanceDate(selectedRecord.attendanceDate) : '' }}
+          </DialogDescription>
         </DialogHeader>
 
-        <div v-if="selectedRecord" class="py-2">
-          <div v-if="isPreviewLoading" class="flex flex-col items-center justify-center gap-2 py-16 text-xs text-muted-foreground">
-            <Loader2 class="h-6 w-6 animate-spin text-primary" />
-            <span>Loading the daily time record...</span>
-          </div>
-          <p v-else-if="previewError" class="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6 text-center text-xs text-destructive">
-            {{ previewError }}
-          </p>
-          <div v-else-if="previewData" class="rounded-lg border bg-muted/30 p-2 sm:p-4">
-            <DtrPrintSheet :data="previewData" :dual-copy="false" :right-copy-has-name="false" />
+        <div v-if="selectedRecord" class="space-y-4 py-2">
+          <div class="grid grid-cols-2 gap-2">
+            <div v-for="slot in punchSlots" :key="slot.key" class="space-y-1.5 rounded-lg border bg-muted/30 p-3">
+              <p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{{ slot.label }}</p>
+              <p
+                class="font-mono text-sm font-semibold"
+                :class="getPunchCell(selectedRecord, slot.key).time ? 'text-foreground' : 'text-muted-foreground/60'"
+              >
+                {{ getPunchCell(selectedRecord, slot.key).time || '—' }}
+              </p>
+              <Badge
+                v-if="getPunchCell(selectedRecord, slot.key).status"
+                variant="outline"
+                :class="[getPunchStatusBadgeClass(getPunchCell(selectedRecord, slot.key).status), badgeClass]"
+              >
+                {{ formatPunchStatusLabel(getPunchCell(selectedRecord, slot.key).status) }}
+              </Badge>
+            </div>
           </div>
         </div>
 

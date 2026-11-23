@@ -30,7 +30,6 @@ import {
 import { formatDisplayDateLong, formatDisplayDateTime } from '@/helpers/common/dateFormatHelper'
 import { getPageRange, getVisiblePages } from '@/helpers/common/paginationHelper'
 import { useToastAlert } from '@/composables/common/useToastAlert'
-import { useDtrPreview } from '@/composables/common/useDtrPreview'
 
 /**
  * Team Attendance (supervisor): the daily time records of the beneficiaries in the supervisor's office.
@@ -197,19 +196,14 @@ export function useTeamAttendance() {
   const prevPage = () => setPage(currentPage.value - 1)
   const nextPage = () => setPage(currentPage.value + 1)
 
-  // ─── Details dialog: the member's printed DTR (CS Form 48) for the record's month ───
-  const dtrPreview = useDtrPreview((profileId, startDate, endDate) =>
-    teamService.getMemberDtrAttendances(profileId, startDate, endDate),
-  )
+  // ─── Details dialog: only the selected day's punches (the month is on the DTR page) ───
   const openDetails = (record: TeamAttendanceRecord) => {
     selectedRecord.value = record
     isDetailsOpen.value = true
-    void dtrPreview.loadPreview({ profileId: record.profileId, fullName: record.fullName, date: record.attendanceDate })
   }
   const closeDetails = () => {
     isDetailsOpen.value = false
     selectedRecord.value = null
-    dtrPreview.clearPreview()
   }
   const onDetailsOpenChange = (open: boolean) => {
     if (!open) closeDetails()
@@ -269,7 +263,6 @@ export function useTeamAttendance() {
     selectedRecord,
     isDetailsOpen,
     openDetails,
-    ...dtrPreview,
     onDetailsOpenChange,
     closeDetails,
     // display helpers
