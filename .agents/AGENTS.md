@@ -234,3 +234,7 @@ Component (.vue) ──► Composable (useXxx) ──► [Store (xxxStore)] ─�
 22. **On mobile, every data table renders as `SwipeRow`s** (`@/components/vuebits/SwipeRow.vue`): the table is
     `hidden md:block`, a `md:hidden` list of swipe rows shows the same rows, and the row's actions become its swipe
     actions (delete first). See [`DESIGN.md`](DESIGN.md) §11.2.
+23. **Delete `supabase/.temp/` after every Supabase CLI session.** `supabase link` (needed before `db push --linked` /
+    `db query --linked`) writes that folder; it must never show up in unstaged changes or be committed. Run
+    `rtk npx supabase link --project-ref otulzqszdvyzebetiqkn` when a linked command needs it, and remove the folder
+    (`rm -rf supabase/.temp`) as soon as the CLI work is done, before handing back or committing.
