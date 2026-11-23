@@ -32,6 +32,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
+import EditPunchesDialog from './EditPunchesDialog.vue'
 import { useAttendance } from '@/composables/peso/useAttendance'
 import { formatDisplayDateLong } from '@/helpers/common/dateFormatHelper'
 import {
@@ -112,6 +113,7 @@ const {
   bulkDeletePreview,
   bulkDeleteOverflow,
   openDtrPage,
+  openFixDtrPage,
   generateDtrFromDetails,
 } = useAttendance()
 
@@ -142,6 +144,15 @@ const checkboxClass =
         >
           <FileText class="h-3.5 w-3.5" />
           <span>Generate DTR</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="gap-1.5 text-xs cursor-pointer shadow-xs"
+          @click="openFixDtrPage"
+        >
+          <Wrench class="h-3.5 w-3.5" />
+          <span>Fix</span>
         </Button>
         <Button
           variant="outline"
@@ -976,73 +987,17 @@ const checkboxClass =
     </Dialog>
 
     <!-- ─── Edit DTR Dialog (admin) ─── -->
-    <Dialog :open="isEditDialogOpen" @update:open="(val) => (!val ? closeEditDialog() : null)">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Wrench class="h-5 w-5" />
-            </div>
-            <div>
-              <DialogTitle class="text-base font-semibold text-foreground">Edit DTR</DialogTitle>
-              <DialogDescription class="text-xs text-muted-foreground mt-0.5">
-                <template v-if="recordToEdit">
-                  {{ recordToEdit.fullName }} · {{ formatDisplayDateLong(recordToEdit.attendanceDate) }}
-                </template>
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
-        <form class="space-y-3" @submit.prevent="confirmEdit">
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div v-for="slot in editSlots" :key="slot.key" class="space-y-1.5">
-              <label :for="`edit-dtr-${slot.key}`" class="text-xs font-medium text-foreground">{{ slot.label }}</label>
-              <div class="flex items-center gap-1">
-                <Input
-                  :id="`edit-dtr-${slot.key}`"
-                  v-model="editForm[slot.key]"
-                  type="time"
-                  class="h-9 min-w-0 flex-1 text-base md:text-xs font-mono"
-                  :disabled="isSavingEdit"
-                />
-                <Button
-                  v-if="editForm[slot.key]"
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
-                  :title="`Clear ${slot.label}`"
-                  :disabled="isSavingEdit"
-                  @click="clearEditSlot(slot.key)"
-                >
-                  <X class="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <p v-if="editError" class="text-[11px] text-destructive">{{ editError }}</p>
-
-          <DialogFooter class="gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              class="text-xs cursor-pointer"
-              :disabled="isSavingEdit"
-              @click="closeEditDialog"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" size="sm" class="text-xs cursor-pointer gap-1.5" :disabled="isSavingEdit">
-              <Loader2 v-if="isSavingEdit" class="h-3.5 w-3.5 animate-spin" />
-              <span>{{ isSavingEdit ? 'Saving...' : 'Save Changes' }}</span>
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <EditPunchesDialog
+      v-model:form="editForm"
+      :open="isEditDialogOpen"
+      :description="recordToEdit ? `${recordToEdit.fullName} · ${formatDisplayDateLong(recordToEdit.attendanceDate)}` : ''"
+      :slots="editSlots"
+      :error="editError"
+      :saving="isSavingEdit"
+      @close="closeEditDialog"
+      @save="confirmEdit"
+      @clear="clearEditSlot"
+    />
 
     <!-- ─── Delete Confirmation Dialog ─── -->
     <Dialog :open="isDeleteDialogOpen" @update:open="(val) => (!val ? closeDeleteDialog() : null)">

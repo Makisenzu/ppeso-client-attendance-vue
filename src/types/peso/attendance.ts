@@ -74,3 +74,20 @@ export interface AttendancePunchTimes {
   pmIn: string | null
   pmOut: string | null
 }
+
+/** A GIP beneficiary in the Fix DTR list */
+export interface GipBeneficiary {
+  id: string
+  fullName: string
+  avatarPath: string | null
+  officeName: string | null
+}
+
+/** One date of the month on the Fix DTR month view; `record` is null when nothing was recorded that day */
+export interface FixDtrDay {
+  /** ISO date, yyyy-mm-dd */
+  date: string
+  isWeekend: boolean
+  holidayName: string | null
+  record: AttendanceRecord | null
+}

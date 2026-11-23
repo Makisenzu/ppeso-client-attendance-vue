@@ -14,6 +14,7 @@ import {
   recordMatchesDate,
   recordMatchesStatus,
   toManilaTimeInput,
+  validatePunchTimes,
 } from '@/helpers/peso/attendanceHelper'
 import { useToastAlert } from '@/composables/common/useToastAlert'
 
@@ -401,14 +402,9 @@ export function useAttendance() {
       pmIn: f.pmIn || null,
       pmOut: f.pmOut || null,
     }
-    // Same order rule the database enforces, checked here for a quicker message
-    const filled = [times.amIn, times.amOut, times.pmIn, times.pmOut].filter((t): t is string => Boolean(t))
-    if (filled.some((t, i) => i > 0 && t <= filled[i - 1])) {
-      editError.value = 'Punch times must be in order: AM in, AM out, PM in, PM out.'
-      return false
-    }
-    if (times.amOut && !times.amIn) {
-      editError.value = 'Morning Check-Out needs a Morning Check-In.'
+    const problem = validatePunchTimes(times)
+    if (problem) {
+      editError.value = problem
       return false
     }
     const empName = recordToEdit.value.fullName || 'Employee'
@@ -560,6 +556,10 @@ export function useAttendance() {
   // ─── Civil Service Form 48 DTR — opens the Generate DTR page ───
   const router = useRouter()
 
+  const openFixDtrPage = () => {
+    router.push({ name: 'attendance-fix-dtr' })
+  }
+
   const openDtrPage = (profileId?: string | null) => {
     router.push({ name: 'attendance-dtr', query: profileId ? { profileId } : {} })
   }
@@ -580,6 +580,7 @@ export function useAttendance() {
     bulkDeletePreview,
     bulkDeleteOverflow,
     openDtrPage,
+    openFixDtrPage,
     generateDtrFromDetails,
     detailPunches,
     recordToEdit,

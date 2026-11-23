@@ -1,5 +1,5 @@
 import { supabase } from '@/services/supabase'
-import type { AttendanceRecord, AttendancePunchTimes } from '@/types/peso/attendance'
+import type { AttendanceRecord, AttendancePunchTimes, GipBeneficiary } from '@/types/peso/attendance'
 
 export const attendanceService = {
   async getAttendances(): Promise<AttendanceRecord[]> {
@@ -232,6 +232,41 @@ export const attendanceService = {
   async updateAttendancePunches(id: string, times: AttendancePunchTimes): Promise<void> {
     const { error } = await supabase.schema('core').rpc('admin_update_attendance', {
       p_id: id,
+      p_am_in: times.amIn ?? undefined,
+      p_am_out: times.amOut ?? undefined,
+      p_pm_in: times.pmIn ?? undefined,
+      p_pm_out: times.pmOut ?? undefined,
+    })
+    if (error) throw new Error(error.message)
+    this.notifyAttendanceChange()
+  },
+
+  /** Fix DTR: every GIP beneficiary with their office, by last name (only the columns the list shows) */
+  async getGipBeneficiaries(): Promise<GipBeneficiary[]> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, firstname, middlename, lastname, avatar_path, offices(name)')
+      .eq('role', 'beneficiary')
+      .eq('position', 'gip')
+      .order('lastname', { ascending: true })
+      .order('firstname', { ascending: true })
+    if (error) throw new Error('Failed to load the GIP beneficiaries.')
+    return (data ?? []).map((p) => ({
+      id: p.id,
+      fullName: [p.firstname, p.middlename, p.lastname].filter(Boolean).join(' ').trim() || 'Unknown',
+      avatarPath: p.avatar_path,
+      officeName: p.offices?.name ?? null,
+    }))
+  },
+
+  /**
+   * Fix DTR: sets a beneficiary's four punches on a date ("HH:MM" Philippine times, null clears a punch), creating
+   * the day's record when there is none. core.admin_set_attendance() checks the admin role, date and punch order.
+   */
+  async setAttendancePunches(profileId: string, date: string, times: AttendancePunchTimes): Promise<void> {
+    const { error } = await supabase.schema('core').rpc('admin_set_attendance', {
+      p_profile_id: profileId,
+      p_date: date,
       p_am_in: times.amIn ?? undefined,
       p_am_out: times.amOut ?? undefined,
       p_pm_in: times.pmIn ?? undefined,

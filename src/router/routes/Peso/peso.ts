@@ -5,7 +5,7 @@ import PesoLayout from '@/layouts/PesoLayout.vue'
 /**
  * Admin area. Admins can open only these pages — the ones in PesoSidebar
  * (Dashboard, Attendance/kiosk, Daily Time Record, Accomplishments, Evaluations, Files, Client Records, Offices,
- * User Management, Calendar) plus Generate DTR, Office Details and Account. Unknown /dashboard URLs go to the dashboard.
+ * User Management, Calendar) plus Generate DTR, Fix DTR, Office Details and Account. Unknown /dashboard URLs go to the dashboard.
  */
 export const pesoRoutes: RouteRecordRaw[] = [
   {
@@ -60,6 +60,13 @@ export const pesoRoutes: RouteRecordRaw[] = [
         name: 'attendance-dtr',
         component: () => import('@/components/peso/attendance/DtrGenerator.vue'),
         meta: { title: 'Generate DTR' },
+      },
+      {
+        // Fix DTR: correct a GIP beneficiary's punches for any past date
+        path: 'attendance/fix-dtr',
+        name: 'attendance-fix-dtr',
+        component: () => import('@/components/peso/attendance/FixDtr.vue'),
+        meta: { title: 'Fix DTR' },
       },
       {
         path: 'records',

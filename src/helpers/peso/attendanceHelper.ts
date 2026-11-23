@@ -388,3 +388,43 @@ export function exportAttendanceToCsv(records: AttendanceRecord[], filterSummary
   link.click()
   document.body.removeChild(link)
 }
+
+/**
+ * The same punch rules the database enforces (core.admin_update_attendance), checked first for a quicker message.
+ * Times are "HH:MM"; returns the problem, or null when the times are fine.
+ */
+export function validatePunchTimes(times: { amIn: string | null; amOut: string | null; pmIn: string | null; pmOut: string | null }): string | null {
+  const filled = [times.amIn, times.amOut, times.pmIn, times.pmOut].filter((t): t is string => Boolean(t))
+  if (filled.some((t, i) => i > 0 && t <= filled[i - 1])) {
+    return 'Punch times must be in order: AM in, AM out, PM in, PM out.'
+  }
+  if (times.amOut && !times.amIn) return 'Morning Check-Out needs a Morning Check-In.'
+  if (times.pmOut && !times.pmIn && !times.amIn) return 'Afternoon Check-Out needs a check-in.'
+  return null
+}
+
+/** Today in the Philippines as yyyy-mm-dd (the office's calendar, whatever the device's time zone) */
+export function manilaToday(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+}
+
+/** Every date (yyyy-mm-dd) of a month, up to `lastDate` when it falls inside the month */
+export function getMonthDates(year: number, monthIndex: number, lastDate?: string): string[] {
+  const days = new Date(year, monthIndex + 1, 0).getDate()
+  const prefix = `${year}-${String(monthIndex + 1).padStart(2, '0')}-`
+  const dates = Array.from({ length: days }, (_, i) => `${prefix}${String(i + 1).padStart(2, '0')}`)
+  return lastDate ? dates.filter((d) => d <= lastDate) : dates
+}
+
+/** Saturday or Sunday, for a yyyy-mm-dd date */
+export function isWeekendDate(date: string): boolean {
+  const [y, m, d] = date.split('-').map(Number)
+  const day = new Date(y, m - 1, d).getDay()
+  return day === 0 || day === 6
+}
+
+/** `Mon`, for a yyyy-mm-dd date */
+export function getWeekdayShort(date: string): string {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short' })
+}

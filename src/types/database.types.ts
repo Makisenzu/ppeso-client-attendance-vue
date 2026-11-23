@@ -269,6 +269,39 @@ export type Database = {
         }
         Relationships: []
       }
+      special_days: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          created_by: string | null
+          day_type: Database["core"]["Enums"]["special_day_type"]
+          id: string
+          note: string | null
+          office_id: string | null
+          profile_id: string | null
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          created_by?: string | null
+          day_type: Database["core"]["Enums"]["special_day_type"]
+          id?: string
+          note?: string | null
+          office_id?: string | null
+          profile_id?: string | null
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          created_by?: string | null
+          day_type?: Database["core"]["Enums"]["special_day_type"]
+          id?: string
+          note?: string | null
+          office_id?: string | null
+          profile_id?: string | null
+        }
+        Relationships: []
+      }
       walkin_attendances: {
         Row: {
           barangay: string
@@ -325,6 +358,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_special_day: { Args: { p_id: string }; Returns: undefined }
+      admin_set_attendance: {
+        Args: {
+          p_am_in?: string
+          p_am_out?: string
+          p_date: string
+          p_pm_in?: string
+          p_pm_out?: string
+          p_profile_id: string
+        }
+        Returns: undefined
+      }
+      admin_set_special_day: {
+        Args: {
+          p_date: string
+          p_day_type: Database["core"]["Enums"]["special_day_type"]
+          p_note?: string
+          p_office_id?: string
+          p_profile_id?: string
+        }
+        Returns: undefined
+      }
       admin_update_attendance: {
         Args: {
           p_am_in?: string
@@ -338,6 +393,16 @@ export type Database = {
       flag_daily_absences: {
         Args: { target_date?: string }
         Returns: undefined
+      }
+      get_special_days: {
+        Args: { p_end: string; p_profile_id: string; p_start: string }
+        Returns: {
+          attendance_date: string
+          day_type: Database["core"]["Enums"]["special_day_type"]
+          id: string
+          is_office: boolean
+          note: string
+        }[]
       }
       kiosk_today_punches: {
         Args: never
@@ -386,6 +451,11 @@ export type Database = {
         | "cea"
         | "skills"
         | "others"
+      special_day_type:
+        | "office_activity"
+        | "official_business"
+        | "training"
+        | "leave"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -689,6 +759,12 @@ export const Constants = {
         "cea",
         "skills",
         "others",
+      ],
+      special_day_type: [
+        "office_activity",
+        "official_business",
+        "training",
+        "leave",
       ],
     },
   },
