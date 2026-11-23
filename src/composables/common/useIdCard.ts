@@ -2,8 +2,11 @@ import { computed, ref, useTemplateRef, watch, type Ref } from 'vue'
 import { idCardService, type IdCardPerson } from '@/services/common/idCardService'
 import {
   buildIdCardSheetHtml,
+  buildIdCardSheetPdf,
   buildIdCardSvg,
+  idCardFileName,
   ID_CARD_POSITION,
+  ID_CARD_SIZE_PT,
   ID_CARLITO_CSS,
   ID_FONT_FAMILY,
   ID_NICKNAME_MAX,
@@ -17,7 +20,7 @@ import { useAvatarStore } from '@/stores/avatarStore'
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const PHOTO_MAX_BYTES = 10 * 1024 * 1024
 
-const readAsDataUrl = (file: File) =>
+const readAsDataUrl = (file: Blob) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result))
@@ -44,6 +47,40 @@ async function loadIdFont(): Promise<void> {
     // The system fallback is used
   }
 }
+
+/** Fetches a URL (app asset, Google Fonts file, blob: profile photo) as a data: URL; data: URLs pass through */
+async function toDataUrl(url: string): Promise<string> {
+  if (url.startsWith('data:')) return url
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`Could not load ${url}`)
+  return readAsDataUrl(await response.blob())
+}
+
+/** Carlito's @font-face with the font files inlined, or '' (the image then falls back to an installed font) */
+async function inlinedFontCss(): Promise<string> {
+  try {
+    let css = await (await fetch(ID_CARLITO_CSS)).text()
+    const urls = [...new Set([...css.matchAll(/url\((https:[^)]+)\)/g)].map((match) => match[1]))]
+    for (const url of urls) css = css.replaceAll(url, await toDataUrl(url))
+    return css
+  } catch {
+    return ''
+  }
+}
+
+/** Replaces every image href in the SVG with a data: URL, since an SVG drawn as an image loads nothing external */
+async function inlineSvgImages(svg: string): Promise<string> {
+  const unescape = (value: string) => value.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+  const hrefs = [...new Set([...svg.matchAll(/<image href="([^"]+)"/g)].map((match) => match[1]))]
+  for (const href of hrefs) {
+    if (href.startsWith('data:')) continue
+    svg = svg.replaceAll(`href="${href}"`, `href="${await toDataUrl(unescape(href))}"`)
+  }
+  return svg
+}
+
+/** Pixels per point for the card image in the downloaded PDF: 300 DPI, print quality */
+const DOWNLOAD_SCALE = 300 / 72
 
 let measureContext: CanvasRenderingContext2D | null = null
 const measureText: MeasureText = (text, size) => {
@@ -195,6 +232,47 @@ export function useIdCard(profileId: Ref<string | null>) {
     step.value = 'form'
   }
 
+  /**
+   * Downloads the print sheet as a PDF: two copies on Letter landscape, at the same places as Print.
+   * Built in this tab; the photo is never uploaded.
+   */
+  const isDownloading = ref(false)
+  async function download() {
+    if (!cardData.value || isDownloading.value) return
+    isDownloading.value = true
+    try {
+      const fontCss = await inlinedFontCss()
+      const svg = await inlineSvgImages(
+        buildIdCardSvg(cardData.value, measureText, window.location.origin, 'gip-id-download', fontCss),
+      )
+      const image = new Image()
+      image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+      await image.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(ID_CARD_SIZE_PT.width * DOWNLOAD_SCALE)
+      canvas.height = Math.round(ID_CARD_SIZE_PT.height * DOWNLOAD_SCALE)
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('No canvas')
+      // JPEG has no transparency: start from white paper
+      context.fillStyle = '#fff'
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      const jpeg = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.95))
+      if (!jpeg) throw new Error('No image')
+      const pdf = buildIdCardSheetPdf(new Uint8Array(await jpeg.arrayBuffer()), canvas.width, canvas.height)
+      const url = URL.createObjectURL(pdf)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = idCardFileName(cardData.value.fullName)
+      link.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch {
+      toast.show('The ID could not be downloaded.', 'error')
+    } finally {
+      isDownloading.value = false
+    }
+  }
+
   function print() {
     if (!cardData.value || isPrinting.value) return
     try {
@@ -229,6 +307,8 @@ export function useIdCard(profileId: Ref<string | null>) {
     backToForm,
     isPrinting,
     print,
+    isDownloading,
+    download,
     reset,
   }
 }

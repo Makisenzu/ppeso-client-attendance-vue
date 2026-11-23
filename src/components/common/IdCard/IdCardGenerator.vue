@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toRef } from 'vue'
-import { ImageOff, Loader2, Printer, Upload, UserRound, X } from '@lucide/vue'
+import { Download, ImageOff, Loader2, Printer, Upload, UserRound, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,6 +39,8 @@ const {
   backToForm,
   isPrinting,
   print,
+  isDownloading,
+  download,
 } = useIdCard(toRef(props, 'profileId'))
 </script>
 
@@ -125,9 +127,16 @@ const {
       <!-- Built from escaped text, app image URLs and the picked photo only (idCardHelper) -->
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="mx-auto w-full max-w-[280px] border shadow-sm [&_svg]:h-auto [&_svg]:w-full" v-html="previewSvg" />
-      <p class="text-center text-[11px] text-muted-foreground">Prints two copies. Print at 100% (Actual size).</p>
-      <div class="flex justify-end gap-2">
-        <Button type="button" variant="outline" size="sm" class="text-xs cursor-pointer" :disabled="isPrinting" @click="backToForm">Back</Button>
+      <p class="text-center text-[11px] text-muted-foreground">
+        Prints two copies. Print at 100% (Actual size). Download saves the same sheet as a PDF.
+      </p>
+      <div class="flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="outline" size="sm" class="text-xs cursor-pointer" :disabled="isPrinting || isDownloading" @click="backToForm">Back</Button>
+        <Button type="button" variant="outline" size="sm" class="gap-1.5 text-xs cursor-pointer" :disabled="isDownloading" @click="download">
+          <Loader2 v-if="isDownloading" class="h-3.5 w-3.5 animate-spin" />
+          <Download v-else class="h-3.5 w-3.5" />
+          <span>{{ isDownloading ? 'Preparing...' : 'Download' }}</span>
+        </Button>
         <Button type="button" size="sm" class="gap-1.5 text-xs cursor-pointer font-semibold" :disabled="isPrinting" @click="print">
           <Loader2 v-if="isPrinting" class="h-3.5 w-3.5 animate-spin" />
           <Printer v-else class="h-3.5 w-3.5" />
