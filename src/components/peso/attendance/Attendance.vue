@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import MobileFilters from '@/components/common/MobileFilters.vue'
-import { Building2, Calendar, CalendarX2, Download, Eye, FileText, Filter, Loader2, RefreshCw, Search, Trash2, Wrench, X } from '@lucide/vue'
+import { Building2, Calendar, CalendarX2, ChevronRight, Download, Eye, FileText, Filter, Loader2, RefreshCw, Search, Trash2, Wrench, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +35,7 @@ import {
 import EditPunchesDialog from './EditPunchesDialog.vue'
 import { useAttendance } from '@/composables/peso/useAttendance'
 import { formatDisplayDateLong } from '@/helpers/common/dateFormatHelper'
+import { getWeekdayShort } from '@/helpers/peso/attendanceHelper'
 import {
   formatDateDisplay,
   formatPunchStatusLabel,
@@ -49,6 +50,17 @@ const {
   attendances,
   filteredAttendances,
   paginatedAttendances,
+  viewLevel,
+  drillDate,
+  drillOfficeName,
+  levelRecords,
+  levelCount,
+  paginatedDateGroups,
+  paginatedOfficeGroups,
+  openDate,
+  openOffice,
+  backToDates,
+  backToOffices,
   availablePositions,
   totalPages,
   statsSummary,
@@ -280,10 +292,18 @@ const checkboxClass =
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle class="text-lg font-semibold flex items-center gap-2">
-              Employee Attendance Record
+              Attendance Record
             </CardTitle>
             <CardDescription class="text-xs">
-              Showing {{ filteredAttendances.length }} of {{ attendances.length }} total records
+              <template v-if="viewLevel === 'dates'">
+                {{ levelCount }} date{{ levelCount === 1 ? '' : 's' }} · {{ filteredAttendances.length }} of {{ attendances.length }} records
+              </template>
+              <template v-else-if="viewLevel === 'offices'">
+                {{ levelCount }} office{{ levelCount === 1 ? '' : 's' }} on {{ formatDisplayDateLong(drillDate) }}
+              </template>
+              <template v-else>
+                {{ levelRecords.length }} record{{ levelRecords.length === 1 ? '' : 's' }} for {{ drillOfficeName }} on {{ formatDisplayDateLong(drillDate) }}
+              </template>
             </CardDescription>
           </div>
 
@@ -442,6 +462,190 @@ const checkboxClass =
       </CardHeader>
 
       <CardContent class="p-0">
+        <!-- ─── Breadcrumb: Date › Office › Records ─── -->
+        <nav
+          v-if="viewLevel !== 'dates'"
+          aria-label="Attendance record levels"
+          class="flex flex-wrap items-center gap-1 border-t bg-muted/20 px-4 py-2 text-xs"
+        >
+          <button type="button" class="font-medium text-primary hover:underline cursor-pointer" @click="backToDates">All dates</button>
+          <ChevronRight class="h-3.5 w-3.5 text-muted-foreground" />
+          <button
+            v-if="viewLevel === 'records'"
+            type="button"
+            class="font-medium text-primary hover:underline cursor-pointer"
+            @click="backToOffices"
+          >
+            {{ formatDisplayDateLong(drillDate) }}
+          </button>
+          <span v-else class="font-semibold text-foreground">{{ formatDisplayDateLong(drillDate) }}</span>
+          <template v-if="viewLevel === 'records'">
+            <ChevronRight class="h-3.5 w-3.5 text-muted-foreground" />
+            <span class="font-semibold text-foreground">{{ drillOfficeName }}</span>
+          </template>
+        </nav>
+
+        <!-- ─── Level 1: dates ─── -->
+        <template v-if="viewLevel === 'dates'">
+          <div class="divide-y border-t md:hidden">
+            <div v-if="isLoading" class="flex justify-center py-10">
+              <Loader2 class="h-6 w-6 animate-spin text-primary" />
+            </div>
+            <template v-else-if="paginatedDateGroups.length > 0">
+              <SwipeRow
+                v-for="group in paginatedDateGroups"
+                :key="group.date"
+                :label="formatDisplayDateLong(group.date)"
+                :actions="[
+                  { id: 'open', label: 'Open', icon: ChevronRight, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openDate(group.date) },
+                ]"
+              >
+                <button type="button" class="min-w-0 flex-1 text-left cursor-pointer" @click="openDate(group.date)">
+                  <p class="truncate text-sm font-semibold text-foreground">
+                    {{ formatDisplayDateLong(group.date) }}
+                    <span class="text-xs font-normal text-muted-foreground">· {{ getWeekdayShort(group.date) }}</span>
+                  </p>
+                  <p class="truncate text-xs text-muted-foreground">
+                    {{ group.present }} present · {{ group.late }} late · {{ group.absent }} absent
+                  </p>
+                </button>
+                <ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground" />
+              </SwipeRow>
+            </template>
+            <p v-else class="py-10 text-center text-xs text-muted-foreground">No attendance records found.</p>
+          </div>
+
+          <div class="relative hidden overflow-x-auto border-t md:block">
+            <Table>
+              <TableHeader class="bg-muted/40">
+                <TableRow>
+                  <TableHead class="min-w-48 text-xs font-semibold">Date</TableHead>
+                    <TableHead class="min-w-20 text-xs font-semibold">Present</TableHead>
+                    <TableHead class="min-w-20 text-xs font-semibold">Late</TableHead>
+                    <TableHead class="min-w-20 text-xs font-semibold">Absent</TableHead>
+                  <TableHead class="w-24 text-right text-xs font-semibold">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                  <TableRow v-if="isLoading">
+                    <TableCell colspan="5" class="h-40 text-center">
+                      <div class="flex flex-col items-center justify-center gap-2">
+                        <Loader2 class="h-7 w-7 animate-spin text-primary" />
+                        <p class="text-xs text-muted-foreground">Loading attendance records...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                <template v-else-if="paginatedDateGroups.length > 0">
+                  <TableRow
+                    v-for="group in paginatedDateGroups"
+                    :key="group.date"
+                    class="cursor-pointer transition-colors hover:bg-muted/30"
+                    @click="openDate(group.date)"
+                  >
+                    <TableCell class="py-3">
+                      <div class="flex flex-col">
+                        <span class="text-xs font-semibold text-foreground sm:text-sm">{{ formatDisplayDateLong(group.date) }}</span>
+                        <span class="text-[11px] text-muted-foreground">{{ getWeekdayShort(group.date) }}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell class="py-3 font-mono text-xs text-emerald-600 dark:text-emerald-400">{{ group.present }}</TableCell>
+                    <TableCell class="py-3 font-mono text-xs text-amber-600 dark:text-amber-400">{{ group.late }}</TableCell>
+                    <TableCell class="py-3 font-mono text-xs text-rose-600 dark:text-rose-400">{{ group.absent }}</TableCell>
+                    <TableCell class="py-3 text-right">
+                      <Button variant="ghost" size="sm" class="h-8 gap-1 text-xs cursor-pointer text-muted-foreground hover:text-foreground" @click.stop="openDate(group.date)">
+                        <span>Offices</span>
+                        <ChevronRight class="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                </template>
+                <TableRow v-else>
+                  <TableCell colspan="5" class="py-10 text-center text-xs text-muted-foreground">
+                    No attendance records match your filters.
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </template>
+
+        <!-- ─── Level 2: offices on the chosen date ─── -->
+        <template v-else-if="viewLevel === 'offices'">
+          <div class="divide-y border-t md:hidden">
+            <template v-if="paginatedOfficeGroups.length > 0">
+              <SwipeRow
+                v-for="group in paginatedOfficeGroups"
+                :key="group.key"
+                :label="group.name"
+                :actions="[
+                  { id: 'open', label: 'Open', icon: ChevronRight, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openOffice(group.key) },
+                ]"
+              >
+                <button type="button" class="min-w-0 flex-1 text-left cursor-pointer" @click="openOffice(group.key)">
+                  <p class="truncate text-sm font-semibold text-foreground">{{ group.name }}</p>
+                  <p class="truncate text-xs text-muted-foreground">
+                    {{ group.present }} present · {{ group.late }} late · {{ group.absent }} absent
+                  </p>
+                </button>
+                <ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground" />
+              </SwipeRow>
+            </template>
+            <p v-else class="py-10 text-center text-xs text-muted-foreground">No offices have records on this date.</p>
+          </div>
+
+          <div class="relative hidden overflow-x-auto border-t md:block">
+            <Table>
+              <TableHeader class="bg-muted/40">
+                <TableRow>
+                  <TableHead class="min-w-56 text-xs font-semibold">Office</TableHead>
+                    <TableHead class="min-w-20 text-xs font-semibold">Present</TableHead>
+                    <TableHead class="min-w-20 text-xs font-semibold">Late</TableHead>
+                    <TableHead class="min-w-20 text-xs font-semibold">Absent</TableHead>
+                  <TableHead class="w-24 text-right text-xs font-semibold">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <template v-if="paginatedOfficeGroups.length > 0">
+                  <TableRow
+                    v-for="group in paginatedOfficeGroups"
+                    :key="group.key"
+                    class="cursor-pointer transition-colors hover:bg-muted/30"
+                    @click="openOffice(group.key)"
+                  >
+                    <TableCell class="py-3">
+                      <div class="flex items-center gap-2">
+                        <span class="truncate text-xs font-semibold text-foreground sm:text-sm">{{ group.name }}</span>
+                        <span
+                          v-if="group.code"
+                          class="rounded border border-border/50 bg-muted/70 px-1.5 py-0.5 font-mono text-[10px] text-foreground"
+                        >
+                          {{ group.code }}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell class="py-3 font-mono text-xs text-emerald-600 dark:text-emerald-400">{{ group.present }}</TableCell>
+                    <TableCell class="py-3 font-mono text-xs text-amber-600 dark:text-amber-400">{{ group.late }}</TableCell>
+                    <TableCell class="py-3 font-mono text-xs text-rose-600 dark:text-rose-400">{{ group.absent }}</TableCell>
+                    <TableCell class="py-3 text-right">
+                      <Button variant="ghost" size="sm" class="h-8 gap-1 text-xs cursor-pointer text-muted-foreground hover:text-foreground" @click.stop="openOffice(group.key)">
+                        <span>Records</span>
+                        <ChevronRight class="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                </template>
+                <TableRow v-else>
+                  <TableCell colspan="5" class="py-10 text-center text-xs text-muted-foreground">
+                    No offices have records on this date.
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </template>
+
+        <!-- ─── Level 3: the day's records for the chosen office ─── -->
+        <template v-else>
         <!-- ─── Bulk Selection Bar ─── -->
         <div
           v-if="selectedCount > 0"
@@ -457,7 +661,7 @@ const checkboxClass =
               class="font-medium text-primary hover:underline cursor-pointer"
               @click="selectAllFiltered"
             >
-              Select all {{ filteredAttendances.length }} matching records
+              Select all {{ levelRecords.length }} matching records
             </button>
             <button
               type="button"
@@ -843,12 +1047,15 @@ const checkboxClass =
           </Table>
         </div>
 
+        </template>
+
         <!-- ─── Table Pagination Footer ─── -->
-        <div v-if="filteredAttendances.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 border-t text-xs text-muted-foreground bg-muted/10">
+        <div v-if="levelCount > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 border-t text-xs text-muted-foreground bg-muted/10">
           <div>
             Showing <span class="font-medium text-foreground">{{ pageRange.start }}</span>
             to <span class="font-medium text-foreground">{{ pageRange.end }}</span>
-            of <span class="font-medium text-foreground">{{ filteredAttendances.length }}</span> records
+            of <span class="font-medium text-foreground">{{ levelCount }}</span>
+            {{ viewLevel === 'dates' ? 'dates' : viewLevel === 'offices' ? 'offices' : 'records' }}
           </div>
 
           <div class="flex items-center gap-2 flex-wrap">

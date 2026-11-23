@@ -155,16 +155,104 @@ export function useAttendance() {
     )
   })
 
+  // ─── Drill-down: Date › Office › that day's records (filters apply at every level) ───
+  const NO_OFFICE = '__none__'
+  const drillDate = ref<string | null>(null)
+  const drillOfficeKey = ref<string | null>(null)
+  const viewLevel = computed<'dates' | 'offices' | 'records'>(() =>
+    !drillDate.value ? 'dates' : drillOfficeKey.value === null ? 'offices' : 'records',
+  )
+  const officeKeyOf = (r: AttendanceRecord) => r.officeId ?? NO_OFFICE
+
+  /** Counts for a group of records: present = any check-in, late = any late punch, absent = flagged absent */
+  const summarize = (records: AttendanceRecord[]) => ({
+    total: records.length,
+    present: records.filter((r) => Boolean(r.amCheckIn || r.pmCheckIn)).length,
+    late: records.filter((r) => getRecordStatuses(r).includes('late')).length,
+    absent: records.filter((r) => isRecordAbsent(r)).length,
+  })
+
+  const dateGroups = computed(() => {
+    const byDate = new Map<string, AttendanceRecord[]>()
+    for (const r of filteredAttendances.value) {
+      const list = byDate.get(r.attendanceDate)
+      if (list) list.push(r)
+      else byDate.set(r.attendanceDate, [r])
+    }
+    return [...byDate.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, records]) => ({
+        date,
+        ...summarize(records),
+      }))
+  })
+
+  const officeGroups = computed(() => {
+    if (!drillDate.value) return []
+    const byOffice = new Map<string, AttendanceRecord[]>()
+    for (const r of filteredAttendances.value) {
+      if (r.attendanceDate !== drillDate.value) continue
+      const key = officeKeyOf(r)
+      const list = byOffice.get(key)
+      if (list) list.push(r)
+      else byOffice.set(key, [r])
+    }
+    return [...byOffice.entries()]
+      .map(([key, records]) => ({
+        key,
+        name: records[0].officeName || 'No office assigned',
+        code: records[0].officeCode,
+        ...summarize(records),
+      }))
+      .sort((a, b) => (a.key === NO_OFFICE ? 1 : b.key === NO_OFFICE ? -1 : a.name.localeCompare(b.name)))
+  })
+
+  /** The records of the chosen date and office (the last level) */
+  const levelRecords = computed<AttendanceRecord[]>(() => {
+    if (!drillDate.value || drillOfficeKey.value === null) return []
+    return filteredAttendances.value.filter(
+      (r) => r.attendanceDate === drillDate.value && officeKeyOf(r) === drillOfficeKey.value,
+    )
+  })
+
+  const drillOfficeName = computed(
+    () => officeGroups.value.find((o) => o.key === drillOfficeKey.value)?.name ?? 'No office assigned',
+  )
+
+  const openDate = (date: string) => {
+    drillDate.value = date
+    drillOfficeKey.value = null
+  }
+  const openOffice = (key: string) => {
+    drillOfficeKey.value = key
+  }
+  const backToDates = () => {
+    drillDate.value = null
+    drillOfficeKey.value = null
+  }
+  const backToOffices = () => {
+    drillOfficeKey.value = null
+  }
+
+  /** How many rows the current level pages through */
+  const levelCount = computed<number>(() =>
+    viewLevel.value === 'dates'
+      ? dateGroups.value.length
+      : viewLevel.value === 'offices'
+        ? officeGroups.value.length
+        : levelRecords.value.length,
+  )
+
   // ─── Pagination ───
   const totalPages = computed<number>(() => {
-    const count = Math.ceil(filteredAttendances.value.length / pageSize.value)
+    const count = Math.ceil(levelCount.value / pageSize.value)
     return count > 0 ? count : 1
   })
 
-  const paginatedAttendances = computed<AttendanceRecord[]>(() => {
-    const start = (currentPage.value - 1) * pageSize.value
-    return filteredAttendances.value.slice(start, start + pageSize.value)
-  })
+  const pageSlice = <T>(list: T[]) => list.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value)
+  const paginatedAttendances = computed<AttendanceRecord[]>(() => pageSlice(levelRecords.value))
+  const paginatedDateGroups = computed(() => pageSlice(dateGroups.value))
+  const paginatedOfficeGroups = computed(() => pageSlice(officeGroups.value))
 
   // Auto reset page to 1 whenever any filter changes
   watch(
@@ -175,13 +263,15 @@ export function useAttendance() {
       selectedDateFilter,
       customDateFilter,
       pageSize,
+      drillDate,
+      drillOfficeKey,
     ],
     () => {
       currentPage.value = 1
     }
   )
 
-  watch([filteredAttendances, totalPages], () => {
+  watch([levelCount, totalPages], () => {
     if (currentPage.value > totalPages.value) {
       currentPage.value = 1
     }
@@ -432,7 +522,7 @@ export function useAttendance() {
   const selectedCount = computed<number>(() => selectedIds.value.size)
 
   const selectedRecords = computed<AttendanceRecord[]>(() =>
-    filteredAttendances.value.filter((r) => selectedIds.value.has(r.id)),
+    levelRecords.value.filter((r) => selectedIds.value.has(r.id)),
   )
 
   const isAllPageSelected = computed<boolean>(() =>
@@ -446,8 +536,8 @@ export function useAttendance() {
   )
 
   const isAllFilteredSelected = computed<boolean>(() =>
-    filteredAttendances.value.length > 0 &&
-    selectedIds.value.size === filteredAttendances.value.length,
+    levelRecords.value.length > 0 &&
+    selectedIds.value.size === levelRecords.value.length,
   )
 
   const isSelected = (id: string) => selectedIds.value.has(id)
@@ -470,7 +560,7 @@ export function useAttendance() {
   }
 
   const selectAllFiltered = () => {
-    selectedIds.value = new Set(filteredAttendances.value.map((r) => r.id))
+    selectedIds.value = new Set(levelRecords.value.map((r) => r.id))
   }
 
   const clearSelection = () => {
@@ -479,7 +569,7 @@ export function useAttendance() {
 
   // Keep the selection limited to records that are still visible under the
   // current filters, so a bulk delete never touches hidden rows.
-  watch(filteredAttendances, (records) => {
+  watch(levelRecords, (records) => {
     if (selectedIds.value.size === 0) return
     const visible = new Set(records.map((r) => r.id))
     const pruned = new Set([...selectedIds.value].filter((id) => visible.has(id)))
@@ -537,7 +627,7 @@ export function useAttendance() {
 
   // ─── Pagination display ───
   const pageRange = computed(() =>
-    getPageRange(currentPage.value, pageSize.value, filteredAttendances.value.length),
+    getPageRange(currentPage.value, pageSize.value, levelCount.value),
   )
   const firstVisiblePage = computed(() => visiblePages.value[0] ?? 1)
   const lastVisiblePage = computed(() => visiblePages.value[visiblePages.value.length - 1] ?? 1)
@@ -610,6 +700,19 @@ export function useAttendance() {
     confirmBulkDelete,
     attendances,
     filteredAttendances,
+    viewLevel,
+    drillDate,
+    drillOfficeName,
+    dateGroups,
+    officeGroups,
+    levelRecords,
+    levelCount,
+    paginatedDateGroups,
+    paginatedOfficeGroups,
+    openDate,
+    openOffice,
+    backToDates,
+    backToOffices,
     paginatedAttendances,
     availablePositions,
     totalPages,
