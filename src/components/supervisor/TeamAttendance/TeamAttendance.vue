@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import PersonAvatar from '@/components/common/PersonAvatar.vue'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
@@ -296,9 +296,7 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
                   >
                     <TableCell class="py-3 pl-4">
                       <div class="flex items-center gap-2.5 min-w-0">
-                        <Avatar class="h-8 w-8 text-xs shrink-0 font-medium">
-                          <AvatarFallback class="bg-primary/10 text-primary">{{ getInitials(record.fullName) }}</AvatarFallback>
-                        </Avatar>
+                        <PersonAvatar :path="record.avatarPath" :initials="getInitials(record.fullName)" :alt="record.fullName" class="h-8 w-8 text-xs shrink-0 font-medium" fallback-class="bg-primary/10 text-primary" />
                         <div class="min-w-0">
                           <p class="truncate text-xs font-semibold text-foreground">{{ record.fullName }}</p>
                           <p class="text-[11px] text-muted-foreground">{{ formatPositionLabel(record.position) }}</p>
@@ -446,9 +444,7 @@ const badgeClass = 'text-[10px] font-mono capitalize px-1.5 py-0 h-4'
 
         <div v-if="selectedRecord" class="space-y-4 py-2">
           <div class="flex items-center gap-3">
-            <Avatar class="h-10 w-10 shrink-0 text-sm font-medium">
-              <AvatarFallback class="bg-primary/10 text-primary">{{ getInitials(selectedRecord.fullName) }}</AvatarFallback>
-            </Avatar>
+            <PersonAvatar :path="selectedRecord.avatarPath" :initials="getInitials(selectedRecord.fullName)" :alt="selectedRecord.fullName" class="h-10 w-10 shrink-0 text-sm font-medium" fallback-class="bg-primary/10 text-primary" />
             <div class="min-w-0">
               <p class="truncate text-sm font-semibold text-foreground">{{ selectedRecord.fullName }}</p>
               <p class="text-xs text-muted-foreground">{{ formatPositionLabel(selectedRecord.position) }}</p>

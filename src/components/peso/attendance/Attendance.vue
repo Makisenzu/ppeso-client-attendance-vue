@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import PersonAvatar from '@/components/common/PersonAvatar.vue'
 import {
   Dialog,
   DialogContent,
@@ -578,11 +578,7 @@ const checkboxClass =
                   <!-- 1. Beneficiary (profile_id) -->
                   <TableCell class="py-3">
                     <div class="flex items-center gap-2.5">
-                      <Avatar class="h-8 w-8 text-xs shrink-0 font-medium">
-                        <AvatarFallback class="bg-primary/10 text-primary">
-                          {{ getInitials(record.fullName) }}
-                        </AvatarFallback>
-                      </Avatar>
+                      <PersonAvatar :path="record.avatarPath" :initials="getInitials(record.fullName)" :alt="record.fullName" class="h-8 w-8 text-xs shrink-0 font-medium" fallback-class="bg-primary/10 text-primary" />
                       <div class="flex flex-col min-w-0">
                         <span class="font-semibold text-xs sm:text-sm text-foreground truncate">
                           {{ record.fullName }}
@@ -928,9 +924,7 @@ const checkboxClass =
 
         <div v-if="selectedRecord" class="space-y-4 py-2">
           <div class="flex items-center gap-3">
-            <Avatar class="h-10 w-10 shrink-0 text-sm font-medium">
-              <AvatarFallback class="bg-primary/10 text-primary">{{ getInitials(selectedRecord.fullName) }}</AvatarFallback>
-            </Avatar>
+            <PersonAvatar :path="selectedRecord.avatarPath" :initials="getInitials(selectedRecord.fullName)" :alt="selectedRecord.fullName" class="h-10 w-10 shrink-0 text-sm font-medium" fallback-class="bg-primary/10 text-primary" />
             <div class="min-w-0 space-y-1">
               <p class="truncate text-sm font-semibold text-foreground">{{ selectedRecord.fullName }}</p>
               <div class="flex flex-wrap items-center gap-1.5">

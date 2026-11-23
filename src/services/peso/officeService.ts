@@ -47,7 +47,7 @@ export const officeService = {
   async getOfficeGips(officeId: string): Promise<OfficeGipRecord[]> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, firstname, middlename, lastname, status, created_at')
+      .select('id, firstname, middlename, lastname, status, created_at, avatar_path')
       .eq('office_id', officeId)
       .eq('position', 'gip')
       .order('lastname', { ascending: true })
@@ -58,6 +58,7 @@ export const officeService = {
     return (data ?? []).map((p) => ({
       id: p.id,
       fullName: [p.firstname, p.middlename, p.lastname].filter(Boolean).join(' ').trim() || 'Unknown',
+      avatarPath: p.avatar_path,
       status: p.status,
       createdAt: p.created_at,
     }))

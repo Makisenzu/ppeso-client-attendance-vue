@@ -41,6 +41,8 @@ export interface OfficeSummary {
 export interface OfficeGipRecord {
   id: string
   fullName: string
+  /** profiles.avatar_path: profile picture in the private avatars bucket */
+  avatarPath: string | null
   status: Database['public']['Enums']['profile_status']
   createdAt: string
 }

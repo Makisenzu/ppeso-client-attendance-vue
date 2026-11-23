@@ -56,7 +56,7 @@ export const teamService = {
   async getTeamMembers(officeId: string): Promise<TeamMember[]> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, firstname, middlename, lastname, position, status')
+      .select('id, firstname, middlename, lastname, position, status, avatar_path')
       .eq('office_id', officeId)
       .eq('role', 'beneficiary')
       .order('lastname', { ascending: true })
@@ -66,6 +66,7 @@ export const teamService = {
       fullName: formatNameWithMiddleInitial(p.firstname, p.middlename, p.lastname),
       position: p.position,
       status: p.status,
+      avatarPath: p.avatar_path,
     }))
   },
 
@@ -87,6 +88,7 @@ export const teamService = {
           id: row.id,
           profileId: row.profile_id,
           fullName: member?.fullName ?? 'Unknown',
+          avatarPath: member?.avatarPath ?? null,
           position: member?.position ?? null,
           attendanceDate: row.attendance_date,
           amCheckIn: row.am_check_in,

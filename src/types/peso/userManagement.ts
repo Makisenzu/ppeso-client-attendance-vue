@@ -21,6 +21,8 @@ export interface ProfileRecord {
   funding: ReportFunding | null
   officeName?: string | null
   officeCode?: string | null
+  /** profiles.avatar_path: profile picture in the private avatars bucket */
+  avatarPath?: string | null
   createdAt: string
   updatedAt: string | null
 }

@@ -3,7 +3,7 @@ import { ArrowLeft, Check, ChevronDown, FileText, Loader2, Printer, Search, X } 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import PersonAvatar from '@/components/common/PersonAvatar.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import DtrPrintSheet from './DtrPrintSheet.vue'
@@ -113,11 +113,7 @@ const {
                 @click="isEmployeeDropdownOpen = !isEmployeeDropdownOpen"
               >
                 <div v-if="selectedEmployee" class="flex min-w-0 items-center gap-2.5">
-                  <Avatar class="h-7 w-7 shrink-0 border text-xs">
-                    <AvatarFallback class="bg-primary/10 font-semibold text-primary">
-                      {{ getInitials(selectedEmployee.fullName) }}
-                    </AvatarFallback>
-                  </Avatar>
+                  <PersonAvatar :path="selectedEmployee.avatarPath" :initials="getInitials(selectedEmployee.fullName)" :alt="selectedEmployee.fullName" class="h-7 w-7 shrink-0 border text-xs" fallback-class="bg-primary/10 font-semibold text-primary" />
                   <div class="min-w-0">
                     <div class="truncate text-xs font-semibold leading-none text-foreground">
                       {{ selectedEmployee.fullName }}
@@ -158,11 +154,7 @@ const {
                     @click="selectEmployee(p.id)"
                   >
                     <div class="flex min-w-0 items-center gap-2.5">
-                      <Avatar class="h-6 w-6 shrink-0 border text-[10px]">
-                        <AvatarFallback class="bg-primary/10 font-semibold text-primary">
-                          {{ getInitials(p.fullName) }}
-                        </AvatarFallback>
-                      </Avatar>
+                      <PersonAvatar :path="p.avatarPath" :initials="getInitials(p.fullName)" :alt="p.fullName" class="h-6 w-6 shrink-0 border text-[10px]" fallback-class="bg-primary/10 font-semibold text-primary" />
                       <div class="min-w-0">
                         <div class="truncate font-medium text-foreground">{{ p.fullName }}</div>
                         <div class="text-[10px] capitalize text-muted-foreground">

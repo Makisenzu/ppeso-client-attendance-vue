@@ -344,6 +344,8 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261119000200_pacd_files_xlsx.sql` | `pacd_files` and bucket `pacd-files` also accept Excel (.xlsx) |
 | `20261119000300_kiosk_role.sql` | `profile_roles` gains `kiosk` (an office's PACD computer) |
 | `20261119000400_office_kiosks.sql` | `core.record_punch()` (the only punch path; office kiosks: own office only, wrong-passcode lockout), `core.kiosk_today_punches()`, `core.list_kiosk_accounts()` (admin), `core.kiosk_failed_attempts`, `core.attendances.recorded_by`; kiosk accounts get no passcode and are never flagged absent |
+| `20261123000000_admin_edit_attendance.sql` | `core.admin_update_attendance()` (admin Edit DTR); punch trigger skips its cooldown for that edit |
+| `20261123000100_avatars_supervisor_read.sql` | `avatars` read policy also lets supervisors open their own office members' photos (DTR tables) |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).

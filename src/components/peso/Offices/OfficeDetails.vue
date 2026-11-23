@@ -12,7 +12,7 @@ import { formatStatusLabel as formatOfficeStatus, getStatusBadgeClass as getOffi
 import { formatStatusLabel as formatProfileStatus, getStatusBadgeClass as getProfileStatusClass } from '@/helpers/peso/userManagementHelper'
 import { getInitials } from '@/helpers/peso/attendanceHelper'
 import { formatDisplayDateLong } from '@/helpers/common/dateFormatHelper'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import PersonAvatar from '@/components/common/PersonAvatar.vue'
 
 const {
   office,
@@ -199,9 +199,7 @@ const COLUMN_COUNT = 4
                   </TableCell>
                   <TableCell class="py-3">
                     <div class="flex items-center gap-2.5">
-                      <Avatar class="h-8 w-8 shrink-0 text-xs font-medium">
-                        <AvatarFallback class="bg-primary/10 text-primary">{{ getInitials(gip.fullName) }}</AvatarFallback>
-                      </Avatar>
+                      <PersonAvatar :path="gip.avatarPath" :initials="getInitials(gip.fullName)" :alt="gip.fullName" class="h-8 w-8 shrink-0 text-xs font-medium" fallback-class="bg-primary/10 text-primary" />
                       <span class="truncate text-xs font-semibold text-foreground sm:text-sm">{{ gip.fullName }}</span>
                     </div>
                   </TableCell>

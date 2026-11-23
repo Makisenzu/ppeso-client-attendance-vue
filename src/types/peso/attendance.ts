@@ -12,6 +12,8 @@ export interface AttendanceRecord {
 
   // Personnel Info (from public.profiles)
   fullName: string
+  /** profiles.avatar_path: profile picture in the private avatars bucket */
+  avatarPath: string | null
   firstName: string
   lastName: string
   middleName?: string | null

@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import PersonAvatar from '@/components/common/PersonAvatar.vue'
 import {
   Dialog,
   DialogContent,
@@ -413,11 +413,7 @@ const {
                   <!-- 1. User (Avatar + Name + Position Badge) -->
                   <TableCell class="py-3">
                     <div class="flex items-center gap-2.5">
-                      <Avatar class="h-8 w-8 text-xs shrink-0 font-medium">
-                        <AvatarFallback class="bg-primary/10 text-primary">
-                          {{ getInitials(profile.fullName) }}
-                        </AvatarFallback>
-                      </Avatar>
+                      <PersonAvatar :path="profile.avatarPath" :initials="getInitials(profile.fullName)" :alt="profile.fullName" class="h-8 w-8 text-xs shrink-0 font-medium" fallback-class="bg-primary/10 text-primary" />
                       <div class="flex flex-col min-w-0">
                         <span class="font-semibold text-xs sm:text-sm text-foreground truncate">
                           {{ profile.fullName }}
@@ -627,11 +623,7 @@ const {
         <div v-if="selectedProfile" class="space-y-4 py-2 text-xs">
           <!-- Personnel Card -->
           <div class="flex items-center gap-3 p-3 rounded-lg border bg-muted/20">
-            <Avatar class="h-10 w-10 text-sm font-semibold">
-              <AvatarFallback class="bg-primary/10 text-primary">
-                {{ getInitials(selectedProfile.fullName) }}
-              </AvatarFallback>
-            </Avatar>
+            <PersonAvatar :path="selectedProfile.avatarPath" :initials="getInitials(selectedProfile.fullName)" :alt="selectedProfile.fullName" class="h-10 w-10 text-sm font-semibold" fallback-class="bg-primary/10 text-primary" />
             <div class="min-w-0 space-y-0.5">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="font-semibold text-sm text-foreground">

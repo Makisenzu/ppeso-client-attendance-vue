@@ -14,12 +14,15 @@ export interface TeamMember {
   fullName: string
   position: ProfilePosition
   status: ProfileStatus | null
+  /** profiles.avatar_path: profile picture in the private avatars bucket */
+  avatarPath: string | null
 }
 
 /** One daily time record of a team member (punches + who it belongs to). */
 export interface TeamAttendanceRecord extends MyAttendanceRecord {
   profileId: string
   fullName: string
+  avatarPath: string | null
   position: ProfilePosition | null
 }
 

@@ -117,7 +117,9 @@ every evaluation; a supervisor reads the active questions and writes this month'
 office (drafts editable, submitted ones locked — `core.check_gip_evaluation`). GIPs can't read evaluations or questions.
 
 **Profile pictures** (Storage bucket `avatars`, private): each user reads / writes only `<their id>/…`; admins read
-(GIP IDs) and delete (account deletion — done from the client, since SQL can't delete storage files).
+(GIP IDs, DTR tables) and delete (account deletion — done from the client, since SQL can't delete storage files);
+supervisors read the photos of their own office's members (`private.supervises`, migration `20261123000100`), for the
+Team Attendance table. Photos open through short-lived signed URLs only (`PersonAvatar` / `useAvatarUrl`).
 
 **Files** (`core.pacd_files` + Storage bucket `pacd-files`, private): admins only — read, upload, edit details and
 delete. Files open with 10-minute signed URLs.
