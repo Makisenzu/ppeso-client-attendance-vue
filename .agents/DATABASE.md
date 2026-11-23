@@ -237,7 +237,8 @@ only active GIPs (`position = gip`), only the current month, no changes once Sub
 | `public.set_profile_passcode()` | `BEFORE INSERT OR UPDATE OF role, passcode ON profiles`, DEFINER | Admin / supervisor role → passcode NULL; any other role → unique 6-digit passcode if missing |
 | `public.guard_profile_update()` | `BEFORE UPDATE ON profiles` (`trg_guard_profile_update`), DEFINER | Non-admin API callers may change only their own name fields; sets `updated_at` |
 | `public.admin_delete_user(uuid)` | DEFINER, RPC for `authenticated` | Admin-only (not self): deletes the `auth.users` row; profile and attendance cascade |
-| `core.calculate_punch_status()` | `BEFORE INSERT OR UPDATE ON attendances` | 5-minute cooldown between punches (`'Already Recorded'`); fills statuses left null |
+| `core.calculate_punch_status()` | `BEFORE INSERT OR UPDATE ON attendances` | 5-minute cooldown between punches (`'Already Recorded'`); fills statuses left null. Cooldown skipped inside `core.admin_update_attendance` |
+| `core.admin_update_attendance(uuid, time×4)` | DEFINER, RPC for `authenticated` | Admin-only Edit DTR: sets a day's four punches (Philippine times, null clears), checks their order, recomputes statuses like `record_punch`; cleared absent punches stay `absent` |
 | `core.flag_daily_absences(date)` | DEFINER, called by pg_cron | Marks missing punches `absent` for active, non-client profiles that use the kiosk (not admins / supervisors / kiosk accounts); skips dates in `public.holidays` |
 | `private.user_role()`, `user_office_id()`, `is_admin()`, `is_supervisor()`, `supervises(uuid)` | DEFINER, `private` schema | RLS helpers (SECURITY.md §4.3) |
 

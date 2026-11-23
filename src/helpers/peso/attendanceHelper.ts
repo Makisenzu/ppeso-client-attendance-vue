@@ -63,6 +63,19 @@ export function formatTimeDisplay(timeStr?: string | null): string {
   return trimmed
 }
 
+/** A punch timestamp as the "HH:MM" Philippine time a time input expects ('' when there is no punch) */
+export function toManilaTimeInput(timestamp?: string | null): string {
+  if (!timestamp) return ''
+  const d = new Date(timestamp)
+  if (isNaN(d.getTime())) return ''
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Manila',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(d)
+}
+
 export function formatDateTimeDisplay(dateStr?: string | null): string {
   if (!dateStr) return '—'
   try {

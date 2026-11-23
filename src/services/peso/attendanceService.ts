@@ -1,5 +1,5 @@
 import { supabase } from '@/services/supabase'
-import type { AttendanceRecord } from '@/types/peso/attendance'
+import type { AttendanceRecord, AttendancePunchTimes } from '@/types/peso/attendance'
 
 export const attendanceService = {
   async getAttendances(): Promise<AttendanceRecord[]> {
@@ -222,6 +222,22 @@ export const attendanceService = {
         }
       })
     } catch {}
+  },
+
+  /**
+   * Admin edit of a day's four punches (Philippine "HH:MM" times, null clears a punch).
+   * core.admin_update_attendance() checks the admin role and the punch order, and recomputes the statuses.
+   */
+  async updateAttendancePunches(id: string, times: AttendancePunchTimes): Promise<void> {
+    const { error } = await supabase.schema('core').rpc('admin_update_attendance', {
+      p_id: id,
+      p_am_in: times.amIn ?? undefined,
+      p_am_out: times.amOut ?? undefined,
+      p_pm_in: times.pmIn ?? undefined,
+      p_pm_out: times.pmOut ?? undefined,
+    })
+    if (error) throw new Error(error.message)
+    this.notifyAttendanceChange()
   },
 
   /**

@@ -325,6 +325,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_attendance: {
+        Args: {
+          p_am_in?: string
+          p_am_out?: string
+          p_id: string
+          p_pm_in?: string
+          p_pm_out?: string
+        }
+        Returns: undefined
+      }
       flag_daily_absences: {
         Args: { target_date?: string }
         Returns: undefined

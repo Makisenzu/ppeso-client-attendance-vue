@@ -1,7 +1,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPageRange } from '@/helpers/common/paginationHelper'
-import type { AttendanceRecord, AttendanceStatsSummary } from '@/types/peso/attendance'
+import type { AttendancePunchTimes, AttendanceRecord, AttendanceStatsSummary } from '@/types/peso/attendance'
 import { attendanceService } from '@/services/peso/attendanceService'
 import {
   computeAttendanceStats,
@@ -13,6 +13,7 @@ import {
   isRecordAbsent,
   recordMatchesDate,
   recordMatchesStatus,
+  toManilaTimeInput,
 } from '@/helpers/peso/attendanceHelper'
 import { useToastAlert } from '@/composables/common/useToastAlert'
 
@@ -355,6 +356,79 @@ export function useAttendance() {
   }
 
   // ─── Bulk Selection & Delete ───
+  // ─── Edit DTR (admin): correct a day's four punches; the database recomputes the statuses ───
+  const recordToEdit = ref<AttendanceRecord | null>(null)
+  const isEditDialogOpen = ref<boolean>(false)
+  const isSavingEdit = ref<boolean>(false)
+  const editError = ref<string>('')
+  const editForm = ref<Record<keyof AttendancePunchTimes, string>>({ amIn: '', amOut: '', pmIn: '', pmOut: '' })
+  const editSlots: { key: keyof AttendancePunchTimes; label: string }[] = [
+    { key: 'amIn', label: 'AM Check In' },
+    { key: 'amOut', label: 'AM Check Out' },
+    { key: 'pmIn', label: 'PM Check In' },
+    { key: 'pmOut', label: 'PM Check Out' },
+  ]
+
+  const openEditDialog = (record: AttendanceRecord) => {
+    recordToEdit.value = record
+    editForm.value = {
+      amIn: toManilaTimeInput(record.amCheckIn),
+      amOut: toManilaTimeInput(record.amCheckOut),
+      pmIn: toManilaTimeInput(record.pmCheckIn),
+      pmOut: toManilaTimeInput(record.pmCheckOut),
+    }
+    editError.value = ''
+    isEditDialogOpen.value = true
+  }
+
+  const closeEditDialog = () => {
+    if (isSavingEdit.value) return
+    isEditDialogOpen.value = false
+    recordToEdit.value = null
+    editError.value = ''
+  }
+
+  const clearEditSlot = (key: keyof AttendancePunchTimes) => {
+    editForm.value[key] = ''
+  }
+
+  const confirmEdit = async (): Promise<boolean> => {
+    if (!recordToEdit.value) return false
+    const f = editForm.value
+    const times: AttendancePunchTimes = {
+      amIn: f.amIn || null,
+      amOut: f.amOut || null,
+      pmIn: f.pmIn || null,
+      pmOut: f.pmOut || null,
+    }
+    // Same order rule the database enforces, checked here for a quicker message
+    const filled = [times.amIn, times.amOut, times.pmIn, times.pmOut].filter((t): t is string => Boolean(t))
+    if (filled.some((t, i) => i > 0 && t <= filled[i - 1])) {
+      editError.value = 'Punch times must be in order: AM in, AM out, PM in, PM out.'
+      return false
+    }
+    if (times.amOut && !times.amIn) {
+      editError.value = 'Morning Check-Out needs a Morning Check-In.'
+      return false
+    }
+    const empName = recordToEdit.value.fullName || 'Employee'
+    isSavingEdit.value = true
+    editError.value = ''
+    try {
+      await attendanceService.updateAttendancePunches(recordToEdit.value.id, times)
+      isEditDialogOpen.value = false
+      recordToEdit.value = null
+      showFeedback(`DTR for ${empName} was updated.`, 'success')
+      await fetchAttendances()
+      return true
+    } catch (err) {
+      editError.value = err instanceof Error ? err.message : 'Failed to update the DTR. Please try again.'
+      return false
+    } finally {
+      isSavingEdit.value = false
+    }
+  }
+
   const selectedIds = ref<Set<string>>(new Set())
   const isBulkDeleteDialogOpen = ref<boolean>(false)
   const isBulkDeleting = ref<boolean>(false)
@@ -508,6 +582,16 @@ export function useAttendance() {
     openDtrPage,
     generateDtrFromDetails,
     detailPunches,
+    recordToEdit,
+    isEditDialogOpen,
+    isSavingEdit,
+    editError,
+    editForm,
+    editSlots,
+    openEditDialog,
+    closeEditDialog,
+    clearEditSlot,
+    confirmEdit,
     selectedCount,
     selectedRecords,
     isAllPageSelected,

@@ -64,3 +64,11 @@ export interface AttendanceFilterState {
   dateFilter: 'ALL' | 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom'
   customDateFilter?: string
 }
+
+/** A day's four punches as Philippine local "HH:MM" times for the admin Edit DTR dialog; null = no punch */
+export interface AttendancePunchTimes {
+  amIn: string | null
+  amOut: string | null
+  pmIn: string | null
+  pmOut: string | null
+}

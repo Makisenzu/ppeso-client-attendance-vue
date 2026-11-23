@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import MobileFilters from '@/components/common/MobileFilters.vue'
-import { Building2, Calendar, CalendarX2, Download, Eye, FileText, Filter, Loader2, RefreshCw, Search, Trash2, X } from '@lucide/vue'
+import { Building2, Calendar, CalendarX2, Download, Eye, FileText, Filter, Loader2, RefreshCw, Search, Trash2, Wrench, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -77,6 +77,16 @@ const {
   openDetails,
   detailPunches,
   closeDetails,
+  recordToEdit,
+  isEditDialogOpen,
+  isSavingEdit,
+  editError,
+  editForm,
+  editSlots,
+  openEditDialog,
+  closeEditDialog,
+  clearEditSlot,
+  confirmEdit,
   exportCsv,
   selectedCount,
   selectedRecords,
@@ -470,6 +480,7 @@ const checkboxClass =
               :label="record.fullName"
               :actions="[
                 { id: 'delete', label: 'Delete', icon: Trash2, onSelect: () => openDeleteDialog(record) },
+                { id: 'edit', label: 'Edit', icon: Wrench, color: 'var(--primary)', textColor: 'var(--primary-foreground)', onSelect: () => openEditDialog(record) },
                 { id: 'view', label: 'View', icon: Eye, onSelect: () => openDetails(record) },
               ]"
             >
@@ -752,9 +763,18 @@ const checkboxClass =
                     <span v-else class="text-muted-foreground/60 text-xs font-mono">—</span>
                   </TableCell>
 
-                  <!-- 7. Actions / Delete (no Details here: the row already shows every punch; mobile keeps View) -->
+                  <!-- 7. Actions / Edit DTR, Delete (no Details here: the row already shows every punch; mobile keeps View) -->
                   <TableCell class="py-3 text-right">
                     <div class="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
+                        title="Edit DTR"
+                        @click="openEditDialog(record)"
+                      >
+                        <Wrench class="h-3.5 w-3.5" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -957,6 +977,76 @@ const checkboxClass =
             Close
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- ─── Edit DTR Dialog (admin) ─── -->
+    <Dialog :open="isEditDialogOpen" @update:open="(val) => (!val ? closeEditDialog() : null)">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Wrench class="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle class="text-base font-semibold text-foreground">Edit DTR</DialogTitle>
+              <DialogDescription class="text-xs text-muted-foreground mt-0.5">
+                <template v-if="recordToEdit">
+                  {{ recordToEdit.fullName }} · {{ formatDateDisplay(recordToEdit.attendanceDate) }}.
+                </template>
+                Statuses are recalculated from the times. Leave a punch empty to clear it.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <form class="space-y-3" @submit.prevent="confirmEdit">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div v-for="slot in editSlots" :key="slot.key" class="space-y-1.5">
+              <label :for="`edit-dtr-${slot.key}`" class="text-xs font-medium text-foreground">{{ slot.label }}</label>
+              <div class="flex items-center gap-1">
+                <Input
+                  :id="`edit-dtr-${slot.key}`"
+                  v-model="editForm[slot.key]"
+                  type="time"
+                  class="h-9 min-w-0 flex-1 text-base md:text-xs font-mono"
+                  :disabled="isSavingEdit"
+                />
+                <Button
+                  v-if="editForm[slot.key]"
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                  :title="`Clear ${slot.label}`"
+                  :disabled="isSavingEdit"
+                  @click="clearEditSlot(slot.key)"
+                >
+                  <X class="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <p v-if="editError" class="text-[11px] text-destructive">{{ editError }}</p>
+
+          <DialogFooter class="gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              class="text-xs cursor-pointer"
+              :disabled="isSavingEdit"
+              @click="closeEditDialog"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" class="text-xs cursor-pointer gap-1.5" :disabled="isSavingEdit">
+              <Loader2 v-if="isSavingEdit" class="h-3.5 w-3.5 animate-spin" />
+              <span>{{ isSavingEdit ? 'Saving...' : 'Save Changes' }}</span>
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
 
