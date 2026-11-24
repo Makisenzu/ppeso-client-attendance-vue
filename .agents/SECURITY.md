@@ -159,6 +159,9 @@ The client-callable DEFINER functions on `auth.users` all check `private.is_admi
 row (profile + attendance cascade); `public.admin_get_user_email(uuid)` / `public.admin_update_user_email(uuid, text)`
 (User Management → Edit User) read and change the sign-in email (validated, unique, confirmed right away; the email
 identity follows). Emails are fetched only when the edit panel opens, never in the user list.
+`public.login_email_exists(text)` is the one DEFINER function `anon` may call: after a failed sign-in, the login page
+asks it whether the email has an account, so only the wrong field is marked. It returns a boolean only. This allows
+email enumeration — an accepted trade-off (11/24/2026); never widen it to return any other data.
 
 They are `SECURITY DEFINER` (owner `postgres`, bypasses RLS — no policy recursion), `STABLE`, `SET search_path = ''`.
 The `private` schema is not exposed through the Data API, so they cannot be called as RPCs.

@@ -625,6 +625,7 @@ export type Database = {
         Args: { new_email: string; target_user_id: string }
         Returns: undefined
       }
+      login_email_exists: { Args: { p_email: string }; Returns: boolean }
     }
     Enums: {
       profile_position: "employee" | "gip" | "tupad" | "client" | "admin"

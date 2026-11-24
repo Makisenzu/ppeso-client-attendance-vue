@@ -6,6 +6,9 @@ export type UserProfile = Pick<
   'firstname' | 'middlename' | 'lastname' | 'position' | 'role' | 'status' | 'avatar_path'
 >
 
+/** Thrown by `signIn` when Supabase rejects the email / password pair. */
+export class InvalidCredentialsError extends Error {}
+
 export const authService = {
   /**
    * Get the current authenticated user
@@ -42,7 +45,18 @@ export const authService = {
    */
   async signIn(email: string, password: string): Promise<void> {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error?.code === 'invalid_credentials') throw new InvalidCredentialsError(error.message)
     if (error) throw new Error(error.message)
+  },
+
+  /**
+   * After a failed sign-in: does an account use this email? (`login_email_exists`, boolean only.)
+   * Lets the login page mark only the wrong field. `null` when the check itself fails.
+   */
+  async emailExists(email: string): Promise<boolean | null> {
+    const { data, error } = await supabase.rpc('login_email_exists', { p_email: email.trim() })
+    if (error) return null
+    return data === true
   },
 
   /**

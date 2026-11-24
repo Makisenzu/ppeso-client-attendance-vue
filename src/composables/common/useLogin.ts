@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMediaQuery } from '@vueuse/core'
 import { useAuthForm } from '@/composables/useAuthForm'
-import { authService } from '@/services/common/authService'
+import { authService, InvalidCredentialsError } from '@/services/common/authService'
 import { useAuthStore, getDashboardByRole } from '@/stores/authStore'
 
 /** Login page: signs in, loads the role, and opens that role's dashboard. */
@@ -28,7 +28,7 @@ export function useLogin() {
     return !emailError.value && !passwordError.value
   }
 
-  // ─── Shake: a wrong field shakes on submit. Sign-in can't tell which one was wrong, so both shake. ───
+  // ─── Shake: only the wrong field shakes (and gets the red border) on submit ───
   const emailShake = ref(false)
   const passwordShake = ref(false)
 
@@ -65,11 +65,30 @@ export function useLogin() {
     }
 
     const signedIn = await runAuthAction(async () => {
-      await authService.signIn(email.value, password.value)
+      try {
+        await authService.signIn(email.value, password.value)
+      } catch (err) {
+        if (!(err instanceof InvalidCredentialsError)) throw err
+        // Supabase doesn't say which one was wrong: an unknown email means the email, else the password.
+        const exists = await authService.emailExists(email.value)
+        if (exists === false) {
+          emailError.value = 'No account uses this email'
+          throw new Error('')
+        }
+        if (exists === true) {
+          passwordError.value = 'Incorrect password'
+          throw new Error('')
+        }
+        throw new Error('Incorrect email or password')
+      }
       await authStore.fetchUserRole()
       await router.push({ name: getDashboardByRole(authStore.userRole) })
     })
-    if (!signedIn) shake({ email: true, password: true })
+    if (!signedIn) {
+      // The check failed (exists === null): both may be wrong, so both shake.
+      const unknown = error.value === 'Incorrect email or password'
+      shake({ email: unknown || !!emailError.value, password: unknown || !!passwordError.value })
+    }
   }
 
   // ─── Animated background (MagicRings) ───
