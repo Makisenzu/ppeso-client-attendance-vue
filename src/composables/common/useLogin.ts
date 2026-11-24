@@ -28,6 +28,27 @@ export function useLogin() {
     return !emailError.value && !passwordError.value
   }
 
+  // ─── Shake: a wrong field shakes on submit. Sign-in can't tell which one was wrong, so both shake. ───
+  const emailShake = ref(false)
+  const passwordShake = ref(false)
+
+  /** Clears first and sets on the next frame, so the animation replays on every submit. */
+  const shake = (fields: { email: boolean; password: boolean }) => {
+    emailShake.value = false
+    passwordShake.value = false
+    requestAnimationFrame(() => {
+      emailShake.value = fields.email
+      passwordShake.value = fields.password
+    })
+  }
+
+  const stopEmailShake = () => {
+    emailShake.value = false
+  }
+  const stopPasswordShake = () => {
+    passwordShake.value = false
+  }
+
   // Clear a field's error as soon as the user edits it.
   watch(email, () => {
     emailError.value = ''
@@ -39,14 +60,16 @@ export function useLogin() {
   const handleLogin = async () => {
     error.value = ''
     if (!validate()) {
+      shake({ email: !!emailError.value, password: !!passwordError.value })
       return
     }
 
-    await runAuthAction(async () => {
+    const signedIn = await runAuthAction(async () => {
       await authService.signIn(email.value, password.value)
       await authStore.fetchUserRole()
       await router.push({ name: getDashboardByRole(authStore.userRole) })
     })
+    if (!signedIn) shake({ email: true, password: true })
   }
 
   // ─── Animated background (MagicRings) ───
@@ -60,6 +83,10 @@ export function useLogin() {
     password,
     emailError,
     passwordError,
+    emailShake,
+    passwordShake,
+    stopEmailShake,
+    stopPasswordShake,
     error,
     loading,
     handleLogin,

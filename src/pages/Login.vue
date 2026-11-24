@@ -22,6 +22,10 @@ const {
   password,
   emailError,
   passwordError,
+  emailShake,
+  passwordShake,
+  stopEmailShake,
+  stopPasswordShake,
   error,
   loading,
   handleLogin,
@@ -60,29 +64,33 @@ const {
           <div class="grid w-full items-center gap-4">
             <div class="flex flex-col space-y-1.5">
               <Label for="email">Email</Label>
-              <Input
-                id="email"
-                v-model="email"
-                type="email"
-                autocomplete="email"
-                placeholder="example@example.com"
-                :disabled="loading"
-                :aria-invalid="!!emailError"
-                :class="emailError ? 'border-destructive' : ''"
-              />
+              <div :class="emailShake ? 'motion-safe:animate-shake' : ''" @animationend="stopEmailShake">
+                <Input
+                  id="email"
+                  v-model="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="example@example.com"
+                  :disabled="loading"
+                  :aria-invalid="!!emailError"
+                  :class="emailError ? 'border-destructive' : ''"
+                />
+              </div>
               <p v-if="emailError" class="text-xs text-destructive">{{ emailError }}</p>
             </div>
 
             <div class="flex flex-col space-y-1.5">
               <Label for="password">Password</Label>
-              <PasswordInput
-                id="password"
-                v-model="password"
-                autocomplete="current-password"
-                :disabled="loading"
-                :aria-invalid="!!passwordError"
-                :class="passwordError ? 'border-destructive' : ''"
-              />
+              <div :class="passwordShake ? 'motion-safe:animate-shake' : ''" @animationend="stopPasswordShake">
+                <PasswordInput
+                  id="password"
+                  v-model="password"
+                  autocomplete="current-password"
+                  :disabled="loading"
+                  :aria-invalid="!!passwordError"
+                  :class="passwordError ? 'border-destructive' : ''"
+                />
+              </div>
               <p v-if="passwordError" class="text-xs text-destructive">{{ passwordError }}</p>
             </div>
 
