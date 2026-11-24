@@ -256,6 +256,7 @@ only active GIPs (`position = gip`), only the current month, no changes once Sub
 | `public.set_profile_passcode()` | `BEFORE INSERT OR UPDATE OF role, passcode ON profiles`, DEFINER | Admin / supervisor role → passcode NULL; any other role → unique 6-digit passcode if missing |
 | `public.guard_profile_update()` | `BEFORE UPDATE ON profiles` (`trg_guard_profile_update`), DEFINER | Non-admin API callers may change only their own name fields; sets `updated_at` |
 | `public.admin_delete_user(uuid)` | DEFINER, RPC for `authenticated` | Admin-only (not self): deletes the `auth.users` row; profile and attendance cascade |
+| `public.admin_get_user_email(uuid)` / `public.admin_update_user_email(uuid, text)` | DEFINER, RPC for `authenticated` | Admin-only Edit User: reads / changes the `auth.users` email (validated, unique, confirmed); syncs the `email` identity |
 | `core.calculate_punch_status()` | `BEFORE INSERT OR UPDATE ON attendances` | 5-minute cooldown between punches (`'Already Recorded'`); fills statuses left null. Cooldown skipped inside `core.admin_update_attendance` |
 | `core.admin_update_attendance(uuid, time×4)` | DEFINER, RPC for `authenticated` | Admin-only Edit DTR: sets a day's four punches (Philippine times, null clears), checks their order, recomputes statuses like `record_punch`; cleared absent punches stay `absent` |
 | `core.admin_set_attendance(uuid, date, time×4)` | DEFINER, RPC for `authenticated` | Admin-only Fix DTR: a beneficiary's punches on a past or current date; creates the day's row when missing, then applies `admin_update_attendance` |
@@ -371,6 +372,7 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261123000100_avatars_supervisor_read.sql` | `avatars` read policy also lets supervisors open their own office members' photos (DTR tables) |
 | `20261123000200_admin_set_attendance.sql` | `core.admin_set_attendance()` (Fix DTR: any date, creates the row when missing) |
 | `20261123000300_special_days.sql` | `core.special_days` + `special_day_type`, admin set / delete RPCs, `get_special_days`; `flag_daily_absences` skips special days |
+| `20261124000000_admin_user_email.sql` | `admin_get_user_email()` / `admin_update_user_email()` — admins edit a user's sign-in email |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).

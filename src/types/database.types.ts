@@ -617,6 +617,14 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      admin_get_user_email: {
+        Args: { target_user_id: string }
+        Returns: string
+      }
+      admin_update_user_email: {
+        Args: { new_email: string; target_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       profile_position: "employee" | "gip" | "tupad" | "client" | "admin"

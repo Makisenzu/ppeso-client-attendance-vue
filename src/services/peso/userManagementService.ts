@@ -200,7 +200,7 @@ export const userManagementService = {
 
   /**
    * Updates a profile as the signed-in admin. RLS + trg_guard_profile_update only let admins
-   * change role, status, office and position. Email / password live in Supabase Auth.
+   * change role, status, office and position. The email is changed separately (`updateUserEmail`).
    */
   async updateUser(id: string, formData: EditUserFormData): Promise<{ success: boolean; error?: string }> {
     try {
@@ -234,6 +234,27 @@ export const userManagementService = {
         error: err instanceof Error ? err.message : 'An unexpected error occurred',
       }
     }
+  },
+
+  /** The account's sign-in email (auth.users), via the admin-only `admin_get_user_email` function. */
+  async getUserEmail(id: string): Promise<{ email: string | null; error?: string }> {
+    const { data, error } = await supabase.rpc('admin_get_user_email', { target_user_id: id })
+    if (error) return { email: null, error: error.message || 'Could not load the email.' }
+    return { email: data ?? '' }
+  },
+
+  /**
+   * Changes the sign-in email via the admin-only `admin_update_user_email` function
+   * (confirmed right away, unique across accounts).
+   */
+  async updateUserEmail(id: string, email: string): Promise<{ success: boolean; error?: string }> {
+    const { error } = await supabase.rpc('admin_update_user_email', {
+      target_user_id: id,
+      new_email: email.trim(),
+    })
+    // Messages raised on purpose by the function are written for the admin; pass them through.
+    if (error) return { success: false, error: error.message || 'Failed to change the email.' }
+    return { success: true }
   },
 
   /**

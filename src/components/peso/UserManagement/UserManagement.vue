@@ -116,6 +116,7 @@ const {
   isSavingEdit,
   editError,
   editForm,
+  isLoadingEditEmail,
   isEditingSelf,
   openEditUser,
   onEditPositionChange,
@@ -782,6 +783,25 @@ const {
             <div class="space-y-1.5">
               <label for="edit-middlename" class="text-xs font-medium text-foreground">Middle Name</label>
               <Input id="edit-middlename" v-model="editForm.middlename" class="h-9 text-base md:text-xs" :disabled="isSavingEdit" />
+            </div>
+
+            <!-- Email -->
+            <div class="space-y-1.5">
+              <label for="edit-email" class="text-xs font-medium text-foreground">
+                Email <span class="text-destructive">*</span>
+              </label>
+              <Input
+                id="edit-email"
+                v-model="editForm.email"
+                type="email"
+                autocomplete="off"
+                :placeholder="isLoadingEditEmail ? 'Loading email…' : 'lastname.firstname@peso.ph'"
+                class="h-9 text-base md:text-xs"
+                :disabled="isSavingEdit || isLoadingEditEmail"
+              />
+              <p class="text-[11px] text-muted-foreground">
+                The account signs in with this email. A change takes effect right away.
+              </p>
             </div>
 
             <!-- Position & Role -->

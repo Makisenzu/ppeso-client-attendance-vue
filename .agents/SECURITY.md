@@ -154,8 +154,11 @@ if ((deleted?.length ?? 0) < ids.length) { /* report the skipped rows */ }
 | `private.is_supervisor()`  | `true` for active supervisors |
 | `private.supervises(uuid)` | `true` if caller is a supervisor and the profile is in their office |
 
-The one client-callable DEFINER function is `public.admin_delete_user(uuid)` (User Management → Delete): it checks
-`private.is_admin()`, refuses the caller's own id, then deletes the `auth.users` row (profile + attendance cascade).
+The client-callable DEFINER functions on `auth.users` all check `private.is_admin()` first:
+`public.admin_delete_user(uuid)` (User Management → Delete) refuses the caller's own id, then deletes the `auth.users`
+row (profile + attendance cascade); `public.admin_get_user_email(uuid)` / `public.admin_update_user_email(uuid, text)`
+(User Management → Edit User) read and change the sign-in email (validated, unique, confirmed right away; the email
+identity follows). Emails are fetched only when the edit panel opens, never in the user list.
 
 They are `SECURITY DEFINER` (owner `postgres`, bypasses RLS — no policy recursion), `STABLE`, `SET search_path = ''`.
 The `private` schema is not exposed through the Data API, so they cannot be called as RPCs.

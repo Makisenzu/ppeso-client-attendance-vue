@@ -342,7 +342,11 @@ export function useUserManagement() {
   const isSavingEdit = ref<boolean>(false)
   const editError = ref<string>('')
   const currentUserId = ref<string | null>(null)
+  /** The email as loaded, so it is only sent when the admin changed it. */
+  const originalEditEmail = ref<string>('')
+  const isLoadingEditEmail = ref<boolean>(false)
   const editForm = ref<EditUserFormData>({
+    email: '',
     firstname: '',
     middlename: '',
     lastname: '',
@@ -367,6 +371,7 @@ export function useUserManagement() {
   const openEditUser = async (profile: ProfileRecord) => {
     editingProfile.value = profile
     editForm.value = {
+      email: '',
       firstname: profile.firstname,
       middlename: profile.middlename || '',
       lastname: profile.lastname,
@@ -377,7 +382,9 @@ export function useUserManagement() {
       funding: profile.funding ?? '',
     }
     editError.value = ''
+    originalEditEmail.value = ''
     isEditUserOpen.value = true
+    void loadEditEmail(profile.id)
 
     if (officeStore.offices.length === 0) {
       void officeStore.fetchOffices()
@@ -385,6 +392,23 @@ export function useUserManagement() {
     if (currentUserId.value === null) {
       const user = await authService.getCurrentUser()
       currentUserId.value = user?.id ?? null
+    }
+  }
+
+  /** Emails live in Supabase Auth, so they are fetched only when an edit panel opens. */
+  const loadEditEmail = async (id: string) => {
+    isLoadingEditEmail.value = true
+    try {
+      const result = await userManagementService.getUserEmail(id)
+      if (editingProfile.value?.id !== id) return
+      if (result.error) {
+        editError.value = result.error
+        return
+      }
+      originalEditEmail.value = result.email ?? ''
+      editForm.value.email = originalEditEmail.value
+    } finally {
+      isLoadingEditEmail.value = false
     }
   }
 
@@ -418,6 +442,12 @@ export function useUserManagement() {
       editError.value = 'Last name is required'
       return
     }
+    const newEmail = editForm.value.email.trim().toLowerCase()
+    const emailChanged = !isLoadingEditEmail.value && newEmail !== originalEditEmail.value.toLowerCase()
+    if (emailChanged && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)) {
+      editError.value = 'Enter a valid email address'
+      return
+    }
 
     // Never send a change to your own role or status.
     const basePayload: EditUserFormData = isEditingSelf.value
@@ -434,6 +464,15 @@ export function useUserManagement() {
 
     isSavingEdit.value = true
     try {
+      if (emailChanged) {
+        const emailResult = await userManagementService.updateUserEmail(editingProfile.value.id, newEmail)
+        if (!emailResult.success) {
+          editError.value = emailResult.error || 'Failed to change the email'
+          return
+        }
+        originalEditEmail.value = newEmail
+      }
+
       const result = await userManagementService.updateUser(editingProfile.value.id, payload)
       if (!result.success) {
         editError.value = result.error || 'Failed to update user'
@@ -629,6 +668,7 @@ export function useUserManagement() {
     isSavingEdit,
     editError,
     editForm,
+    isLoadingEditEmail,
     isEditingSelf,
     editOfficeOptions,
     openEditUser,

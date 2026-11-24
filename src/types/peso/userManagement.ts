@@ -53,6 +53,8 @@ export interface SupervisorFormData {
 
 /** Edit User form. Email / password are managed by Supabase Auth and are not editable here. */
 export interface EditUserFormData {
+  /** Sign-in email (auth.users); only sent when the admin changed it */
+  email: string
   firstname: string
   middlename: string
   lastname: string
