@@ -99,7 +99,7 @@ const {
         <DialogHeader>
           <DialogTitle class="text-base">Sign out of this kiosk?</DialogTitle>
           <DialogDescription class="text-xs">
-            Attendance can't be recorded on this computer until someone signs in with the office's kiosk account again.
+            Attendance stops until the kiosk account signs in again.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter class="gap-2">
