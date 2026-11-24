@@ -1,9 +1,9 @@
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useMediaQuery } from '@vueuse/core'
 import { useAuthForm } from '@/composables/useAuthForm'
 import { authService, InvalidCredentialsError } from '@/services/common/authService'
 import { useAuthStore, getDashboardByRole } from '@/stores/authStore'
+import loginBackground from '@/assets/bg.png'
 
 /** Login page: signs in, loads the role, and opens that role's dashboard. */
 export function useLogin() {
@@ -91,12 +91,6 @@ export function useLogin() {
     }
   }
 
-  // ─── Animated background (MagicRings) ───
-  // Skipped for people who ask their OS for reduced motion.
-  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
-  const showBackground = computed(() => !prefersReducedMotion.value)
-  const backgroundRings = LOGIN_BACKGROUND_RINGS
-
   return {
     email,
     password,
@@ -109,8 +103,7 @@ export function useLogin() {
     error,
     loading,
     handleLogin,
-    showBackground,
-    backgroundRings,
+    backgroundImage: loginBackground,
     logos: LOGIN_LOGOS,
   }
 }
@@ -120,28 +113,3 @@ const LOGIN_LOGOS = [
   { src: '/agsur.png', alt: 'Province of Agusan del Sur', fallback: 'AS' },
   { src: '/pesologo.png', alt: 'Public Employment Service Office', fallback: 'PESO' },
 ] as const
-
-/** MagicRings settings for the login background (colors from the Vue Bits example). */
-const LOGIN_BACKGROUND_RINGS = {
-  color: '#fc42ff',
-  colorTwo: '#42fcff',
-  ringCount: 6,
-  speed: 1,
-  attenuation: 10,
-  lineThickness: 2,
-  baseRadius: 0.35,
-  radiusStep: 0.1,
-  scaleRate: 0.1,
-  opacity: 1,
-  blur: 0,
-  noiseAmount: 0.1,
-  rotation: 0,
-  ringGap: 1.5,
-  fadeIn: 0.7,
-  fadeOut: 0.5,
-  followMouse: false,
-  mouseInfluence: 0.2,
-  hoverScale: 1.2,
-  parallax: 0.05,
-  clickBurst: false,
-} as const

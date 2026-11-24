@@ -17,7 +17,7 @@ export const loginRoutes: RouteRecordRaw[] = [
         path: 'login',
         name: 'login',
         component: LoginView,
-        // Dark only, to match the MagicRings background.
+        // Dark only, so the card reads over the darkened background photo.
         meta: { forceDark: true },
       },
       {

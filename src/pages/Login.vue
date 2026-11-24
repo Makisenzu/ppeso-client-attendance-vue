@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,9 +13,6 @@ import {
 import PasswordInput from '@/components/common/PasswordInput.vue'
 import { useLogin } from '@/composables/common/useLogin'
 
-// Loaded on demand so three.js stays out of the main bundle.
-const MagicRings = defineAsyncComponent(() => import('@/components/vuebits/MagicRings.vue'))
-
 const {
   email,
   password,
@@ -29,8 +25,7 @@ const {
   error,
   loading,
   handleLogin,
-  showBackground,
-  backgroundRings,
+  backgroundImage,
   logos,
 } = useLogin()
 </script>
@@ -38,9 +33,13 @@ const {
 <template>
   <!-- Always dark (route meta.forceDark). -->
   <div class="flex w-full justify-center">
-    <!-- ─── Animated background (full screen, behind the card, ignores clicks) ─── -->
-    <div v-if="showBackground" class="pointer-events-none fixed inset-0" aria-hidden="true">
-      <MagicRings v-bind="backgroundRings" />
+    <!-- ─── Background photo (full screen, behind the card, ignores clicks), darkened so the card reads ─── -->
+    <div
+      class="pointer-events-none fixed inset-0 bg-cover bg-center"
+      :style="{ backgroundImage: `url(${backgroundImage})` }"
+      aria-hidden="true"
+    >
+      <div class="absolute inset-0 bg-background/60" />
     </div>
 
     <!-- ─── Login card (same layout as vue-agsurjobs LoginCard) ─── -->
