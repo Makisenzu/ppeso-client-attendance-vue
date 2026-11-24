@@ -33,17 +33,31 @@ const {
 <template>
   <!-- Always dark (route meta.forceDark). -->
   <div class="flex w-full justify-center">
-    <!-- ─── Background photo (full screen, behind the card, ignores clicks), darkened so the card reads ─── -->
-    <div
-      class="pointer-events-none fixed inset-0 bg-cover bg-center"
-      :style="{ backgroundImage: `url(${backgroundImage})` }"
-      aria-hidden="true"
-    >
-      <div class="absolute inset-0 bg-background/60" />
+    <!-- ─── Background (full screen, behind the card, ignores clicks) ─── -->
+    <div class="pointer-events-none fixed inset-0 overflow-hidden bg-background" aria-hidden="true">
+      <!-- Photo: slow zoom-out on load; slightly muted so the card leads -->
+      <div
+        class="absolute inset-0 bg-cover bg-center saturate-[0.85] motion-safe:animate-ken-burns"
+        :style="{ backgroundImage: `url(${backgroundImage})` }"
+      />
+      <!-- Even wash, then darker toward the bottom where the caption sits -->
+      <div class="absolute inset-0 bg-background/45" />
+      <div class="absolute inset-0 bg-linear-to-t from-background via-background/40 to-background/10" />
+      <!-- Soft vignette that pulls the eye to the centre -->
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,var(--background)_100%)] opacity-70" />
     </div>
 
-    <!-- ─── Login card (same layout as vue-agsurjobs LoginCard) ─── -->
-    <Card class="relative w-full max-w-sm bg-card/80 backdrop-blur-md">
+    <!-- ─── Caption (large screens only) ─── -->
+    <div class="pointer-events-none fixed bottom-8 left-10 hidden max-w-sm lg:block" aria-hidden="true">
+      <p class="text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground">Province of Agusan del Sur</p>
+      <p class="mt-1.5 text-lg font-semibold leading-snug text-foreground/90">Provincial Public Employment Service Office</p>
+      <div class="mt-3 h-px w-12 bg-primary/60" />
+    </div>
+
+    <!-- ─── Login card: frosted glass over the photo (same layout as vue-agsurjobs LoginCard) ─── -->
+    <Card
+      class="relative w-full max-w-sm border-border/60 bg-card/60 shadow-2xl shadow-background/60 ring-1 ring-foreground/5 backdrop-blur-xl backdrop-saturate-150 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700"
+    >
       <CardHeader>
         <div class="mb-4 flex items-center gap-2">
           <img

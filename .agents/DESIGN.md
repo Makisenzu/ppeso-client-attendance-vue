@@ -271,7 +271,7 @@ Every authenticated role uses the same shell ([`src/layouts/`](../src/layouts)):
 | `PesoLayout.vue`             | `PesoSidebar.vue`        | Admin |
 | `SupervisorLayout.vue`       | `SupervisorSidebar.vue`  | Supervisor |
 | `BeneficiaryLayout.vue`      | `BeneficiarySidebar.vue` | Beneficiary |
-| `auth/AuthLayout.vue`        | _(none — public)_        | Login / Signup |
+| `auth/AuthLayout.vue`        | _(none — public)_        | Login          |
 
 Header pattern:
 
@@ -297,8 +297,8 @@ Page header pattern (inside a screen): `<h1 class="text-2xl font-bold tracking-t
 > [!IMPORTANT]
 > 1. **Every component must work in dark mode** — use tokens; add `dark:` overrides only when a token can't express it.
 > 2. **Test both modes** for every new component.
-> 3. **Dark-only pages** set `meta: { forceDark: true }` on their route (the login page, to match its MagicRings
->    background). `AuthLayout` (via `useAuthLayout`) then adds `dark` to its root and hides the theme toggle.
+> 3. **Dark-only pages** set `meta: { forceDark: true }` on their route (the login page, to match its darkened
+>    `src/assets/bg.png` background). `AuthLayout` (via `useAuthLayout`) then adds `dark` to its root and hides the theme toggle.
 
 ---
 
