@@ -115,7 +115,7 @@ src/
 │   ├── supervisor/          # useSupervisorSidebar, useSupervisorDashboard, useTeamAttendance, useTeamAccomplishments,
 │   │                        #   useTeamEvaluations
 │   ├── beneficiary/         # useBeneficiarySidebar
-│   └── useAuthForm.ts       # Shared login/signup form state
+│   └── useAuthForm.ts       # Shared login form state
 ├── helpers/
 │   ├── common/              # persistentCache, psgcHelpers
 │   ├── supervisor/          # teamHelper (today status, member options, team search, GIP report rows)
@@ -123,7 +123,7 @@ src/
 │                            #   dashboardHelper, officeHelper, userManagementHelper
 ├── layouts/                 # PesoLayout, SupervisorLayout, BeneficiaryLayout, auth/AuthLayout
 ├── lib/utils.ts             # cn() utility for class merging (shadcn-vue)
-├── pages/                   # Login.vue, Signup.vue (public auth pages)
+├── pages/                   # Login.vue (public auth page; no signup — admins create accounts)
 ├── router/
 │   ├── index.ts             # Main router + global beforeEach guard
 │   └── routes/              # Login.ts, Peso/peso.ts, Supervisor/supervisor.ts, Beneficiary/beneficiary.ts
@@ -166,7 +166,7 @@ Component (.vue) ──► Composable (useXxx) ──► [Store (xxxStore)] ─�
 
 | Role          | Path Prefix         | Layout              | Meta `allowedRoles` |
 | ------------- | ------------------- | ------------------- | ------------------- |
-| Auth (public) | `/login`, `/signup` | `AuthLayout`        | _(none)_            |
+| Auth (public) | `/login`           | `AuthLayout`        | _(none)_            |
 | Admin         | `/dashboard`        | `PesoLayout`        | `['admin']`         |
 | Supervisor    | `/supervisor`       | `SupervisorLayout`  | `['supervisor']`    |
 | Beneficiary   | `/beneficiary`      | `BeneficiaryLayout` | `['beneficiary']`   |

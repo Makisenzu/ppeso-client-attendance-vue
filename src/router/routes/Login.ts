@@ -2,7 +2,6 @@ import type { RouteRecordRaw } from 'vue-router'
 
 import AuthLayout from '@/layouts/auth/AuthLayout.vue'
 import LoginView from '@/pages/Login.vue'
-import SignupView from '@/pages/Signup.vue'
 
 export const loginRoutes: RouteRecordRaw[] = [
   {
@@ -20,11 +19,12 @@ export const loginRoutes: RouteRecordRaw[] = [
         // Dark only, so the card reads over the darkened background photo.
         meta: { forceDark: true },
       },
-      {
-        path: 'signup',
-        name: 'signup',
-        component: SignupView,
-      },
     ],
+  },
+  // No public signup: accounts are created by admins. Unknown paths (e.g. /signup) go to /login,
+  // which sends a signed-in user on to their dashboard.
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/login',
   },
 ]

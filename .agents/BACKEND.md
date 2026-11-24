@@ -258,7 +258,7 @@ router.beforeEach
   ├── no session + requiresAuth → /login
   └── session → authStore.fetchUserRole() (once)
         └── public.profiles.role for auth.uid()
-              ├── on /login or /signup → redirect to getDashboardByRole(role)
+              ├── on /login → redirect to getDashboardByRole(role)
               └── allowedRoles mismatch → redirect to getDashboardByRole(role)
 ```
 

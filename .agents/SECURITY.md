@@ -62,7 +62,7 @@ The project uses a **defense-in-depth** model:
 
 ```
 1. Authentication:   route.meta.requiresAuth && !session        → /login
-2. Public routes:    session && (to = 'login' | 'signup')       → getDashboardByRole(role)
+2. Public routes:    session && to = 'login'                    → getDashboardByRole(role)
 3. Role enforcement: meta.allowedRoles && role ∉ allowedRoles   → getDashboardByRole(role)
 ```
 
@@ -249,8 +249,9 @@ guard trigger rejects role/office changes from a non-admin.
 
 > [!IMPORTANT]
 > 1. **Passwords are never stored** in Pinia state, `localStorage`, or logs — they live only in the form and go to Supabase Auth.
-> 2. **Public signup** (`/signup`) creates a `beneficiary` account with no office. An admin must assign role and office.
->    If the office does not want self-registration, disable signups in Supabase Auth settings and remove the route.
+> 2. **No public signup.** The `/signup` route was removed (11/24/2026); accounts are created by admins in User
+>    Management, and unknown paths redirect to `/login`. Supabase Auth signups stay enabled only because admin account
+>    creation uses `auth.signUp`; `handle_new_user` still never reads `role` from metadata.
 
 ---
 

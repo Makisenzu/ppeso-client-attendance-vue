@@ -41,8 +41,8 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
       await authStore.fetchUserRole()
     }
 
-    // Redirect away from login/signup to the correct dashboard
-    if (to.name === 'login' || to.name === 'signup') {
+    // Redirect away from login to the correct dashboard
+    if (to.name === 'login') {
       next({ name: getDashboardByRole(authStore.userRole) })
       return
     }
