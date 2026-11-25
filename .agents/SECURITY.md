@@ -183,6 +183,10 @@ admins pass.
 > 3. **NEVER create a `SECURITY DEFINER` function without explicit approval.** When one is approved: `SET search_path = ''`,
 >    check `private.is_admin()` (or the right role) inside it, and revoke execute from `public, anon` unless needed.
 > 4. **NEVER grant anything to `anon`** — the app has no logged-out data screens.
+>    **Approved exceptions:** `public.login_email_exists(text)` (boolean only) and `public.submit_walk_in(...)`
+>    (public `/walk-in` form, migration `20261125000000_public_walk_in.sql`): insert-only, returns nothing, validates
+>    every field, requires privacy consent, and rate-limits 5 submissions per IP per 10 minutes
+>    (`core.walk_in_submission_log`, MD5 IP hashes kept 1 day). anon still has no table grants and no `core` usage.
 > 5. **NEVER grant `TRUNCATE`, `TRIGGER` or `REFERENCES`** to `authenticated` (TRUNCATE ignores RLS).
 > 6. **Test every policy change with a non-admin user** (impersonation snippet in DATABASE.md §9).
 > 7. **Profiles are created only by the `on_auth_user_created` trigger**, and it must never read `role` from metadata.

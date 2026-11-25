@@ -109,7 +109,7 @@ export function useLogin() {
 }
 
 /** Logos at the top of the login card (served from /public). */
-const LOGIN_LOGOS = [
+export const LOGIN_LOGOS = [
   { src: '/agsur.png', alt: 'Province of Agusan del Sur', fallback: 'AS' },
   { src: '/pesologo.png', alt: 'Public Employment Service Office', fallback: 'PESO' },
 ] as const

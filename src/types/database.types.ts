@@ -302,6 +302,24 @@ export type Database = {
         }
         Relationships: []
       }
+      walk_in_submission_log: {
+        Row: {
+          id: number
+          ip_hash: string
+          submitted_at: string
+        }
+        Insert: {
+          id?: never
+          ip_hash: string
+          submitted_at?: string
+        }
+        Update: {
+          id?: never
+          ip_hash?: string
+          submitted_at?: string
+        }
+        Relationships: []
+      }
       walkin_attendances: {
         Row: {
           barangay: string
@@ -626,6 +644,22 @@ export type Database = {
         Returns: undefined
       }
       login_email_exists: { Args: { p_email: string }; Returns: boolean }
+      submit_walk_in: {
+        Args: {
+          p_barangay: string
+          p_consent: boolean
+          p_contact_number: string
+          p_firstname: string
+          p_gender: string
+          p_geographic: string
+          p_lastname: string
+          p_middlename: string
+          p_province: string
+          p_purok: string
+          p_purpose: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       profile_position: "employee" | "gip" | "tupad" | "client" | "admin"

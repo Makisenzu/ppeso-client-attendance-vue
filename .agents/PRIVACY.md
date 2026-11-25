@@ -87,7 +87,10 @@ When you add a table or column that holds personal data, add it here.
 ## 3. Transparency (Sec. 16(a), 18)
 
 > [!WARNING]
-> **Gap:** the system has no Privacy Notice page and records no acknowledgement. Walk-in clients are logged by staff, so
+> **Self-service walk-ins:** the public `/walk-in` form (`src/pages/WalkIn.vue`) shows a short privacy notice and
+> requires a consent checkbox before `public.submit_walk_in` will store the record. It never reads data back.
+
+> **Gap:** the system has no Privacy Notice page and records no acknowledgement. Walk-in clients logged by staff are not covered by the `/walk-in` notice, so
 > the office must inform them at the point of collection (a posted notice or a line on the visitor log) of: who
 > collects the data, why, how long it's kept, who it's shared with, and how to exercise their rights.
 
