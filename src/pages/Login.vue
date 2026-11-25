@@ -71,7 +71,7 @@ const {
                 class="h-14 w-14 shrink-0 rounded-full object-cover"
               />
             </div>
-            <CardTitle>Login to PPESO Attendance</CardTitle>
+            <CardTitle>Login to PPMIS</CardTitle>
             <CardDescription>Enter your email below to login to your account</CardDescription>
           </CardHeader>
 

@@ -59,9 +59,9 @@ const {
 
     <!-- Office kiosk: no sidebar, only the office it belongs to -->
     <header class="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-3 border-b border-border/60 bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <img src="/agsur.png" alt="AGSURJOBS Logo" class="size-9 object-contain">
+      <img src="/agsur.png" alt="PPMIS Logo" class="size-9 object-contain">
       <div class="min-w-0">
-        <p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Attendance Kiosk</p>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">PPMIS · Attendance Kiosk</p>
         <div class="flex items-center gap-1.5 min-w-0">
           <Building2 class="size-3.5 shrink-0 text-primary" />
           <h1 class="truncate text-sm font-semibold text-foreground">

@@ -86,10 +86,10 @@ const {
     <template v-else>
       <SidebarHeader class="p-2 flex items-center w-full transition-all duration-200">
         <div v-if="state === 'expanded'" class="w-full max-w-50 flex justify-start mr-auto p-2">
-          <img src="/agsur.png" alt="AGSURJOBS Logo" class="dark:hidden w-10 h-10 object-contain">
+          <img src="/agsur.png" alt="PPMIS Logo" class="dark:hidden w-10 h-10 object-contain">
         </div>
         <div v-else class="flex items-center justify-center size-8 mx-auto overflow-hidden">
-          <img src="/agsur.png" alt="AGSURJOBS Logo" class="w-10 h-10 object-contain">
+          <img src="/agsur.png" alt="PPMIS Logo" class="w-10 h-10 object-contain">
         </div>
       </SidebarHeader>
 
