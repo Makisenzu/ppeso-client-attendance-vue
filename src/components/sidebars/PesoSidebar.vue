@@ -95,8 +95,12 @@ const {
 
     <template v-else>
       <SidebarHeader class="p-2 flex items-center w-full transition-all duration-200">
-        <div v-if="state === 'expanded'" class="w-full max-w-50 flex justify-start mr-auto p-2">
-          <img src="/agsur.png" alt="PPMIS Logo" class="dark:hidden w-10 h-10 object-contain">
+        <div v-if="state === 'expanded'" class="w-full flex items-center gap-2.5 mr-auto p-2 min-w-0">
+          <img src="/agsur.png" alt="PPMIS Logo" class="w-10 h-10 shrink-0 object-contain">
+          <div class="flex flex-col min-w-0 leading-tight">
+            <span class="truncate text-base font-bold tracking-tight text-sidebar-foreground">PPMIS</span>
+            <span class="truncate text-[11px] text-muted-foreground">Provincial PESO MIS</span>
+          </div>
         </div>
         <div v-else class="flex items-center justify-center size-8 mx-auto overflow-hidden">
           <img src="/agsur.png" alt="PPMIS Logo" class="w-10 h-10 object-contain">
