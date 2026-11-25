@@ -39,7 +39,7 @@ export function useWalkInForm() {
   const firstname = ref('')
   const middlename = ref('')
   const lastname = ref('')
-  const gender = ref<GenderType>('not specified')
+  const gender = ref<GenderType | ''>('')
   const contactNumber = ref('')
   const purok = ref('')
   const purpose = ref<ServiceRequired>('gip')
@@ -69,7 +69,11 @@ export function useWalkInForm() {
   const currentStep = computed(() => WALK_IN_STEPS.find((s) => s.step === step.value) ?? WALK_IN_STEPS[0]!)
 
   // ─── SearchSelect options / models ───
-  const genderOptions: SearchSelectOption[] = GENDER_OPTIONS.map((g) => ({ value: g.value, label: g.label }))
+  // Sex is required on the public form: Male or Female (no "Not Specified").
+  const genderOptions: SearchSelectOption[] = GENDER_OPTIONS.filter((g) => g.value !== 'not specified').map((g) => ({
+    value: g.value,
+    label: g.label,
+  }))
   const purposeOptions: SearchSelectOption[] = PURPOSE_OPTIONS.map((p) => ({ value: p.value, label: p.label }))
   const provinceOptions = computed<SearchSelectOption[]>(() =>
     provinces.value.map((p) => ({ value: p.code, label: p.name })),
@@ -105,7 +109,7 @@ export function useWalkInForm() {
     firstname.value = ''
     middlename.value = ''
     lastname.value = ''
-    gender.value = 'not specified'
+    gender.value = ''
     contactNumber.value = ''
     purok.value = ''
     purpose.value = 'gip'
@@ -134,6 +138,7 @@ export function useWalkInForm() {
   const validatePersonal = (): string => {
     if (!firstname.value.trim()) return 'First name is required.'
     if (!lastname.value.trim()) return 'Last name is required.'
+    if (!gender.value) return 'Please select your sex.'
     const contact = contactNumber.value.trim()
     if (contact && !/^[0-9+() -]{7,20}$/.test(contact)) return 'Please enter a valid contact number.'
     return ''

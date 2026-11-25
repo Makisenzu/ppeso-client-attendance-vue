@@ -148,13 +148,13 @@ const {
                   <Input id="wi-middlename" v-model="middlename" placeholder="Dela" maxlength="80" autocomplete="off" />
                 </div>
                 <div class="grid min-w-0 grid-cols-1 gap-2">
-                  <Label for="wi-gender">Gender</Label>
+                  <Label for="wi-gender">Sex <span class="text-destructive">*</span></Label>
                   <SearchSelect
                     id="wi-gender"
                     v-model="genderModel"
                     :options="genderOptions"
                     :searchable="false"
-                    placeholder="Select gender"
+                    placeholder="Select sex"
                   />
                 </div>
                 <div class="grid min-w-0 grid-cols-1 gap-2 sm:col-span-2">
@@ -246,7 +246,7 @@ const {
                       I agree to the privacy notice <span class="text-destructive">*</span>
                     </span>
                     <span class="block text-xs leading-relaxed text-muted-foreground">
-                      The Provincial PESO of Agusan del Sur collects your name, gender, contact number, address and the
+                      The Provincial PESO of Agusan del Sur collects your name, sex, contact number, address and the
                       service you need to record your visit and assist you. Only authorized PESO staff can see it, and it
                       is not shared outside the office except as required by law. You may ask to access, correct or
                       delete your record under the Data Privacy Act of 2012 (RA 10173).
