@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthForm } from '@/composables/useAuthForm'
 import { authService, InvalidCredentialsError } from '@/services/common/authService'
@@ -12,6 +12,14 @@ export function useLogin() {
   const email = ref('')
   const password = ref('')
   const { error, loading, runAuthAction } = useAuthForm()
+
+  /** Shown when sign-in (or a reopened session) belongs to an account an admin set to inactive. */
+  const INACTIVE_MESSAGE = 'This account is inactive'
+
+  // The router guard signs out inactive sessions and sends them here: explain why.
+  onMounted(() => {
+    if (authStore.consumeInactiveNotice()) error.value = INACTIVE_MESSAGE
+  })
 
   // ─── Per-field validation (shown under each input) ───
   const emailError = ref('')
@@ -82,6 +90,7 @@ export function useLogin() {
         throw new Error('Incorrect email or password')
       }
       await authStore.fetchUserRole()
+      if (authStore.consumeInactiveNotice()) throw new Error(INACTIVE_MESSAGE)
       await router.push({ name: getDashboardByRole(authStore.userRole) })
     })
     if (!signedIn) {

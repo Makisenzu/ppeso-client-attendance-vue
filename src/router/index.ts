@@ -41,6 +41,13 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
       await authStore.fetchUserRole()
     }
 
+    // Inactive account: fetchUserRole already signed it out, so only the login page is left.
+    if (authStore.accountInactive) {
+      if (to.name === 'login') next()
+      else next({ name: 'login' })
+      return
+    }
+
     // Redirect away from login to the correct dashboard
     if (to.name === 'login') {
       next({ name: getDashboardByRole(authStore.userRole) })
