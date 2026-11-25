@@ -35,6 +35,7 @@ const {
   isSubmitted,
   step,
   currentStep,
+  cooldown,
   onProvinceChange,
   onCityChange,
   onBarangayChange,
@@ -91,7 +92,9 @@ const {
             <p class="mt-2 max-w-xs text-sm text-muted-foreground">
               Your visit has been recorded. Please have a seat — a PESO staff member will assist you shortly.
             </p>
-            <Button class="mt-8 w-full sm:w-auto" @click="startOver">Submit another client</Button>
+            <Button class="mt-8 w-full sm:w-auto" :disabled="cooldown > 0" @click="startOver">
+              {{ cooldown > 0 ? `Submit another client (${cooldown}s)` : 'Submit another client' }}
+            </Button>
           </div>
 
           <!-- ═══ Form ═══ -->
@@ -266,14 +269,14 @@ const {
                   Back
                 </Button>
                 <span v-else class="hidden sm:block" />
-                <Button type="submit" class="w-full sm:w-auto sm:min-w-32" :disabled="isSubmitting">
+                <Button type="submit" class="w-full sm:w-auto sm:min-w-32" :disabled="isSubmitting || cooldown > 0">
                   <template v-if="step === 1">
                     Continue
                     <ArrowRight class="size-4" />
                   </template>
                   <template v-else>
                     <Loader2 v-if="isSubmitting" class="size-4 animate-spin" />
-                    {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+                    {{ isSubmitting ? 'Submitting...' : cooldown > 0 ? `Try again in ${cooldown}s` : 'Submit' }}
                   </template>
                 </Button>
               </div>

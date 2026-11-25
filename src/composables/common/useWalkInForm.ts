@@ -1,7 +1,7 @@
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { usePsgc } from '@/composables/common/usePsgc'
 import { LOGIN_LOGOS } from '@/composables/common/useLogin'
-import { walkInService } from '@/services/common/walkInService'
+import { walkInService, WalkInRateLimitError } from '@/services/common/walkInService'
 import { GENDER_OPTIONS, PURPOSE_OPTIONS } from '@/helpers/peso/clientRecordHelper'
 import walkInBackground from '@/assets/bg.png'
 import type { GenderType, ServiceRequired } from '@/types/peso/clientRecord'
@@ -9,6 +9,10 @@ import type { SearchSelectOption } from '@/types/common/searchSelect'
 
 const DEFAULT_REGION = 'Region XIII (Caraga)'
 const DEFAULT_PROVINCE = 'Agusan del Sur'
+
+/** Client-side throttle (the server enforces the real limits in public.submit_walk_in). */
+const COOLDOWN_AFTER_SUBMIT_S = 10
+const COOLDOWN_AFTER_LIMIT_S = 60
 
 /** The form is split in two parts: 1 = personal information, 2 = address, service and consent. */
 export type WalkInStep = 1 | 2
@@ -45,6 +49,23 @@ export function useWalkInForm() {
   const isSubmitting = ref(false)
   const isSubmitted = ref(false)
   const step = ref<WalkInStep>(1)
+
+  // ─── Cooldown: blocks Submit / "Submit another" for a few seconds ───
+  const cooldown = ref(0)
+  let cooldownTimer: ReturnType<typeof setInterval> | undefined
+  const stopCooldown = () => {
+    if (cooldownTimer) clearInterval(cooldownTimer)
+    cooldownTimer = undefined
+  }
+  const startCooldown = (seconds: number) => {
+    stopCooldown()
+    cooldown.value = seconds
+    cooldownTimer = setInterval(() => {
+      cooldown.value = Math.max(0, cooldown.value - 1)
+      if (cooldown.value === 0) stopCooldown()
+    }, 1000)
+  }
+  onBeforeUnmount(stopCooldown)
   const currentStep = computed(() => WALK_IN_STEPS.find((s) => s.step === step.value) ?? WALK_IN_STEPS[0]!)
 
   // ─── SearchSelect options / models ───
@@ -139,7 +160,7 @@ export function useWalkInForm() {
   }
 
   const handleSubmit = async () => {
-    if (isSubmitting.value) return
+    if (isSubmitting.value || cooldown.value > 0) return
     if (step.value === 1) {
       nextStep()
       return
@@ -169,7 +190,9 @@ export function useWalkInForm() {
         p_consent: consent.value,
       })
       isSubmitted.value = true
+      startCooldown(COOLDOWN_AFTER_SUBMIT_S)
     } catch (err) {
+      if (err instanceof WalkInRateLimitError) startCooldown(COOLDOWN_AFTER_LIMIT_S)
       errorMessage.value = err instanceof Error ? err.message : 'Could not submit the form. Please try again.'
     } finally {
       isSubmitting.value = false
@@ -178,6 +201,7 @@ export function useWalkInForm() {
 
   /** "Submit another" — clears the form for the next client. */
   const startOver = () => {
+    if (cooldown.value > 0) return
     resetForm()
     isSubmitted.value = false
   }
@@ -219,6 +243,7 @@ export function useWalkInForm() {
     isSubmitted,
     step,
     currentStep,
+    cooldown,
 
     onProvinceChange,
     onCityChange,
