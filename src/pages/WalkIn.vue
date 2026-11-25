@@ -130,21 +130,21 @@ const {
 
               <!-- ─── Step 1: Personal information ─── -->
               <div v-if="step === 1" key="step-1" class="grid grid-cols-1 gap-4 sm:grid-cols-2 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-3">
-                <div class="grid gap-2">
+                <div class="grid min-w-0 grid-cols-1 gap-2">
                   <Label for="wi-firstname">First name <span class="text-destructive">*</span></Label>
                   <Input id="wi-firstname" v-model="firstname" placeholder="Juan" maxlength="80" autocomplete="off" />
                 </div>
-                <div class="grid gap-2">
+                <div class="grid min-w-0 grid-cols-1 gap-2">
                   <Label for="wi-lastname">Last name <span class="text-destructive">*</span></Label>
                   <Input id="wi-lastname" v-model="lastname" placeholder="Cruz" maxlength="80" autocomplete="off" />
                 </div>
-                <div class="grid gap-2">
+                <div class="grid min-w-0 grid-cols-1 gap-2">
                   <Label for="wi-middlename">
                     Middle name <span class="text-xs font-normal text-muted-foreground">Optional</span>
                   </Label>
                   <Input id="wi-middlename" v-model="middlename" placeholder="Dela" maxlength="80" autocomplete="off" />
                 </div>
-                <div class="grid gap-2">
+                <div class="grid min-w-0 grid-cols-1 gap-2">
                   <Label for="wi-gender">Gender</Label>
                   <SearchSelect
                     id="wi-gender"
@@ -154,7 +154,7 @@ const {
                     placeholder="Select gender"
                   />
                 </div>
-                <div class="grid gap-2 sm:col-span-2">
+                <div class="grid min-w-0 grid-cols-1 gap-2 sm:col-span-2">
                   <Label for="wi-contact">
                     Contact number <span class="text-xs font-normal text-muted-foreground">Optional</span>
                   </Label>
@@ -173,7 +173,7 @@ const {
               <!-- ─── Step 2: Address & service ─── -->
               <div v-else key="step-2" class="space-y-6 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-3">
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div class="grid gap-2">
+                  <div class="grid min-w-0 grid-cols-1 gap-2">
                     <Label for="wi-province">Province <span class="text-destructive">*</span></Label>
                     <SearchSelect
                       id="wi-province"
@@ -185,7 +185,7 @@ const {
                       @update:model-value="onProvinceChange"
                     />
                   </div>
-                  <div class="grid gap-2">
+                  <div class="grid min-w-0 grid-cols-1 gap-2">
                     <Label for="wi-city">Municipality / City <span class="text-destructive">*</span></Label>
                     <SearchSelect
                       id="wi-city"
@@ -197,7 +197,7 @@ const {
                       @update:model-value="onCityChange"
                     />
                   </div>
-                  <div class="grid gap-2">
+                  <div class="grid min-w-0 grid-cols-1 gap-2">
                     <Label for="wi-barangay">Barangay <span class="text-destructive">*</span></Label>
                     <SearchSelect
                       id="wi-barangay"
@@ -209,11 +209,11 @@ const {
                       @update:model-value="onBarangayChange"
                     />
                   </div>
-                  <div class="grid gap-2">
+                  <div class="grid min-w-0 grid-cols-1 gap-2">
                     <Label for="wi-purok">Purok / Street / Zone <span class="text-destructive">*</span></Label>
                     <Input id="wi-purok" v-model="purok" placeholder="Purok 3A, Sampaguita St." maxlength="160" autocomplete="off" />
                   </div>
-                  <div class="grid gap-2 sm:col-span-2">
+                  <div class="grid min-w-0 grid-cols-1 gap-2 sm:col-span-2">
                     <Label for="wi-purpose">Service you need <span class="text-destructive">*</span></Label>
                     <SearchSelect
                       id="wi-purpose"
