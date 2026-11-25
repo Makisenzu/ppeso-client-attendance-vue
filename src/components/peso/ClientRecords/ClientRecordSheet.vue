@@ -151,7 +151,9 @@ const {
               id="contactNumber"
               v-model="contactNumber"
               type="tel"
-              placeholder="e.g. 0912 345 6789"
+              inputmode="tel"
+              placeholder="e.g. 0912-345-6789"
+              maxlength="13"
               class="h-9 text-xs"
             />
           </div>

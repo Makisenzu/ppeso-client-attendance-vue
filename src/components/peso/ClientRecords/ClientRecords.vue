@@ -433,7 +433,7 @@ const {
                 <TableCell>
                   <div class="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
                     <Phone class="h-3 w-3 shrink-0 text-muted-foreground/60" />
-                    <span>{{ client.contact_number || 'None' }}</span>
+                    <span>{{ client.formattedContact || 'None' }}</span>
                   </div>
                 </TableCell>
 
@@ -621,7 +621,7 @@ const {
             </div>
             <div>
               <span class="text-muted-foreground block text-[10px] uppercase tracking-wider font-semibold">Contact</span>
-              <span class="font-medium text-foreground font-mono">{{ selectedRecord.contact_number || 'N/A' }}</span>
+              <span class="font-medium text-foreground font-mono">{{ selectedRecord.formattedContact || 'N/A' }}</span>
             </div>
             <div class="col-span-2">
               <span class="text-muted-foreground block text-[10px] uppercase tracking-wider font-semibold">Address</span>

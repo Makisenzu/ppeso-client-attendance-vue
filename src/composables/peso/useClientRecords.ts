@@ -68,7 +68,12 @@ export function useClientRecords() {
       // 1. Text Search Filter (name, contact, purok, barangay, geographic, purpose)
       if (q) {
         const nameMatch = item.fullName.toLowerCase().includes(q)
-        const contactMatch = item.contact_number ? item.contact_number.toLowerCase().includes(q) : false
+        // Matches `09123456789`, `0912 345 6789` and `0912-345-6789` alike.
+        const qDigits = q.replace(/\D/g, '')
+        const contactMatch = item.contact_number
+          ? item.formattedContact.toLowerCase().includes(q) ||
+            (qDigits.length > 0 && item.contact_number.replace(/\D/g, '').includes(qDigits))
+          : false
         const addressMatch = item.formattedAddress.toLowerCase().includes(q)
         const purposeMatch = item.purpose ? item.purpose.toLowerCase().includes(q) : false
         const idMatch = item.id.toLowerCase().includes(q)

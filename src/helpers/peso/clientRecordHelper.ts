@@ -161,7 +161,7 @@ export function exportClientRecordsToCsv(records: ClientRecordItem[]): void {
     r.lastname,
     r.fullName,
     r.gender || 'not specified',
-    r.contact_number || '',
+    r.formattedContact,
     r.purok,
     r.barangay,
     r.geographic,

@@ -167,7 +167,7 @@ const {
                     type="tel"
                     inputmode="tel"
                     placeholder="0912 345 6789"
-                    maxlength="20"
+                    maxlength="13"
                     autocomplete="off"
                   />
                 </div>

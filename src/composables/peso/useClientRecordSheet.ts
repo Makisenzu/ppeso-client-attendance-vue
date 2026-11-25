@@ -1,5 +1,6 @@
-import { onMounted, ref, watch, type Ref } from 'vue'
+import { computed, onMounted, ref, watch, type Ref } from 'vue'
 import { usePsgc } from '@/composables/common/usePsgc'
+import { contactDigits, groupContactNumber, isValidContactNumber } from '@/helpers/common/contactNumberHelper'
 import type {
   GenderType,
   ServiceRequired,
@@ -36,7 +37,14 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
   const middlename = ref('')
   const lastname = ref('')
   const gender = ref<GenderType>('not specified')
-  const contactNumber = ref('')
+  // Digits only; the input shows them grouped 4-3-4 (`0912-345-6789`).
+  const contactNumberDigits = ref('')
+  const contactNumber = computed({
+    get: () => groupContactNumber(contactNumberDigits.value, '-'),
+    set: (v: string) => {
+      contactNumberDigits.value = contactDigits(v)
+    },
+  })
   const purok = ref('')
   const purpose = ref<ServiceRequired>('gip')
 
@@ -48,7 +56,7 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
     middlename.value = ''
     lastname.value = ''
     gender.value = 'not specified'
-    contactNumber.value = ''
+    contactNumberDigits.value = ''
     purok.value = ''
     purpose.value = 'gip'
     errorMessage.value = ''
@@ -99,6 +107,10 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
       errorMessage.value = 'Last name is required.'
       return
     }
+    if (contactNumberDigits.value && !isValidContactNumber(contactNumberDigits.value)) {
+      errorMessage.value = 'Contact number must be 11 digits, like 0912-345-6789.'
+      return
+    }
     if (!selectedProvince.value?.name) {
       errorMessage.value = 'Please select a province.'
       return
@@ -121,7 +133,7 @@ export function useClientRecordSheet(options: UseClientRecordSheetOptions) {
       middlename: middlename.value.trim() || null,
       lastname: lastname.value.trim(),
       gender: gender.value,
-      contact_number: contactNumber.value.trim() || null,
+      contact_number: contactNumberDigits.value || null,
       province: selectedProvince.value.name.trim(),
       geographic: selectedCity.value.name.trim(),
       barangay: selectedBarangay.value.name.trim(),

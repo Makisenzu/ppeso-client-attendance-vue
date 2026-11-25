@@ -12,6 +12,8 @@ export interface ClientRecordItem extends WalkinAttendanceRow {
   initials: string
   formattedAddress: string
   formattedCheckIn: string
+  /** `0912-345-6789` (older non-standard numbers as saved); '' when none. */
+  formattedContact: string
 }
 
 export interface ClientRecordStats {

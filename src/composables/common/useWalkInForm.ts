@@ -3,6 +3,7 @@ import { usePsgc } from '@/composables/common/usePsgc'
 import { LOGIN_LOGOS } from '@/composables/common/useLogin'
 import { walkInService, WalkInRateLimitError } from '@/services/common/walkInService'
 import { GENDER_OPTIONS, PURPOSE_OPTIONS } from '@/helpers/peso/clientRecordHelper'
+import { contactDigits, groupContactNumber, isValidContactNumber } from '@/helpers/common/contactNumberHelper'
 import walkInBackground from '@/assets/bg.png'
 import type { GenderType, ServiceRequired } from '@/types/peso/clientRecord'
 import type { SearchSelectOption } from '@/types/common/searchSelect'
@@ -40,7 +41,14 @@ export function useWalkInForm() {
   const middlename = ref('')
   const lastname = ref('')
   const gender = ref<GenderType | ''>('')
-  const contactNumber = ref('')
+  // Digits only; the input shows them grouped 4-3-4 (`0912 345 6789`) as the client types.
+  const contactNumberDigits = ref('')
+  const contactNumber = computed({
+    get: () => groupContactNumber(contactNumberDigits.value, ' '),
+    set: (v: string) => {
+      contactNumberDigits.value = contactDigits(v)
+    },
+  })
   const purok = ref('')
   const purpose = ref<ServiceRequired>('gip')
   const consent = ref(false)
@@ -110,7 +118,7 @@ export function useWalkInForm() {
     middlename.value = ''
     lastname.value = ''
     gender.value = ''
-    contactNumber.value = ''
+    contactNumberDigits.value = ''
     purok.value = ''
     purpose.value = 'gip'
     consent.value = false
@@ -139,8 +147,8 @@ export function useWalkInForm() {
     if (!firstname.value.trim()) return 'First name is required.'
     if (!lastname.value.trim()) return 'Last name is required.'
     if (!gender.value) return 'Please select your sex.'
-    const contact = contactNumber.value.trim()
-    if (contact && !/^[0-9+() -]{7,20}$/.test(contact)) return 'Please enter a valid contact number.'
+    const contact = contactNumberDigits.value
+    if (contact && !isValidContactNumber(contact)) return 'Contact number must be 11 digits, like 0912 345 6789.'
     return ''
   }
 
@@ -186,7 +194,7 @@ export function useWalkInForm() {
         p_middlename: middlename.value.trim(),
         p_lastname: lastname.value.trim(),
         p_gender: gender.value,
-        p_contact_number: contactNumber.value.trim(),
+        p_contact_number: contactNumberDigits.value,
         p_province: selectedProvince.value?.name.trim() ?? '',
         p_geographic: selectedCity.value?.name.trim() ?? '',
         p_barangay: selectedBarangay.value?.name.trim() ?? '',

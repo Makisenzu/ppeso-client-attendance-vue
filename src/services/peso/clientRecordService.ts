@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabase'
+import { formatContactNumber } from '@/helpers/common/contactNumberHelper'
 import type {
   ClientRecordItem,
   WalkinAttendanceInsert,
@@ -40,6 +41,7 @@ function mapToClientRecordItem(row: WalkinAttendanceRow): ClientRecordItem {
     initials,
     formattedAddress,
     formattedCheckIn,
+    formattedContact: formatContactNumber(row.contact_number),
   }
 }
 
