@@ -8,7 +8,7 @@ import type {
   AnnexDSex,
   BeneficiaryType,
   CivilStatus,
-} from '@/types/peso/dataEntry'
+} from '@/types/common/dataEntry'
 
 /**
  * Option lists for the Data Entry page (ANNEX D — Profile of TUPAD Beneficiaries).

@@ -14,26 +14,30 @@ import {
   splitChoice,
   todayIso,
   validateAnnexDForm,
-} from '@/helpers/peso/dataEntryHelper'
-import type { AnnexDEntry, AnnexDEntryInsert, AnnexDFormData, AnnexDFormErrors, AnnexDLocation } from '@/types/peso/dataEntry'
+} from '@/helpers/common/dataEntryHelper'
+import type { AnnexDEntry, AnnexDEntryInsert, AnnexDFormData, AnnexDFormErrors, AnnexDLocation } from '@/types/common/dataEntry'
 import type { SearchSelectOption } from '@/types/common/searchSelect'
 
 const DEFAULT_REGION = 'Region XIII (Caraga)'
 const DEFAULT_PROVINCE = 'Agusan del Sur'
 
-export interface UseDataEntrySheetOptions {
-  open: Ref<boolean>
+export interface UseAnnexDFormOptions {
+  /** When given, the form resets (or loads `entry`) every time this turns true — the admin sheet. */
+  open?: Ref<boolean>
   /** The entry being edited; null when adding. */
-  entry: Ref<AnnexDEntry | null>
-  emit: {
-    (e: 'update:open', value: boolean): void
-    (e: 'submit', payload: AnnexDEntryInsert): void
-  }
+  entry?: Ref<AnnexDEntry | null>
+  /** Called with a valid payload. */
+  onSubmit: (payload: AnnexDEntryInsert) => void
+  onClose?: () => void
 }
 
-/** Add / Edit sheet of the Data Entry page: one ANNEX D beneficiary. */
-export function useDataEntrySheet(options: UseDataEntrySheetOptions) {
-  const { open, entry, emit } = options
+/**
+ * One ANNEX D beneficiary form — shared by the admin Add / Edit sheet and the public /data-entry page.
+ * Rendered by `AnnexDFormFields.vue`.
+ */
+export function useAnnexDForm(options: UseAnnexDFormOptions) {
+  const { open, onSubmit, onClose } = options
+  const entry = options.entry ?? ref<AnnexDEntry | null>(null)
 
   const {
     provinces,
@@ -124,14 +128,22 @@ export function useDataEntrySheet(options: UseDataEntrySheetOptions) {
     }
   }
 
-  // Reset (or load the entry) every time the sheet opens
-  watch(open, (isOpen) => {
-    if (!isOpen) return
+  /**
+   * Clears the form (or loads the entry being edited). `keepLocation` keeps the province, city, barangay,
+   * district and type of beneficiary for the next entry — beneficiaries are encoded a barangay at a time.
+   */
+  const reset = (keepLocation = false) => {
     errors.value = {}
-    // Drop the last sheet's location; initialize() below restores without clearing.
+    const current = entry.value
+    if (keepLocation && !current) {
+      const kept = form.value
+      form.value = { ...emptyAnnexDForm(), district: kept.district, beneficiaryType: kept.beneficiaryType }
+      loadChoices()
+      return
+    }
+    // Drop the last location; initialize() below restores without clearing.
     selectedCity.value = null
     selectedBarangay.value = null
-    const current = entry.value
     if (current) {
       form.value = entryToForm(current)
       void initPsgc(DEFAULT_REGION, current.province, current.municipality, current.barangay)
@@ -140,10 +152,16 @@ export function useDataEntrySheet(options: UseDataEntrySheetOptions) {
       void initPsgc(DEFAULT_REGION, DEFAULT_PROVINCE)
     }
     loadChoices()
-  })
+  }
+
+  if (open) {
+    watch(open, (isOpen) => {
+      if (isOpen) reset()
+    })
+  }
 
   const handleClose = () => {
-    emit('update:open', false)
+    onClose?.()
   }
 
   const handleSubmit = () => {
@@ -154,7 +172,7 @@ export function useDataEntrySheet(options: UseDataEntrySheetOptions) {
     }
     errors.value = found
     if (Object.keys(errors.value).length > 0 || !location) return
-    emit('submit', formToPayload(form.value, location))
+    onSubmit(formToPayload(form.value, location))
   }
 
   return {
@@ -177,6 +195,7 @@ export function useDataEntrySheet(options: UseDataEntrySheetOptions) {
     isLoadingProvinces,
     isLoadingCities,
     isLoadingBarangays,
+    reset,
     handleClose,
     handleSubmit,
   }

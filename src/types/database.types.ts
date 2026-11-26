@@ -109,6 +109,7 @@ export type Database = {
           province: string
           sex: string
           skills_training_needed: string | null
+          source: string
           updated_at: string
         }
         Insert: {
@@ -136,6 +137,7 @@ export type Database = {
           province: string
           sex: string
           skills_training_needed?: string | null
+          source?: string
           updated_at?: string
         }
         Update: {
@@ -163,7 +165,26 @@ export type Database = {
           province?: string
           sex?: string
           skills_training_needed?: string | null
+          source?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      annex_d_submission_log: {
+        Row: {
+          id: number
+          ip_hash: string
+          submitted_at: string
+        }
+        Insert: {
+          id?: never
+          ip_hash: string
+          submitted_at?: string
+        }
+        Update: {
+          id?: never
+          ip_hash?: string
+          submitted_at?: string
         }
         Relationships: []
       }
@@ -728,6 +749,32 @@ export type Database = {
         Returns: undefined
       }
       login_email_exists: { Args: { p_email: string }; Returns: boolean }
+      submit_annex_d_entry: {
+        Args: {
+          p_average_monthly_income: number
+          p_barangay: string
+          p_beneficiary_type: string
+          p_birthdate: string
+          p_civil_status: string
+          p_contact_number: string
+          p_dependent: string
+          p_district: string
+          p_epayment_account: string
+          p_extension_name: string
+          p_firstname: string
+          p_id_number: string
+          p_id_type: string
+          p_interested_in_employment: boolean
+          p_lastname: string
+          p_middlename: string
+          p_municipality: string
+          p_occupation: string
+          p_province: string
+          p_sex: string
+          p_skills_training_needed: string
+        }
+        Returns: undefined
+      }
       submit_walk_in: {
         Args: {
           p_barangay: string

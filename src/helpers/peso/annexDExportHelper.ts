@@ -4,8 +4,8 @@ import {
   beneficiaryTypeExportLabel,
   civilStatusCode,
   computeAge,
-} from '@/helpers/peso/dataEntryHelper'
-import type { AnnexDEntry } from '@/types/peso/dataEntry'
+} from '@/helpers/common/dataEntryHelper'
+import type { AnnexDEntry } from '@/types/common/dataEntry'
 import templateUrl from '@/assets/form/ANNEX D BLANK FORM.xlsx?url'
 
 /**

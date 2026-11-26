@@ -29,6 +29,14 @@ export const loginRoutes: RouteRecordRaw[] = [
         // Dark only, like login, so the card reads over the background photo.
         meta: { title: 'Walk-in Client Form', forceDark: true },
       },
+      {
+        // Public ANNEX D data entry for PESO staff: no auth, several encoders at once. Submit only
+        // (insert-only RPC public.submit_annex_d_entry — SECURITY.md §4.3 exception, migration 20261126000100).
+        path: 'data-entry',
+        name: 'public-data-entry',
+        component: () => import('@/pages/PublicDataEntry.vue'),
+        meta: { title: 'TUPAD Data Entry', forceDark: true },
+      },
     ],
   },
   // No public signup: accounts are created by admins. Unknown paths (e.g. /signup) go to /login,

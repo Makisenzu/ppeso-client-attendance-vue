@@ -1,10 +1,10 @@
 import { supabase } from '@/services/supabase'
-import { sanitizeSearchTerm } from '@/helpers/peso/dataEntryHelper'
-import type { AnnexDEntry, AnnexDEntryInsert, AnnexDFilters, AnnexDSelection } from '@/types/peso/dataEntry'
+import { sanitizeSearchTerm } from '@/helpers/common/dataEntryHelper'
+import type { AnnexDEntry, AnnexDEntryInsert, AnnexDFilters, AnnexDSelection } from '@/types/common/dataEntry'
 
 /** Every ANNEX D column the page and the export use (no audit stamps). */
 const ENTRY_COLUMNS =
-  'id, lastname, firstname, middlename, extension_name, birthdate, barangay, municipality, province, district, id_type, id_number, contact_number, epayment_account, beneficiary_type, occupation, sex, civil_status, average_monthly_income, dependent, interested_in_employment, skills_training_needed, created_at'
+  'id, lastname, firstname, middlename, extension_name, birthdate, barangay, municipality, province, district, id_type, id_number, contact_number, epayment_account, beneficiary_type, occupation, sex, civil_status, average_monthly_income, dependent, interested_in_employment, skills_training_needed, source, created_at'
 
 /** Enough to list a selected entry in the delete confirmation. */
 const SELECTION_COLUMNS = 'id, lastname, firstname, middlename, extension_name'
@@ -32,6 +32,7 @@ function applyFilters<Q extends { eq: (c: string, v: string) => Q; or: (f: strin
 /** Turns constraint errors into messages an admin can act on; hides other database details. */
 function toEntryError(error: { code?: string; message: string }, fallback: string): Error {
   if (error.code === '22007') return new Error(error.message) // raised on purpose by the trigger
+  if (error.code === '23505') return new Error('This beneficiary is already encoded (same name and birthdate).')
   if (error.code === '23514') return new Error('Some details are not valid. Check the form and try again.')
   if (error.code === '42501') return new Error('Only administrators can manage data entries.')
   return new Error(fallback)

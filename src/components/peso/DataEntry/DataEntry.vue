@@ -31,7 +31,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { useDataEntry } from '@/composables/peso/useDataEntry'
 import { formatDisplayDateLong } from '@/helpers/common/dateFormatHelper'
 import { formatContactNumber } from '@/helpers/common/contactNumberHelper'
-import { beneficiaryTypeLabel, computeAge, formatEntryName, sexLabel } from '@/helpers/peso/dataEntryHelper'
+import { beneficiaryTypeLabel, computeAge, formatEntryName, sexLabel } from '@/helpers/common/dataEntryHelper'
 
 const {
   entries,
@@ -312,7 +312,7 @@ const checkboxClass =
                     <div class="flex min-w-0 flex-col">
                       <span class="text-sm font-semibold text-foreground">{{ formatEntryName(entry) }}</span>
                       <span class="text-[11px] text-muted-foreground">
-                        {{ sexLabel(entry.sex) }}<template v-if="entry.occupation"> · {{ entry.occupation }}</template>
+                        {{ sexLabel(entry.sex) }}<template v-if="entry.occupation"> · {{ entry.occupation }}</template><template v-if="entry.source === 'public_form'"> · Public form</template>
                       </span>
                     </div>
                   </TableCell>

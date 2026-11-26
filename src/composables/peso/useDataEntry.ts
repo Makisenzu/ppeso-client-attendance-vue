@@ -3,7 +3,7 @@ import { dataEntryService } from '@/services/peso/dataEntryService'
 import { usePsgc } from '@/composables/common/usePsgc'
 import { useToastAlert } from '@/composables/common/useToastAlert'
 import { getPageRange } from '@/helpers/common/paginationHelper'
-import { BENEFICIARY_TYPE_OPTIONS, formatEntryName } from '@/helpers/peso/dataEntryHelper'
+import { BENEFICIARY_TYPE_OPTIONS, formatEntryName } from '@/helpers/common/dataEntryHelper'
 import { downloadAnnexDXlsx } from '@/helpers/peso/annexDExportHelper'
 import type {
   AnnexDEntry,
@@ -11,7 +11,7 @@ import type {
   AnnexDFilters,
   AnnexDSelection,
   BeneficiaryType,
-} from '@/types/peso/dataEntry'
+} from '@/types/common/dataEntry'
 import type { SearchSelectOption } from '@/types/common/searchSelect'
 
 const SEARCH_DEBOUNCE_MS = 300
