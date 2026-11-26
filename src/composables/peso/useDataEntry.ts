@@ -20,8 +20,8 @@ const DELETE_PREVIEW_LIMIT = 50
 
 /**
  * Data Entry page (admin): ANNEX D — Profile of TUPAD Beneficiaries. Lists `core.annex_d_entries` one page at a
- * time from the server (BACKEND.md §15), adds / edits / deletes entries, and exports the filtered or selected
- * entries as the ANNEX D Excel file.
+ * time from the server (BACKEND.md §15), adds / edits / deletes entries, and exports every entry as the ANNEX D Excel
+ * file with the selected entries highlighted.
  */
 export function useDataEntry() {
   const toast = useToastAlert()
@@ -96,11 +96,11 @@ export function useDataEntry() {
   const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
   const pageRange = computed(() => getPageRange(currentPage.value, pageSize.value, total.value))
 
-  // New filters → page 1, a fresh selection (it never holds hidden rows), and a reload
+  // New filters → page 1 and a reload. The selection is kept, so entries can be picked across several
+  // searches (it may hold rows the current filters hide; the delete dialog lists every selected name).
   watch(
     filters,
     () => {
-      selected.value = new Map()
       if (currentPage.value !== 1) currentPage.value = 1
       else void fetchEntries()
     },
@@ -131,9 +131,12 @@ export function useDataEntry() {
     ageFilter.value = 'ALL'
   }
 
-  // ─── Bulk Selection (kept across pages; cleared when the filters change) ───
+  // ─── Bulk Selection (kept across pages and searches) ───
   const selected = ref<Map<string, AnnexDSelection>>(new Map())
   const isSelectingAll = ref(false)
+  /** The filters "Select all matching" last ran with; cleared as soon as any row is deselected. */
+  const selectedAllFor = ref<string | null>(null)
+  const filtersKey = computed(() => JSON.stringify(filters.value))
   const selectedCount = computed(() => selected.value.size)
   const isSelected = (id: string) => selected.value.has(id)
   const isAllPageSelected = computed(
@@ -142,27 +145,40 @@ export function useDataEntry() {
   const isPagePartiallySelected = computed(
     () => !isAllPageSelected.value && entries.value.some((e) => selected.value.has(e.id)),
   )
-  const isAllFilteredSelected = computed(() => total.value > 0 && selected.value.size >= total.value)
+  const isAllFilteredSelected = computed(
+    () =>
+      total.value > 0 &&
+      (selectedAllFor.value === filtersKey.value || (!hasAnyFilter.value && selected.value.size >= total.value)),
+  )
 
   const toggleSelect = (entry: AnnexDEntry) => {
     const next = new Map(selected.value)
-    if (next.has(entry.id)) next.delete(entry.id)
-    else next.set(entry.id, entry)
+    if (next.has(entry.id)) {
+      next.delete(entry.id)
+      selectedAllFor.value = null
+    } else next.set(entry.id, entry)
     selected.value = next
   }
 
   const toggleSelectPage = () => {
     const next = new Map(selected.value)
-    if (isAllPageSelected.value) entries.value.forEach((e) => next.delete(e.id))
-    else entries.value.forEach((e) => next.set(e.id, e))
+    if (isAllPageSelected.value) {
+      entries.value.forEach((e) => next.delete(e.id))
+      selectedAllFor.value = null
+    } else entries.value.forEach((e) => next.set(e.id, e))
     selected.value = next
   }
 
+  /** Adds every entry matching the current search / filters to the selection (earlier picks stay). */
   const selectAllFiltered = async () => {
     isSelectingAll.value = true
+    const key = filtersKey.value
     try {
       const rows = await dataEntryService.listSelection(filters.value)
-      selected.value = new Map(rows.map((r) => [r.id, r]))
+      const next = new Map(selected.value)
+      rows.forEach((r) => next.set(r.id, r))
+      selected.value = next
+      selectedAllFor.value = key
     } catch (err) {
       showFeedback(err instanceof Error ? err.message : 'Failed to select the entries.', 'error')
     } finally {
@@ -172,6 +188,7 @@ export function useDataEntry() {
 
   const clearSelection = () => {
     selected.value = new Map()
+    selectedAllFor.value = null
   }
 
   // ─── Add / Edit Sheet ───
@@ -247,6 +264,7 @@ export function useDataEntry() {
       const deletedIds = await dataEntryService.deleteEntries(ids)
       const deleted = new Set(deletedIds)
       selected.value = new Map([...selected.value].filter(([id]) => !deleted.has(id)))
+      selectedAllFor.value = null
       isDeleteDialogOpen.value = false
       recordsToDelete.value = []
       const skipped = ids.length - deletedIds.length
@@ -263,25 +281,26 @@ export function useDataEntry() {
     }
   }
 
-  // ─── Export ANNEX D (.xlsx): the selection if any, otherwise every filtered entry ───
+  // ─── Export ANNEX D (.xlsx): every entry (search and filters ignored), the selected rows highlighted ───
+  const ALL_ENTRIES: AnnexDFilters = { search: '', beneficiaryType: 'ALL', municipality: '', age: 'ALL' }
   const isExporting = ref(false)
   const exportLabel = computed(() =>
-    selectedCount.value > 0 ? `Export ${selectedCount.value} to Excel` : 'Export to Excel',
+    selectedCount.value > 0 ? `Export (${selectedCount.value} highlighted)` : 'Export to Excel',
   )
 
   const exportAnnexD = async () => {
     isExporting.value = true
     try {
-      const rows =
-        selected.value.size > 0
-          ? await dataEntryService.listByIds([...selected.value.keys()])
-          : await dataEntryService.listForExport(filters.value)
+      const rows = await dataEntryService.listForExport(ALL_ENTRIES)
       if (rows.length === 0) {
         showFeedback('There are no entries to export.', 'error')
         return
       }
-      await downloadAnnexDXlsx(rows)
-      showFeedback(`ANNEX D exported with ${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}.`)
+      const highlightIds = new Set(selected.value.keys())
+      const highlighted = rows.filter((r) => highlightIds.has(r.id)).length
+      await downloadAnnexDXlsx(rows, highlightIds)
+      const count = `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}`
+      showFeedback(`ANNEX D exported with ${count}${highlighted > 0 ? ` (${highlighted} highlighted)` : ''}.`)
     } catch (err) {
       console.error('Failed to export ANNEX D')
       showFeedback(err instanceof Error ? err.message : 'Failed to export. Please try again.', 'error')

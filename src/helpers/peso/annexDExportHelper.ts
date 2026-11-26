@@ -19,10 +19,17 @@ import templateUrl from '@/assets/form/ANNEX D BLANK FORM.xlsx?url'
  * birthdate, I–K, M = location, N–Z = the rest (G and L are the form's empty spacer columns). Rows 17–19 hold the
  * Province / Municipality / Barangay lines. More than 205 entries → rows are added after row 227 and everything
  * below moves down.
+ *
+ * Highlighting: entries whose id is in `highlightIds` get a yellow fill on their row (columns B–Z). Every cell
+ * style of the template gets a filled twin appended to `xl/styles.xml`, and a highlighted cell swaps its `s` to
+ * that twin, so its font, border and number format stay the same.
  */
 
 const SHEET_PATH = 'xl/worksheets/sheet1.xml'
 const WORKBOOK_PATH = 'xl/workbook.xml'
+const STYLES_PATH = 'xl/styles.xml'
+/** Excel ARGB of the highlight fill (a spreadsheet colour, not a UI token). */
+const HIGHLIGHT_ARGB = 'FFFFFF00'
 const FIRST_DATA_ROW = 23
 const LAST_DATA_ROW = 227
 const TEMPLATE_ROWS = LAST_DATA_ROW - FIRST_DATA_ROW + 1
@@ -30,6 +37,15 @@ const TEMPLATE_ROWS = LAST_DATA_ROW - FIRST_DATA_ROW + 1
 const DATA_COLUMNS = 'BCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
 type CellValue = string | number | null
+/** Maps a cell's style index to the one it should use (identity for plain rows). */
+type StyleMap = (style: string) => string
+const keepStyle: StyleMap = (style) => style
+
+/** The rows to highlight: entry ids + the style index of each style's filled twin. */
+export interface AnnexDHighlight {
+  ids: ReadonlySet<string>
+  styleOf: StyleMap
+}
 
 const XML_TEXT_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }
 function escapeXml(text: string): string {
@@ -122,12 +138,36 @@ export function sortAnnexDEntries(entries: AnnexDEntry[]): AnnexDEntry[] {
 
 // ─── Sheet XML editing ───────────────────────────────────────────────────────
 
-/** `<c r="REF" …/>` or `<c r="REF" …>…</c>` → the same cell with `value`, keeping its style. */
-function setCell(rowXml: string, ref: string, value: CellValue): string {
+/**
+ * Adds a solid highlight fill and, for every cell style, a twin that uses it (twin of style i = count + i).
+ * Pure: returns the new styles XML and the style map.
+ */
+export function addAnnexDHighlightStyles(stylesXml: string): { xml: string; styleOf: StyleMap } {
+  const fillsCount = Number(/<fills count="(\d+)"/.exec(stylesXml)?.[1] ?? NaN)
+  const xfsBlock = /<cellXfs count="(\d+)">([\s\S]*?)<\/cellXfs>/.exec(stylesXml)
+  if (!Number.isFinite(fillsCount) || !xfsBlock) throw new Error('The ANNEX D form file is damaged.')
+  const xfCount = Number(xfsBlock[1])
+  const twins = (xfsBlock[2].match(/<xf\b[^>]*?(?:\/>|>[\s\S]*?<\/xf>)/g) ?? []).map((xf) =>
+    xf
+      .replace(/\sfillId="\d+"/, ` fillId="${fillsCount}"`)
+      .replace(/\sapplyFill="\d"/, '')
+      .replace(/^<xf\b/, '<xf applyFill="1"'),
+  )
+  const fill = `<fill><patternFill patternType="solid"><fgColor rgb="${HIGHLIGHT_ARGB}"/><bgColor indexed="64"/></patternFill></fill>`
+  const xml = stylesXml
+    .replace(/<fills count="\d+">([\s\S]*?)<\/fills>/, (_m, body: string) => `<fills count="${fillsCount + 1}">${body}${fill}</fills>`)
+    .replace(/<cellXfs count="\d+">([\s\S]*?)<\/cellXfs>/, (_m, body: string) =>
+      `<cellXfs count="${xfCount + twins.length}">${body}${twins.join('')}</cellXfs>`,
+    )
+  return { xml, styleOf: (style) => String(xfCount + Number(style)) }
+}
+
+/** `<c r="REF" …/>` or `<c r="REF" …>…</c>` → the same cell with `value`, keeping its style (mapped by `styleOf`). */
+function setCell(rowXml: string, ref: string, value: CellValue, styleOf: StyleMap = keepStyle): string {
   const pattern = new RegExp(`<c r="${ref}"([^>]*?)(?:/>|>[\\s\\S]*?</c>)`)
   return rowXml.replace(pattern, (_match, attrs: string) => {
-    const style = /\ss="(\d+)"/.exec(attrs)
-    const s = style ? ` s="${style[1]}"` : ''
+    const mapped = styleOf(/\ss="(\d+)"/.exec(attrs)?.[1] ?? '0')
+    const s = mapped === '0' ? '' : ` s="${mapped}"`
     if (value === null || value === '') return `<c r="${ref}"${s}/>`
     if (typeof value === 'number') return `<c r="${ref}"${s}><v>${value}</v></c>`
     return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`
@@ -182,7 +222,12 @@ function cloneDataRow(templateRow: string, rowNumber: number): string {
 }
 
 /** Fills the template's sheet XML with `entries`. Pure: returns the new XML. */
-export function fillAnnexDSheet(sheetXml: string, unsorted: AnnexDEntry[], today: Date): string {
+export function fillAnnexDSheet(
+  sheetXml: string,
+  unsorted: AnnexDEntry[],
+  today: Date,
+  highlight?: AnnexDHighlight,
+): string {
   const entries = sortAnnexDEntries(unsorted)
   const start = sheetXml.indexOf('<sheetData>') + '<sheetData>'.length
   const end = sheetXml.indexOf('</sheetData>')
@@ -199,14 +244,14 @@ export function fillAnnexDSheet(sheetXml: string, unsorted: AnnexDEntry[], today
     if (n === 17) out.push(setHeaderCell(row, 'B17', header.province))
     else if (n === 18) out.push(setHeaderCell(row, 'B18', header.municipality))
     else if (n === 19) out.push(setHeaderCell(row, 'B19', header.barangay))
-    else if (n >= FIRST_DATA_ROW && n <= LAST_DATA_ROW) out.push(fillDataRow(row, n, entries[n - FIRST_DATA_ROW], today))
+    else if (n >= FIRST_DATA_ROW && n <= LAST_DATA_ROW) out.push(fillDataRow(row, n, entries[n - FIRST_DATA_ROW], today, highlight))
     else if (n > LAST_DATA_ROW) out.push(extra > 0 ? shiftRow(row, LAST_DATA_ROW + 1, extra) : row)
     else out.push(row)
 
     if (n === LAST_DATA_ROW) {
       for (let i = 0; i < extra; i++) {
         const target = LAST_DATA_ROW + 1 + i
-        out.push(fillDataRow(cloneDataRow(lastTemplateRow, target), target, entries[TEMPLATE_ROWS + i], today))
+        out.push(fillDataRow(cloneDataRow(lastTemplateRow, target), target, entries[TEMPLATE_ROWS + i], today, highlight))
       }
     }
   }
@@ -229,10 +274,17 @@ export function fillAnnexDSheet(sheetXml: string, unsorted: AnnexDEntry[], today
   return before + out.join('') + after
 }
 
-function fillDataRow(rowXml: string, rowNum: number, entry: AnnexDEntry | undefined, today: Date): string {
+function fillDataRow(
+  rowXml: string,
+  rowNum: number,
+  entry: AnnexDEntry | undefined,
+  today: Date,
+  highlight?: AnnexDHighlight,
+): string {
   const values = entry ? buildAnnexDRow(entry, rowNum - FIRST_DATA_ROW + 1, today) : {}
+  const styleOf = entry && highlight?.ids.has(entry.id) ? highlight.styleOf : keepStyle
   let xml = rowXml
-  for (const col of DATA_COLUMNS) xml = setCell(xml, `${col}${rowNum}`, values[col] ?? null)
+  for (const col of DATA_COLUMNS) xml = setCell(xml, `${col}${rowNum}`, values[col] ?? null, styleOf)
   return xml
 }
 
@@ -247,8 +299,12 @@ export function fillAnnexDWorkbookXml(workbookXml: string, entries: AnnexDEntry[
 
 // ─── Build + download ───────────────────────────────────────────────────────
 
-/** The filled ANNEX D workbook as an .xlsx Blob. */
-export async function buildAnnexDXlsx(entries: AnnexDEntry[], today: Date = new Date()): Promise<Blob> {
+/** The filled ANNEX D workbook as an .xlsx Blob; rows of `highlightIds` are filled yellow. */
+export async function buildAnnexDXlsx(
+  entries: AnnexDEntry[],
+  today: Date = new Date(),
+  highlightIds: ReadonlySet<string> = new Set(),
+): Promise<Blob> {
   const [{ default: JSZip }, template] = await Promise.all([
     import('jszip'),
     fetch(templateUrl).then((res) => {
@@ -261,7 +317,16 @@ export async function buildAnnexDXlsx(entries: AnnexDEntry[], today: Date = new 
   const workbook = await zip.file(WORKBOOK_PATH)?.async('string')
   if (!sheet || !workbook) throw new Error('The ANNEX D form file is damaged.')
 
-  zip.file(SHEET_PATH, fillAnnexDSheet(sheet, entries, today))
+  let highlight: AnnexDHighlight | undefined
+  if (entries.some((e) => highlightIds.has(e.id))) {
+    const styles = await zip.file(STYLES_PATH)?.async('string')
+    if (!styles) throw new Error('The ANNEX D form file is damaged.')
+    const { xml, styleOf } = addAnnexDHighlightStyles(styles)
+    zip.file(STYLES_PATH, xml)
+    highlight = { ids: highlightIds, styleOf }
+  }
+
+  zip.file(SHEET_PATH, fillAnnexDSheet(sheet, entries, today, highlight))
   zip.file(WORKBOOK_PATH, fillAnnexDWorkbookXml(workbook, entries))
 
   return zip.generateAsync({
@@ -277,10 +342,13 @@ export function annexDFileName(today: Date = new Date()): string {
   return `ANNEX-D-TUPAD-Beneficiaries-${iso}.xlsx`
 }
 
-/** Fills the ANNEX D form with `entries` and downloads it. */
-export async function downloadAnnexDXlsx(entries: AnnexDEntry[]): Promise<void> {
+/** Fills the ANNEX D form with `entries` (rows of `highlightIds` highlighted) and downloads it. */
+export async function downloadAnnexDXlsx(
+  entries: AnnexDEntry[],
+  highlightIds: ReadonlySet<string> = new Set(),
+): Promise<void> {
   const today = new Date()
-  const blob = await buildAnnexDXlsx(entries, today)
+  const blob = await buildAnnexDXlsx(entries, today, highlightIds)
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url

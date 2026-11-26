@@ -109,7 +109,8 @@ const checkboxClass =
           variant="outline"
           size="sm"
           class="gap-1.5 text-xs cursor-pointer"
-          :disabled="isExporting || total === 0"
+          :disabled="isExporting"
+          :title="selectedCount > 0 ? 'Exports all entries; the selected ones are highlighted' : 'Exports all entries'"
           @click="exportAnnexD"
         >
           <Loader2 v-if="isExporting" class="h-3.5 w-3.5 animate-spin" />
