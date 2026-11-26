@@ -104,7 +104,7 @@ src/
 ├── components/
 │   ├── ui/                  # shadcn-vue primitives (DO NOT edit manually)
 │   ├── sidebars/            # PesoSidebar, SupervisorSidebar, BeneficiarySidebar (+ index.ts)
-│   ├── peso/                # Admin screens: Dashboard/, attendance/, ClientRecords/, Offices/, Evaluations/, Files/,
+│   ├── peso/                # Admin screens: Dashboard/, attendance/, ClientRecords/, DataEntry/, Offices/, Evaluations/, Files/,
 │   │                        #   UserManagement/, UserKiosk/, Calendar/
 │   ├── supervisor/          # Supervisor screens (Dashboard/, TeamAttendance/, TeamAccomplishments/, TeamEvaluations/) — own office
 │   └── beneficiary/         # Beneficiary screens (Dashboard/)

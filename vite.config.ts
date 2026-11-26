@@ -10,4 +10,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  optimizeDeps: {
+    // Loaded only when an admin exports ANNEX D (dynamic import). Pre-bundle it at startup so the dev server
+    // doesn't discover it on the first click, re-optimize, and break the import with a stale `?v=` hash.
+    include: ['jszip'],
+  },
 })

@@ -127,6 +127,9 @@ Team Attendance table. Photos open through short-lived signed URLs only (`Person
 
 **Files** (`core.pacd_files` + Storage bucket `pacd-files`, private): admins only — read, upload, edit details and
 delete. Files open with 10-minute signed URLs.
+
+**Data Entry** (`core.annex_d_entries`, ANNEX D TUPAD profiles): admins only — read, add, edit, delete, export.
+Verified 11/26/2026 by impersonation: admin inserts and reads; supervisor and beneficiary see 0 rows and are denied.
 | **anon**        | —                                   | —                         | —                    | —                    |
 
 **Inactive / pending accounts** get no admin or supervisor rights (`private.user_role()` only returns a role for

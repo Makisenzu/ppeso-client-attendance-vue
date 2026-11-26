@@ -118,7 +118,7 @@ Services are in [`src/services/<role>/`](../src/services).
 | Role     | Service Files |
 | -------- | ------------- |
 | `common` | `authService.ts` (sign in / up / out, current user, profile, auth listener), `accountService.ts` (own account: read, edit own name, change password — Account page for every role), `psgc.ts` (axios instance for psgc.cloud) |
-| `peso`   | `attendanceService.ts` (attendance list, delete, bulk delete, DTR range queries, realtime), `kioskService.ts` (passcode punch, today's punches), `clientRecordService.ts` (walk-in CRUD), `officeService.ts` (office CRUD), `directoryService.ts` (office directory CRUD, picker options), `userManagementService.ts` (profiles, account creation, delete) |
+| `peso`   | `attendanceService.ts` (attendance list, delete, bulk delete, DTR range queries, realtime), `kioskService.ts` (passcode punch, today's punches), `clientRecordService.ts` (walk-in CRUD), `officeService.ts` (office CRUD), `directoryService.ts` (office directory CRUD, picker options), `userManagementService.ts` (profiles, account creation, delete), `dataEntryService.ts` (ANNEX D entries: server-paged list, CRUD, bulk delete, export rows) |
 
 ### Service Pattern
 

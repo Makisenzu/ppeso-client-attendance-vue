@@ -238,6 +238,34 @@ A supervisor's monthly evaluation of an active GIP in their office. `UNIQUE (pro
 `core.check_gip_evaluation()` (BEFORE INSERT/UPDATE, **SECURITY INVOKER**): only the supervisor of the GIP's office,
 only active GIPs (`position = gip`), only the current month, no changes once Submitted.
 
+### `annex_d_entries`
+
+The admin **Data Entry** page: TUPAD beneficiary profiles for DOLE's "Profile of TUPAD Beneficiaries" (ANNEX D,
+`src/assets/form/ANNEX D BLANK FORM.xlsx`), exported as .xlsx. Migration `20261126000000_annex_d_entries.sql`.
+One column per ANNEX D field; "No." and "Age" are not stored (the export numbers rows and computes age).
+
+| Column | Type | Notes |
+| ------ | ---- | ----- |
+| `id` | `uuid` | PK |
+| `lastname` / `firstname` | `text` | NOT NULL, 1–100 |
+| `middlename` / `extension_name` | `text` | nullable (≤ 100 / ≤ 10) |
+| `birthdate` | `date` | NOT NULL, ≥ 1900-01-01, not in the future (trigger, PHT) |
+| `barangay` / `municipality` / `province` | `text` | NOT NULL — Project Location (PSGC names) |
+| `district` | `text` | nullable, ≤ 30 (`District I` / `District II`) |
+| `id_type` / `id_number` | `text` | nullable (≤ 100 / ≤ 50) |
+| `contact_number` | `text` | nullable, digits only `^09\d{9}$` (trigger strips formatting) |
+| `epayment_account` | `text` | nullable, ≤ 50 |
+| `beneficiary_type` | `text` | NOT NULL: `underemployed_self_employed`, `displaced`, `pwd`, `indigenous_people`, `former_rebel`, `former_violent_extremist`, `parent_malnourished_child`, `senior_citizen` |
+| `occupation` / `dependent` / `skills_training_needed` | `text` | nullable (≤ 150 / 150 / 200) |
+| `sex` | `text` | NOT NULL: `male` / `female` |
+| `civil_status` | `text` | nullable: `single`, `married`, `divorced`, `separated`, `widowed` (exported S / M / D / SP / W) |
+| `average_monthly_income` | `numeric(12,2)` | nullable, ≥ 0 |
+| `interested_in_employment` | `boolean` | nullable — "Interested in wage employment or self-employment? (Yes/No)" |
+| `created_by` | `uuid` | FK → profiles ON DELETE SET NULL, defaults to the caller; fixed after insert |
+| `created_at` / `updated_at` | `timestamptz` | set by `trg_touch_annex_d_entry` |
+
+`core.touch_annex_d_entry()` (BEFORE INSERT/UPDATE) trims text, turns blanks into null and rejects future birthdates.
+
 ### Core Enums
 
 | Enum               | Values                                                        |
@@ -293,6 +321,7 @@ Full rules in SECURITY.md §4. Policy names are prefixed with the table (`"atten
 | `core.evaluation_questions` | admin all · supervisor active only                | admin |
 | `core.gip_evaluations`    | admin all · supervisor same office (GIPs: none)         | insert: supervisor same office · update: supervisor, Draft only · delete: admin, supervisor own-office Draft |
 | `core.pacd_files`         | admin                                                   | admin (bucket `pacd-files`: admin read / upload / delete) |
+| `core.annex_d_entries`    | admin                                                   | admin |
 
 ---
 
@@ -375,6 +404,7 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261123000300_special_days.sql` | `core.special_days` + `special_day_type`, admin set / delete RPCs, `get_special_days`; `flag_daily_absences` skips special days |
 | `20261124000000_admin_user_email.sql` | `admin_get_user_email()` / `admin_update_user_email()` — admins edit a user's sign-in email |
 | `20261124000100_login_email_exists.sql` | `login_email_exists()` — login marks only the wrong field |
+| `20261126000000_annex_d_entries.sql` | `core.annex_d_entries` (Data Entry: ANNEX D TUPAD beneficiary profiles) + admin-only RLS + normalising trigger |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).

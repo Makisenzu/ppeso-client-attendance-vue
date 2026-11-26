@@ -4,7 +4,7 @@ import PesoLayout from '@/layouts/PesoLayout.vue'
 
 /**
  * Admin area. Admins can open only these pages — the ones in PesoSidebar
- * (Dashboard, Attendance/kiosk, Daily Time Record, Accomplishments, Evaluations, Files, Client Records, Offices,
+ * (Dashboard, Attendance/kiosk, Daily Time Record, Accomplishments, Evaluations, Files, Client Records, Data Entry, Offices,
  * User Management, Calendar) plus Generate DTR, Fix DTR, Office Details and Account. Unknown /dashboard URLs go to the dashboard.
  */
 export const pesoRoutes: RouteRecordRaw[] = [
@@ -72,6 +72,13 @@ export const pesoRoutes: RouteRecordRaw[] = [
         path: 'records',
         name: 'records',
         component: () => import('@/components/peso/ClientRecords/ClientRecords.vue'),
+      },
+      {
+        // Data Entry: TUPAD beneficiary profiles (DOLE ANNEX D) + Excel export (admins only)
+        path: 'data-entry',
+        name: 'data-entry',
+        component: () => import('@/components/peso/DataEntry/DataEntry.vue'),
+        meta: { title: 'Data Entry' },
       },
       {
         path: 'offices',

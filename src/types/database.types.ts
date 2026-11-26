@@ -83,6 +83,90 @@ export type Database = {
         }
         Relationships: []
       }
+      annex_d_entries: {
+        Row: {
+          average_monthly_income: number | null
+          barangay: string
+          beneficiary_type: string
+          birthdate: string
+          civil_status: string | null
+          contact_number: string | null
+          created_at: string
+          created_by: string | null
+          dependent: string | null
+          district: string | null
+          epayment_account: string | null
+          extension_name: string | null
+          firstname: string
+          id: string
+          id_number: string | null
+          id_type: string | null
+          interested_in_employment: boolean | null
+          lastname: string
+          middlename: string | null
+          municipality: string
+          occupation: string | null
+          province: string
+          sex: string
+          skills_training_needed: string | null
+          updated_at: string
+        }
+        Insert: {
+          average_monthly_income?: number | null
+          barangay: string
+          beneficiary_type: string
+          birthdate: string
+          civil_status?: string | null
+          contact_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          dependent?: string | null
+          district?: string | null
+          epayment_account?: string | null
+          extension_name?: string | null
+          firstname: string
+          id?: string
+          id_number?: string | null
+          id_type?: string | null
+          interested_in_employment?: boolean | null
+          lastname: string
+          middlename?: string | null
+          municipality: string
+          occupation?: string | null
+          province: string
+          sex: string
+          skills_training_needed?: string | null
+          updated_at?: string
+        }
+        Update: {
+          average_monthly_income?: number | null
+          barangay?: string
+          beneficiary_type?: string
+          birthdate?: string
+          civil_status?: string | null
+          contact_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          dependent?: string | null
+          district?: string | null
+          epayment_account?: string | null
+          extension_name?: string | null
+          firstname?: string
+          id?: string
+          id_number?: string | null
+          id_type?: string | null
+          interested_in_employment?: boolean | null
+          lastname?: string
+          middlename?: string | null
+          municipality?: string
+          occupation?: string | null
+          province?: string
+          sex?: string
+          skills_training_needed?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       attendances: {
         Row: {
           am_check_in: string | null
