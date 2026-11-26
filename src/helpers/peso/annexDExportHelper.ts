@@ -105,14 +105,13 @@ const byText = (a: string | null, b: string | null) =>
   (a ?? '').trim().localeCompare((b ?? '').trim(), 'en', { sensitivity: 'base' })
 
 /**
- * ANNEX D row order: grouped by municipality, then barangay (both A–Z), and within each barangay by
- * last name, first name, middle name, extension (A–Z). "No." runs continuously through the sheet.
+ * ANNEX D row order: grouped by municipality (A–Z), and within each municipality by last name, first name,
+ * middle name, extension (A–Z) across all its barangays. "No." runs continuously through the sheet.
  */
 export function sortAnnexDEntries(entries: AnnexDEntry[]): AnnexDEntry[] {
   return [...entries].sort(
     (a, b) =>
       byText(a.municipality, b.municipality) ||
-      byText(a.barangay, b.barangay) ||
       byText(a.lastname, b.lastname) ||
       byText(a.firstname, b.firstname) ||
       byText(a.middlename, b.middlename) ||
