@@ -192,6 +192,12 @@ admins pass.
 >    10 minutes and 20 per day, 30 per minute overall, and no repeat of the same name within 30 minutes
 >    (`core.walk_in_submission_log`, MD5 IP hashes kept 1 day; migration `20261125000100`). anon still has no table
 >    grants and no `core` usage.
+>    `public.submit_annex_d_entry(...)` (public `/data-entry` form for PESO staff encoding ANNEX D TUPAD profiles,
+>    approved by the user 11/26/2026, migration `20261126000100_public_annex_d_entry.sql`): insert-only, returns
+>    nothing, validates every field, rejects a beneficiary already encoded (unique last + first + middle name +
+>    birthdate → `23505`), and rate-limits with `PT429`: 200 per IP per 10 minutes and 2,000 per day (staff share the
+>    office IP), 60 per minute overall (`core.annex_d_submission_log`, MD5 IP hashes kept 1 day). Rows it adds have
+>    `source = 'public_form'` and no `created_by`. Verified: anon can't read `core.annex_d_entries` (HTTP 401).
 > 5. **NEVER grant `TRUNCATE`, `TRIGGER` or `REFERENCES`** to `authenticated` (TRUNCATE ignores RLS).
 > 6. **Test every policy change with a non-admin user** (impersonation snippet in DATABASE.md §9).
 > 7. **Profiles are created only by the `on_auth_user_created` trigger**, and it must never read `role` from metadata.

@@ -261,10 +261,14 @@ One column per ANNEX D field; "No." and "Age" are not stored (the export numbers
 | `civil_status` | `text` | nullable: `single`, `married`, `divorced`, `separated`, `widowed` (exported S / M / D / SP / W) |
 | `average_monthly_income` | `numeric(12,2)` | nullable, ≥ 0 |
 | `interested_in_employment` | `boolean` | nullable — "Interested in wage employment or self-employment? (Yes/No)" |
-| `created_by` | `uuid` | FK → profiles ON DELETE SET NULL, defaults to the caller; fixed after insert |
+| `source` | `text` | `admin` (Data Entry page) or `public_form` (public `/data-entry` form) |
+| `created_by` | `uuid` | FK → profiles ON DELETE SET NULL, defaults to the caller (null from the public form); fixed after insert |
 | `created_at` / `updated_at` | `timestamptz` | set by `trg_touch_annex_d_entry` |
 
 `core.touch_annex_d_entry()` (BEFORE INSERT/UPDATE) trims text, turns blanks into null and rejects future birthdates.
+Unique index `uq_annex_d_entries_person` on (lower(lastname), lower(firstname), lower(coalesce(middlename, '')), birthdate):
+one row per beneficiary. The public form writes only through `public.submit_annex_d_entry(...)` (DEFINER, anon +
+authenticated, insert-only, rate-limited via `core.annex_d_submission_log` — SECURITY.md §4.3).
 
 ### Core Enums
 
@@ -405,6 +409,7 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261124000000_admin_user_email.sql` | `admin_get_user_email()` / `admin_update_user_email()` — admins edit a user's sign-in email |
 | `20261124000100_login_email_exists.sql` | `login_email_exists()` — login marks only the wrong field |
 | `20261126000000_annex_d_entries.sql` | `core.annex_d_entries` (Data Entry: ANNEX D TUPAD beneficiary profiles) + admin-only RLS + normalising trigger |
+| `20261126000100_public_annex_d_entry.sql` | `annex_d_entries.source`, one-row-per-beneficiary unique index, `public.submit_annex_d_entry()` (public `/data-entry` form) + `core.annex_d_submission_log` rate limits |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).
