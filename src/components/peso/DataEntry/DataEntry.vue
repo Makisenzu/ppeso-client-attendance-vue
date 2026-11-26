@@ -43,6 +43,8 @@ const {
   municipalityFilter,
   typeFilterOptions,
   municipalityFilterOptions,
+  ageFilter,
+  ageFilterOptions,
   hasActiveFilters,
   hasAnyFilter,
   currentPage,
@@ -179,6 +181,13 @@ const checkboxClass =
               placeholder="All municipalities"
               search-placeholder="Search municipality..."
               aria-label="Filter by municipality"
+            />
+            <SearchSelect
+              v-model="ageFilter"
+              :options="ageFilterOptions"
+              :searchable="false"
+              placeholder="All ages"
+              aria-label="Filter by age"
             />
           </MobileFilters>
         </div>

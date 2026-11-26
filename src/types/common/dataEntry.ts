@@ -48,10 +48,14 @@ export interface AnnexDFormData {
 export type AnnexDFormErrors = Partial<Record<keyof AnnexDFormData | 'location' | 'submit', string>>
 
 /** Filters the list and the export share. */
+/** `ABOVE_60`: 61 years old and older today. */
+export type AnnexDAgeFilter = 'ALL' | 'ABOVE_60'
+
 export interface AnnexDFilters {
   search: string
   beneficiaryType: BeneficiaryType | 'ALL'
   municipality: string
+  age: AnnexDAgeFilter
 }
 
 /** The location picked in the form (names as PSGC gives them). */

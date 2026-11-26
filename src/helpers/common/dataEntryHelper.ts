@@ -1,5 +1,6 @@
 import { contactDigits, isValidContactNumber } from '@/helpers/common/contactNumberHelper'
 import type {
+  AnnexDAgeFilter,
   AnnexDEntry,
   AnnexDEntryInsert,
   AnnexDFormData,
@@ -165,6 +166,21 @@ export function computeAge(birthdate: string | null, today: Date = new Date()): 
 export function todayIso(): string {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** Age filter of the admin list: everyone, or beneficiaries above 60 (61 and older). */
+export const SENIOR_MIN_AGE = 61
+export const AGE_FILTER_OPTIONS: { value: AnnexDAgeFilter; label: string }[] = [
+  { value: 'ALL', label: 'All ages' },
+  { value: 'ABOVE_60', label: 'Above 60 (61 and older)' },
+]
+
+/**
+ * Latest birthdate (`yyyy-mm-dd`) of someone at least `age` years old today — `birthdate <= cutoff` matches
+ * `computeAge(birthdate) >= age`.
+ */
+export function birthdateCutoffForAge(age: number, today: Date = new Date()): string {
+  return `${today.getFullYear() - age}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 }
 
 /** `₱12,500.00` */

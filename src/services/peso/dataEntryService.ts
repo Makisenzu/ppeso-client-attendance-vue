@@ -1,5 +1,5 @@
 import { supabase } from '@/services/supabase'
-import { sanitizeSearchTerm } from '@/helpers/common/dataEntryHelper'
+import { birthdateCutoffForAge, sanitizeSearchTerm, SENIOR_MIN_AGE } from '@/helpers/common/dataEntryHelper'
 import type { AnnexDEntry, AnnexDEntryInsert, AnnexDFilters, AnnexDSelection } from '@/types/common/dataEntry'
 
 /** Every ANNEX D column the page and the export use (no audit stamps). */
@@ -15,13 +15,13 @@ const EXPORT_PAGE_SIZE = 1000
 const table = () => supabase.schema('core').from('annex_d_entries')
 
 /** Applies the page's search and filters to a query (same rules for the list, the ids and the export). */
-function applyFilters<Q extends { eq: (c: string, v: string) => Q; or: (f: string) => Q }>(
-  query: Q,
-  filters: AnnexDFilters,
-): Q {
+function applyFilters<
+  Q extends { eq: (c: string, v: string) => Q; lte: (c: string, v: string) => Q; or: (f: string) => Q },
+>(query: Q, filters: AnnexDFilters): Q {
   let q = query
   if (filters.beneficiaryType !== 'ALL') q = q.eq('beneficiary_type', filters.beneficiaryType)
   if (filters.municipality) q = q.eq('municipality', filters.municipality)
+  if (filters.age === 'ABOVE_60') q = q.lte('birthdate', birthdateCutoffForAge(SENIOR_MIN_AGE))
   const term = sanitizeSearchTerm(filters.search)
   if (term) {
     q = q.or(`lastname.ilike.%${term}%,firstname.ilike.%${term}%,middlename.ilike.%${term}%,id_number.ilike.%${term}%`)

@@ -3,9 +3,10 @@ import { dataEntryService } from '@/services/peso/dataEntryService'
 import { usePsgc } from '@/composables/common/usePsgc'
 import { useToastAlert } from '@/composables/common/useToastAlert'
 import { getPageRange } from '@/helpers/common/paginationHelper'
-import { BENEFICIARY_TYPE_OPTIONS, formatEntryName } from '@/helpers/common/dataEntryHelper'
+import { AGE_FILTER_OPTIONS, BENEFICIARY_TYPE_OPTIONS, formatEntryName } from '@/helpers/common/dataEntryHelper'
 import { downloadAnnexDXlsx } from '@/helpers/peso/annexDExportHelper'
 import type {
+  AnnexDAgeFilter,
   AnnexDEntry,
   AnnexDEntryInsert,
   AnnexDFilters,
@@ -37,6 +38,7 @@ export function useDataEntry() {
   const debouncedSearch = ref('')
   const typeFilter = ref<BeneficiaryType | 'ALL'>('ALL')
   const municipalityFilter = ref('')
+  const ageFilter = ref<AnnexDAgeFilter>('ALL')
   const currentPage = ref(1)
   const pageSize = ref(10)
 
@@ -44,8 +46,12 @@ export function useDataEntry() {
     search: debouncedSearch.value,
     beneficiaryType: typeFilter.value,
     municipality: municipalityFilter.value,
+    age: ageFilter.value,
   }))
-  const hasActiveFilters = computed(() => typeFilter.value !== 'ALL' || municipalityFilter.value !== '')
+  const hasActiveFilters = computed(
+    () => typeFilter.value !== 'ALL' || municipalityFilter.value !== '' || ageFilter.value !== 'ALL',
+  )
+  const ageFilterOptions: SearchSelectOption[] = AGE_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))
   const hasAnyFilter = computed(() => hasActiveFilters.value || debouncedSearch.value.trim() !== '')
 
   let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -122,6 +128,7 @@ export function useDataEntry() {
     debouncedSearch.value = ''
     typeFilter.value = 'ALL'
     municipalityFilter.value = ''
+    ageFilter.value = 'ALL'
   }
 
   // ─── Bulk Selection (kept across pages; cleared when the filters change) ───
@@ -302,6 +309,8 @@ export function useDataEntry() {
     municipalityFilter,
     typeFilterOptions,
     municipalityFilterOptions,
+    ageFilter,
+    ageFilterOptions,
     hasActiveFilters,
     hasAnyFilter,
     currentPage,
