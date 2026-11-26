@@ -42,7 +42,8 @@ const {
   isLoadingBarangays,
 } = props.state
 
-const inputClass = 'h-9 text-base md:text-xs'
+// Typed values show in capitals (and are saved that way — formToPayload); hints stay as written
+const inputClass = 'h-9 text-base md:text-xs uppercase placeholder:normal-case'
 const invalidClass = 'border-destructive focus-visible:ring-destructive'
 const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground'
 </script>
@@ -101,6 +102,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
         <div class="space-y-1.5">
           <Label for="de-sex" class="text-xs font-medium">Sex <span class="text-destructive">*</span></Label>
           <SearchSelect
+            uppercase
             id="de-sex"
             v-model="form.sex"
             :options="SEX_OPTIONS"
@@ -113,6 +115,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
         <div class="space-y-1.5">
           <Label for="de-civil" class="text-xs font-medium">Civil Status</Label>
           <SearchSelect
+            uppercase
             id="de-civil"
             v-model="form.civilStatus"
             :options="CIVIL_STATUS_OPTIONS"
@@ -146,6 +149,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
             <span v-if="isLoadingProvinces" class="text-[10px] text-muted-foreground animate-pulse">Loading...</span>
           </Label>
           <SearchSelect
+            uppercase
             id="de-province"
             v-model="provinceCode"
             :options="provinceOptions"
@@ -161,6 +165,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
             <span v-if="isLoadingCities" class="text-[10px] text-muted-foreground animate-pulse">Loading...</span>
           </Label>
           <SearchSelect
+            uppercase
             id="de-city"
             v-model="cityCode"
             :options="cityOptions"
@@ -176,6 +181,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
             <span v-if="isLoadingBarangays" class="text-[10px] text-muted-foreground animate-pulse">Loading...</span>
           </Label>
           <SearchSelect
+            uppercase
             id="de-barangay"
             v-model="barangayCode"
             :options="barangayOptions"
@@ -188,6 +194,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
         <div class="space-y-1.5">
           <Label for="de-district" class="text-xs font-medium">District</Label>
           <SearchSelect
+            uppercase
             id="de-district"
             v-model="form.district"
             :options="DISTRICT_OPTIONS"
@@ -208,6 +215,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
         <div class="space-y-1.5">
           <Label for="de-id-type" class="text-xs font-medium">Type of ID</Label>
           <SearchSelect
+            uppercase
             id="de-id-type"
             v-model="choices.idType.choice"
             :options="ID_TYPE_OPTIONS"
@@ -248,6 +256,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
         <div class="space-y-1.5 sm:col-span-2">
           <Label for="de-type" class="text-xs font-medium">Type of Beneficiary <span class="text-destructive">*</span></Label>
           <SearchSelect
+            uppercase
             id="de-type"
             v-model="form.beneficiaryType"
             :options="BENEFICIARY_TYPE_OPTIONS"
@@ -260,6 +269,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
         <div class="space-y-1.5">
           <Label for="de-occupation" class="text-xs font-medium">Occupation</Label>
           <SearchSelect
+            uppercase
             id="de-occupation"
             v-model="choices.occupation.choice"
             :options="OCCUPATION_OPTIONS"
@@ -300,6 +310,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
         <div class="space-y-1.5">
           <Label for="de-interested" class="text-xs font-medium">Interested in wage or self-employment?</Label>
           <SearchSelect
+            uppercase
             id="de-interested"
             v-model="form.interested"
             :options="INTERESTED_OPTIONS"
@@ -310,6 +321,7 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
         <div class="space-y-1.5 sm:col-span-2">
           <Label for="de-skills" class="text-xs font-medium">Skills Training Needed</Label>
           <SearchSelect
+            uppercase
             id="de-skills"
             v-model="choices.skillsTrainingNeeded.choice"
             :options="SKILLS_TRAINING_OPTIONS"

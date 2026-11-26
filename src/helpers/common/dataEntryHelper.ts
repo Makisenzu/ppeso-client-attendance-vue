@@ -260,20 +260,24 @@ export function validateAnnexDForm(form: AnnexDFormData, location: AnnexDLocatio
   return errors
 }
 
-/** Insert / update payload. Call only after `validateAnnexDForm` passed. */
+/**
+ * Insert / update payload. Call only after `validateAnnexDForm` passed. Every typed value and the location are
+ * saved in capital letters, as ANNEX D is filled. The district keeps its option value (`District I`).
+ */
 export function formToPayload(form: AnnexDFormData, location: AnnexDLocation): AnnexDEntryInsert {
-  const text = (value: string) => value.trim() || null
+  const upper = (value: string) => value.trim().toUpperCase()
+  const text = (value: string) => upper(value) || null
   const income = form.averageMonthlyIncome.replace(/,/g, '').trim()
   return {
-    lastname: form.lastname.trim(),
-    firstname: form.firstname.trim(),
+    lastname: upper(form.lastname),
+    firstname: upper(form.firstname),
     middlename: text(form.middlename),
     extension_name: text(form.extensionName),
     birthdate: form.birthdate,
-    barangay: location.barangay.trim(),
-    municipality: location.municipality.trim(),
-    province: location.province.trim(),
-    district: text(form.district),
+    barangay: upper(location.barangay),
+    municipality: upper(location.municipality),
+    province: upper(location.province),
+    district: form.district.trim() || null,
     id_type: text(form.idType),
     id_number: text(form.idNumber),
     contact_number: contactDigits(form.contactNumber) || null,

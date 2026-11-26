@@ -20,6 +20,8 @@ const props = withDefaults(
     emptyText?: string
     disabled?: boolean
     invalid?: boolean
+    /** Show the chosen value and the options in capital letters (the placeholder stays as written). */
+    uppercase?: boolean
     id?: string
     class?: string
   }>(),
@@ -30,6 +32,7 @@ const props = withDefaults(
     emptyText: 'No matches found.',
     disabled: false,
     invalid: false,
+    uppercase: false,
   },
 )
 
@@ -59,7 +62,7 @@ const { isOpen, dropUp, search, selectedOption, filteredOptions, close, toggle, 
       @click="toggle"
     >
       <span v-if="selectedOption" class="min-w-0 truncate font-medium text-foreground">
-        {{ selectedOption.label }}
+        <span :class="uppercase && 'uppercase'">{{ selectedOption.label }}</span>
       </span>
       <span v-else class="truncate text-muted-foreground">{{ placeholder }}</span>
       <ChevronDown
@@ -93,7 +96,7 @@ const { isOpen, dropUp, search, selectedOption, filteredOptions, close, toggle, 
           @click="select(option)"
         >
           <div class="min-w-0">
-            <div class="truncate font-medium text-foreground">{{ option.label }}</div>
+            <div class="truncate font-medium text-foreground" :class="uppercase && 'uppercase'">{{ option.label }}</div>
             <div v-if="option.description" class="truncate text-[11px] text-muted-foreground">
               {{ option.description }}
             </div>
