@@ -4,12 +4,9 @@ import type { AnnexDEntryInsert } from '@/types/common/dataEntry'
 
 type SubmitArgs = Database['public']['Functions']['submit_annex_d_entry']['Args']
 
-/** The server refused the entry because of a rate limit (HTTP 429 / errcode PT429). */
-export class DataEntryRateLimitError extends Error {}
-
 /**
- * Public Data Entry form (/data-entry). Calls the insert-only `public.submit_annex_d_entry` RPC, which validates,
- * rate-limits and stores one ANNEX D beneficiary. Nothing is read back (RA 10173 — PRIVACY.md).
+ * Public Data Entry form (/data-entry). Calls the insert-only `public.submit_annex_d_entry` RPC, which validates
+ * and stores one ANNEX D beneficiary. Nothing is read back (RA 10173 — PRIVACY.md).
  */
 export const publicDataEntryService = {
   async submit(entry: AnnexDEntryInsert): Promise<void> {
@@ -40,7 +37,6 @@ export const publicDataEntryService = {
     } as unknown as SubmitArgs
     const { error } = await supabase.rpc('submit_annex_d_entry', args)
     // Never log the payload: it holds the beneficiary's personal data.
-    if (error?.code === 'PT429') throw new DataEntryRateLimitError(error.message)
     // Messages raised on purpose by the function (validation, duplicates) are safe to show
     if (error && ['22023', '22007', '23505'].includes(error.code)) throw new Error(error.message)
     if (error) throw new Error('Could not save the entry. Please try again.')

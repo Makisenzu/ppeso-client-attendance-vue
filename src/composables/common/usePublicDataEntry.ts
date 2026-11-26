@@ -1,13 +1,11 @@
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useAnnexDForm } from '@/composables/common/useAnnexDForm'
 import { useToastAlert } from '@/composables/common/useToastAlert'
 import { LOGIN_LOGOS } from '@/composables/common/useLogin'
-import { publicDataEntryService, DataEntryRateLimitError } from '@/services/common/publicDataEntryService'
+import { publicDataEntryService } from '@/services/common/publicDataEntryService'
 import { formatEntryName } from '@/helpers/common/dataEntryHelper'
 import dataEntryBackground from '@/assets/bg.png'
 import type { AnnexDEntryInsert } from '@/types/common/dataEntry'
-
-const COOLDOWN_AFTER_LIMIT_S = 60
 
 /**
  * Public Data Entry form (/data-entry): PESO staff encode ANNEX D TUPAD beneficiaries without signing in, several
@@ -22,23 +20,8 @@ export function usePublicDataEntry() {
   /** Names saved from this browser in this visit (newest first) — so the encoder can see their progress. */
   const savedThisSession = ref<string[]>([])
 
-  const cooldown = ref(0)
-  let cooldownTimer: ReturnType<typeof setInterval> | undefined
-  const stopCooldown = () => {
-    if (cooldownTimer) clearInterval(cooldownTimer)
-    cooldownTimer = undefined
-  }
-  const startCooldown = (seconds: number) => {
-    stopCooldown()
-    cooldown.value = seconds
-    cooldownTimer = setInterval(() => {
-      cooldown.value -= 1
-      if (cooldown.value <= 0) stopCooldown()
-    }, 1000)
-  }
-
   const submit = async (payload: AnnexDEntryInsert) => {
-    if (isSubmitting.value || cooldown.value > 0) return
+    if (isSubmitting.value) return
     isSubmitting.value = true
     errorMessage.value = ''
     try {
@@ -53,7 +36,6 @@ export function usePublicDataEntry() {
       toast.success(`Saved ${name}.`)
       formState.reset(true)
     } catch (err) {
-      if (err instanceof DataEntryRateLimitError) startCooldown(COOLDOWN_AFTER_LIMIT_S)
       errorMessage.value = err instanceof Error ? err.message : 'Could not save the entry. Please try again.'
     } finally {
       isSubmitting.value = false
@@ -69,7 +51,6 @@ export function usePublicDataEntry() {
   }
 
   onMounted(() => formState.reset(false))
-  onBeforeUnmount(stopCooldown)
 
   return {
     formState,
@@ -78,7 +59,6 @@ export function usePublicDataEntry() {
     isSubmitting,
     errorMessage,
     savedThisSession,
-    cooldown,
     clearAll,
     logos: LOGIN_LOGOS,
     backgroundImage: dataEntryBackground,

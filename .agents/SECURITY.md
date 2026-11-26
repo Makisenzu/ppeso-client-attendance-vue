@@ -195,8 +195,8 @@ admins pass.
 >    `public.submit_annex_d_entry(...)` (public `/data-entry` form for PESO staff encoding ANNEX D TUPAD profiles,
 >    approved by the user 11/26/2026, migration `20261126000100_public_annex_d_entry.sql`): insert-only, returns
 >    nothing, validates every field, rejects a beneficiary already encoded (unique last + first + middle name +
->    birthdate → `23505`), and rate-limits with `PT429`: 200 per IP per 10 minutes and 2,000 per day (staff share the
->    office IP), 60 per minute overall (`core.annex_d_submission_log`, MD5 IP hashes kept 1 day). Rows it adds have
+>    birthdate → `23505`). **No rate limit** — removed at the user's request 11/26/2026 (migration `20261126000200`)
+>    so staff can encode in bulk; anyone with the link can add rows (never read them). Rows it adds have
 >    `source = 'public_form'` and no `created_by`. Verified: anon can't read `core.annex_d_entries` (HTTP 401).
 > 5. **NEVER grant `TRUNCATE`, `TRIGGER` or `REFERENCES`** to `authenticated` (TRUNCATE ignores RLS).
 > 6. **Test every policy change with a non-admin user** (impersonation snippet in DATABASE.md §9).

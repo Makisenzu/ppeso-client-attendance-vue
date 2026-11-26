@@ -170,24 +170,6 @@ export type Database = {
         }
         Relationships: []
       }
-      annex_d_submission_log: {
-        Row: {
-          id: number
-          ip_hash: string
-          submitted_at: string
-        }
-        Insert: {
-          id?: never
-          ip_hash: string
-          submitted_at?: string
-        }
-        Update: {
-          id?: never
-          ip_hash?: string
-          submitted_at?: string
-        }
-        Relationships: []
-      }
       attendances: {
         Row: {
           am_check_in: string | null

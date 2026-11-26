@@ -268,7 +268,7 @@ One column per ANNEX D field; "No." and "Age" are not stored (the export numbers
 `core.touch_annex_d_entry()` (BEFORE INSERT/UPDATE) trims text, turns blanks into null and rejects future birthdates.
 Unique index `uq_annex_d_entries_person` on (lower(lastname), lower(firstname), lower(coalesce(middlename, '')), birthdate):
 one row per beneficiary. The public form writes only through `public.submit_annex_d_entry(...)` (DEFINER, anon +
-authenticated, insert-only, rate-limited via `core.annex_d_submission_log` — SECURITY.md §4.3).
+authenticated, insert-only, no rate limit — SECURITY.md §4.3).
 
 ### Core Enums
 
@@ -410,6 +410,7 @@ type ProfileSummary = Pick<ProfileRow, 'id' | 'firstname' | 'lastname' | 'role' 
 | `20261124000100_login_email_exists.sql` | `login_email_exists()` — login marks only the wrong field |
 | `20261126000000_annex_d_entries.sql` | `core.annex_d_entries` (Data Entry: ANNEX D TUPAD beneficiary profiles) + admin-only RLS + normalising trigger |
 | `20261126000100_public_annex_d_entry.sql` | `annex_d_entries.source`, one-row-per-beneficiary unique index, `public.submit_annex_d_entry()` (public `/data-entry` form) + `core.annex_d_submission_log` rate limits |
+| `20261126000200_public_annex_d_entry_no_rate_limit.sql` | `submit_annex_d_entry()` without rate limits; drops `core.annex_d_submission_log` |
 
 > Migrations `0400`–`0900` were applied before being recorded; on 11/18/2026 they were marked applied with
 > `supabase migration repair --status applied` (no SQL re-run).

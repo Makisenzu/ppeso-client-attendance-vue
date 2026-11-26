@@ -11,7 +11,6 @@ const {
   isSubmitting,
   errorMessage,
   savedThisSession,
-  cooldown,
   clearAll,
   logos,
   backgroundImage,
@@ -94,9 +93,9 @@ const {
               Clear all
             </Button>
             <div class="flex flex-col gap-1 sm:items-end">
-              <Button type="submit" class="w-full sm:w-auto sm:min-w-36" :disabled="isSubmitting || cooldown > 0">
+              <Button type="submit" class="w-full sm:w-auto sm:min-w-36" :disabled="isSubmitting">
                 <Loader2 v-if="isSubmitting" class="size-4 animate-spin" />
-                {{ isSubmitting ? 'Saving...' : cooldown > 0 ? `Try again in ${cooldown}s` : 'Save entry' }}
+                {{ isSubmitting ? 'Saving...' : 'Save entry' }}
               </Button>
               <p class="text-center text-[11px] text-muted-foreground sm:text-right">
                 Location and type of beneficiary stay filled for the next entry.
