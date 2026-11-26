@@ -36,7 +36,7 @@ const props = withDefaults(
 const model = defineModel<string>({ default: '' })
 const emit = defineEmits<{ (e: 'change', value: string): void }>()
 
-const { isOpen, search, selectedOption, filteredOptions, close, toggle, select } = useSearchSelect({
+const { isOpen, dropUp, search, selectedOption, filteredOptions, close, toggle, select } = useSearchSelect({
   options: () => props.options,
   searchable: () => props.searchable,
   disabled: () => props.disabled,
@@ -70,7 +70,8 @@ const { isOpen, search, selectedOption, filteredOptions, close, toggle, select }
 
     <div
       v-if="isOpen"
-      class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in zoom-in-95"
+      class="absolute z-50 w-full overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in zoom-in-95"
+      :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
     >
       <div v-if="searchable" class="border-b bg-muted/20 p-2">
         <div class="relative">
@@ -79,7 +80,7 @@ const { isOpen, search, selectedOption, filteredOptions, close, toggle, select }
         </div>
       </div>
 
-      <div class="max-h-60 divide-y divide-border/40 overflow-y-auto" role="listbox">
+      <div class="max-h-60 divide-y divide-border/40 overflow-y-auto [scrollbar-width:thin]" role="listbox">
         <button
           v-for="option in filteredOptions"
           :key="option.value"

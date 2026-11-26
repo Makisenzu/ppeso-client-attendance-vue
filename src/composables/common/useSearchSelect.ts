@@ -14,10 +14,15 @@ export interface UseSearchSelectOptions {
   onChange: (value: string) => void
 }
 
+/** Height the list needs: search box + up to 240px of options (`max-h-60`) + margins. */
+const LIST_SPACE_PX = 320
+
 /** State and behaviour for SearchSelect.vue (open / close, search, selection). */
 export function useSearchSelect(options: UseSearchSelectOptions) {
   const isOpen = ref(false)
   const search = ref('')
+  /** Open the list above the trigger when there isn't room below it (e.g. the last field of a form). */
+  const dropUp = ref(false)
 
   const selectedOption = computed(
     () => options.options().find((o) => o.value === options.model.value) ?? null,
@@ -39,8 +44,16 @@ export function useSearchSelect(options: UseSearchSelectOptions) {
 
   const toggle = () => {
     if (options.disabled()) return
-    if (isOpen.value) close()
-    else isOpen.value = true
+    if (isOpen.value) {
+      close()
+      return
+    }
+    const rect = options.root.value?.getBoundingClientRect()
+    if (rect) {
+      const below = window.innerHeight - rect.bottom
+      dropUp.value = below < LIST_SPACE_PX && rect.top > below
+    }
+    isOpen.value = true
   }
 
   const select = (option: SearchSelectOption) => {
@@ -66,5 +79,5 @@ export function useSearchSelect(options: UseSearchSelectOptions) {
     options.root.value?.querySelector<HTMLInputElement>('input')?.focus()
   })
 
-  return { isOpen, search, selectedOption, filteredOptions, close, toggle, select }
+  return { isOpen, dropUp, search, selectedOption, filteredOptions, close, toggle, select }
 }

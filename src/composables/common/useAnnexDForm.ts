@@ -3,6 +3,7 @@ import { usePsgc } from '@/composables/common/usePsgc'
 import { contactDigits, groupContactNumber } from '@/helpers/common/contactNumberHelper'
 import {
   computeAge,
+  districtForMunicipality,
   emptyAnnexDForm,
   entryToForm,
   formToPayload,
@@ -119,6 +120,14 @@ export function useAnnexDForm(options: UseAnnexDFormOptions) {
     },
   })
 
+  // District comes from the city / municipality (Agusan del Sur); other provinces pick it by hand
+  const autoDistrict = computed(() => districtForMunicipality(selectedProvince.value?.name, selectedCity.value?.name))
+  const isDistrictAuto = computed(() => autoDistrict.value !== null)
+  watch(autoDistrict, (district, previous) => {
+    if (district) form.value.district = district
+    else if (previous) form.value.district = '' // left Agusan del Sur: don't keep the auto-filled value
+  })
+
   const currentLocation = (): AnnexDLocation | null => {
     if (!selectedProvince.value || !selectedCity.value || !selectedBarangay.value) return null
     return {
@@ -192,6 +201,7 @@ export function useAnnexDForm(options: UseAnnexDFormOptions) {
     barangayCode,
     selectedProvince,
     selectedCity,
+    isDistrictAuto,
     isLoadingProvinces,
     isLoadingCities,
     isLoadingBarangays,

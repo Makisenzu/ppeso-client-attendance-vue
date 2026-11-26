@@ -45,6 +45,43 @@ export const DISTRICT_OPTIONS = [
   { value: 'District II', label: 'District II' },
 ]
 
+/** Legislative districts of Agusan del Sur, by city / municipality. */
+const AGUSAN_DEL_SUR_DISTRICTS: Record<string, 'District I' | 'District II'> = {
+  bayugan: 'District I',
+  esperanza: 'District I',
+  prosperidad: 'District I',
+  'san luis': 'District I',
+  sibagat: 'District I',
+  talacogon: 'District I',
+  bunawan: 'District II',
+  'la paz': 'District II',
+  loreto: 'District II',
+  rosario: 'District II',
+  'san francisco': 'District II',
+  'santa josefa': 'District II',
+  trento: 'District II',
+  veruela: 'District II',
+}
+
+/** `City of Bayugan` / `Bayugan City` → `bayugan`; `Sta. Josefa` → `santa josefa`. */
+function normalizePlaceName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/\(.*?\)/g, '')
+    .replace(/^city of\s+/, '')
+    .replace(/\s+city$/, '')
+    .replace(/^sta\.?\s+/, 'santa ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** The district of an Agusan del Sur city / municipality, or null when it isn't one. */
+export function districtForMunicipality(province: string | null | undefined, municipality: string | null | undefined): string | null {
+  if (!province || !municipality || normalizePlaceName(province) !== 'agusan del sur') return null
+  return AGUSAN_DEL_SUR_DISTRICTS[normalizePlaceName(municipality)] ?? null
+}
+
 export const INTERESTED_OPTIONS = [
   { value: 'yes', label: 'Yes' },
   { value: 'no', label: 'No' },

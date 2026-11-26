@@ -36,6 +36,7 @@ const {
   barangayCode,
   selectedProvince,
   selectedCity,
+  isDistrictAuto,
   isLoadingProvinces,
   isLoadingCities,
   isLoadingBarangays,
@@ -191,8 +192,10 @@ const sectionClass = 'border-b border-border/60 pb-1 text-xs font-semibold upper
             v-model="form.district"
             :options="DISTRICT_OPTIONS"
             :searchable="false"
-            placeholder="Select district"
+            :disabled="isDistrictAuto"
+            :placeholder="selectedCity ? 'Select district' : 'Set from the city / municipality'"
           />
+          <p v-if="isDistrictAuto" class="text-[11px] text-muted-foreground">Set from the city / municipality.</p>
         </div>
       </div>
       <p v-if="errors.location" class="text-[11px] text-destructive">{{ errors.location }}</p>

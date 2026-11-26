@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertCircle, CheckCircle2, Loader2, ShieldCheck } from '@lucide/vue'
+import { AlertCircle, CheckCircle2, Loader2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import AnnexDFormFields from '@/components/common/DataEntry/AnnexDFormFields.vue'
 import { usePublicDataEntry } from '@/composables/common/usePublicDataEntry'
@@ -57,14 +57,6 @@ const {
           <p class="mt-1 text-sm text-muted-foreground">
             Encode one beneficiary at a time for the DOLE ANNEX D profile.
           </p>
-        </div>
-
-        <div class="mt-5 flex items-start gap-2.5 rounded-xl border border-border bg-foreground/[0.03] p-3.5 text-xs leading-relaxed text-muted-foreground">
-          <ShieldCheck class="mt-0.5 size-4 shrink-0 text-primary" />
-          <span>
-            For PESO staff only. These details are confidential under the Data Privacy Act of 2012 (RA 10173): encode
-            only what is on the beneficiary's form, and don't share this link outside the office.
-          </span>
         </div>
 
         <form class="mt-6" novalidate @submit.prevent="handleSubmit">
