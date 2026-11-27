@@ -64,9 +64,21 @@ const DOLE_STYLES = `
   .name { font-weight: bold; text-transform: uppercase; }
   .name.underline { text-decoration: underline; }
   .approved { margin-top: 34px; }
-  .footer { display: flex; align-items: flex-end; gap: 40px; margin-top: 36px; padding-left: 40px;
+  /* The ISO seal + office address footer sits at the bottom centre of the page */
+  .footer { display: flex; align-items: flex-end; justify-content: center; gap: 40px;
             font-family: 'Times New Roman', Times, serif; font-size: 11px; line-height: 1.25; }
   .footer img { height: 42px; width: auto; }
+  /* On screen (preview): the sheet is one A4 page tall and the footer is pushed to its bottom */
+  @media screen {
+    .sheet { min-height: 297mm; display: flex; flex-direction: column; }
+    .footer { margin-top: auto; padding-top: 36px; }
+  }
+  /* Printed: fixed to the bottom of every page; the sheet's bottom padding (repeated on each page) keeps the
+     report text clear of it */
+  @media print {
+    .sheet { padding-bottom: 34mm; }
+    .footer { position: fixed; left: 0; right: 0; bottom: 10mm; }
+  }
 `
 
 function doleDayRow(date: string, day: ReportDay | undefined): string {
