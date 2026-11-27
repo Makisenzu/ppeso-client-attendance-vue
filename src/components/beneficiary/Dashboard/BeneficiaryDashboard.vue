@@ -7,9 +7,12 @@ import {
   ClipboardList,
   Clock,
   FileText,
+  Flame,
   Loader2,
   RefreshCw,
   Sparkles,
+  Target,
+  Trophy,
 } from '@lucide/vue'
 import SwipeRow from '@/components/vuebits/SwipeRow.vue'
 import { Button } from '@/components/ui/button'
@@ -31,6 +34,18 @@ const {
   todayPunches,
   todayNotice,
   statCards,
+  currentStreak,
+  bestStreak,
+  streakDays,
+  streakMessage,
+  streakDayStyle,
+  streakDayDelayStyle,
+  isNewBest,
+  streakTier,
+  nextMilestone,
+  daysToMilestone,
+  displayStreak,
+  milestoneProgressStyle,
   monthLabel,
   monthReport,
   openReport,
@@ -94,6 +109,110 @@ const punchHeaders = ['AM In', 'AM Out', 'PM In', 'PM Out']
     </div>
 
     <template v-else-if="hasLoaded">
+      <!-- ─── Attendance streak ─── -->
+      <Card class="relative overflow-hidden border shadow-xs motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
+        <CardContent class="relative flex flex-col gap-6 p-5 lg:flex-row lg:items-center lg:justify-between">
+          <!-- Flame + count -->
+          <div class="flex items-center gap-4">
+            <div class="relative flex h-16 w-16 shrink-0 items-center justify-center">
+              <template v-if="currentStreak > 0">
+                <span aria-hidden="true" class="absolute inset-1 rounded-full bg-orange-500/25 blur-md motion-safe:animate-glow-pulse dark:bg-orange-400/25" />
+                <span aria-hidden="true" class="absolute bottom-6 left-5 h-1 w-1 rounded-full bg-amber-400 opacity-0 [--ember-x:-6px] motion-safe:animate-ember-rise" />
+                <span aria-hidden="true" class="absolute bottom-7 left-8 h-1.5 w-1.5 rounded-full bg-orange-400 opacity-0 [--ember-x:4px] [animation-delay:800ms] motion-safe:animate-ember-rise" />
+                <span aria-hidden="true" class="absolute bottom-6 right-5 h-1 w-1 rounded-full bg-yellow-300 opacity-0 [--ember-x:8px] [animation-delay:1600ms] motion-safe:animate-ember-rise" />
+              </template>
+              <div
+                class="relative flex h-14 w-14 items-center justify-center rounded-2xl border shadow-xs transition-colors duration-500"
+                :class="currentStreak > 0 ? 'border-orange-500/30 bg-orange-500/10 dark:bg-orange-400/10' : 'bg-muted/30'"
+              >
+                <Flame
+                  v-if="currentStreak > 0"
+                  class="h-8 w-8 fill-orange-500/30 text-orange-500 motion-safe:animate-flame-flicker dark:fill-orange-400/30 dark:text-orange-400"
+                />
+                <Flame v-else class="h-8 w-8 text-muted-foreground motion-safe:animate-flame-sleep" />
+              </div>
+            </div>
+
+            <div class="min-w-0 space-y-0.5">
+              <div class="flex items-center gap-2">
+                <p class="text-xs font-medium text-muted-foreground">Attendance Streak</p>
+                <span
+                  v-if="isNewBest"
+                  class="inline-flex items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-xs motion-safe:animate-in motion-safe:zoom-in-50 motion-safe:duration-500 dark:bg-orange-400 dark:text-black"
+                >
+                  <Sparkles class="h-2.5 w-2.5" />
+                  New best!
+                </span>
+                <Badge v-else-if="currentStreak > 0" variant="outline" class="h-4 px-1.5 py-0 text-[10px] font-medium">
+                  {{ streakTier }}
+                </Badge>
+              </div>
+              <p class="flex items-baseline gap-1.5">
+                <span class="font-mono text-4xl font-bold tracking-tight tabular-nums text-foreground">{{ displayStreak }}</span>
+                <span class="text-sm text-muted-foreground">{{ currentStreak === 1 ? 'working day' : 'working days' }}</span>
+              </p>
+              <p class="text-[11px] text-muted-foreground">{{ streakMessage }}</p>
+            </div>
+          </div>
+
+          <!-- Last working days -->
+          <div v-if="streakDays.length > 0" class="flex flex-col gap-1.5">
+            <p class="text-[11px] font-medium text-muted-foreground">Last {{ streakDays.length }} working days</p>
+            <div class="flex flex-wrap gap-1.5">
+              <div
+                v-for="(day, index) in streakDays"
+                :key="day.date"
+                class="group flex w-6 flex-col items-center gap-1 motion-safe:animate-streak-pop"
+                :style="streakDayDelayStyle(index)"
+                :title="`${formatDisplayDateLong(day.date)} · ${streakDayStyle(day.state).label}`"
+              >
+                <span class="relative flex h-6 w-6">
+                  <span
+                    v-if="index === streakDays.length - 1 && day.state !== 'absent'"
+                    aria-hidden="true"
+                    :class="['absolute inset-0 rounded-md opacity-60 motion-safe:animate-ping', streakDayStyle(day.state).class]"
+                  />
+                  <span
+                    :class="[
+                      'relative h-6 w-6 rounded-md border transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:scale-110',
+                      streakDayStyle(day.state).class,
+                      day.state === 'pending' && 'motion-safe:animate-pulse',
+                    ]"
+                  />
+                </span>
+                <span class="text-[9px] uppercase text-muted-foreground">{{ getWeekdayShort(day.date).slice(0, 2) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Next goal + best -->
+          <div class="flex min-w-48 flex-col gap-3">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between gap-2 text-[11px]">
+                <span class="flex items-center gap-1 font-medium text-muted-foreground">
+                  <Target class="h-3 w-3" />
+                  Next goal: {{ nextMilestone }} days
+                </span>
+                <span class="text-muted-foreground">{{ daysToMilestone }} to go</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  class="h-full rounded-full bg-orange-500 dark:bg-orange-400"
+                  :style="milestoneProgressStyle"
+                />
+              </div>
+            </div>
+            <div class="group flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-3 py-2">
+              <span class="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Trophy class="h-3.5 w-3.5 text-amber-500 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-125 dark:text-amber-400" />
+                Best streak
+              </span>
+              <span class="font-mono text-sm font-bold text-foreground">{{ bestStreak }} {{ bestStreak === 1 ? 'day' : 'days' }}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <!-- ─── Today + Report ─── -->
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <!-- Today -->

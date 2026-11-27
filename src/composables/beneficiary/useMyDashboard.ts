@@ -1,5 +1,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { TransitionPresets, usePreferredReducedMotion, useTransition } from '@vueuse/core'
 import { myAttendanceService } from '@/services/beneficiary/myAttendanceService'
 import { myAccomplishmentService } from '@/services/beneficiary/myAccomplishmentService'
 import { myDashboardService } from '@/services/beneficiary/myDashboardService'
@@ -19,13 +20,31 @@ import {
   manilaToday,
 } from '@/helpers/peso/attendanceHelper'
 import type { MyAttendanceRecord } from '@/types/beneficiary/myAttendance'
-import type { MyDashboardProfile, MyTodayPunch, MyUpcomingDay } from '@/types/beneficiary/myDashboard'
+import type {
+  MyDashboardProfile,
+  MyStreakDay,
+  MyStreakDayState,
+  MyTodayPunch,
+  MyUpcomingDay,
+} from '@/types/beneficiary/myDashboard'
 import type { AccomplishmentReport } from '@/types/common/accomplishment'
 import type { HolidayRecord } from '@/types/peso/holiday'
 import type { SpecialDay } from '@/types/common/specialDay'
 
 const RECENT_COUNT = 5
 const UPCOMING_DAYS = 30
+const STREAK_DAYS = 14
+/** Streak goals the progress bar counts toward, in working days */
+const STREAK_MILESTONES = [3, 5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300]
+/** Friendly names for streak lengths (first match from the top wins) */
+const STREAK_TIERS = [
+  { min: 50, label: 'Legendary' },
+  { min: 20, label: 'Unstoppable' },
+  { min: 10, label: 'Blazing' },
+  { min: 5, label: 'On fire' },
+  { min: 3, label: 'Warming up' },
+  { min: 1, label: 'Spark' },
+]
 
 /** yyyy-mm-dd plus n days (calendar dates, no time zone involved) */
 function addDays(date: string, days: number): string {
@@ -121,6 +140,80 @@ export function useMyDashboard() {
   ])
   const monthLabel = computed(() => formatDisplayDateLong(`${monthPrefix}-01`).replace(/ \d+,/, ''))
 
+  // ─── Attendance streak ───
+  // Walks the user's own records (one per working day; absent days have a record too). A day with a check-in
+  // keeps the streak going; a day without one breaks it. Today only counts once punched, so an early visit
+  // never shows a broken streak.
+  const isPresent = (r: MyAttendanceRecord) => Boolean(r.amCheckIn || r.pmCheckIn)
+  const streakRecords = computed(() => records.value.filter((r) => r.attendanceDate < today || isPresent(r)))
+  const currentStreak = computed(() => {
+    let count = 0
+    for (const r of streakRecords.value) {
+      if (!isPresent(r)) break
+      count++
+    }
+    return count
+  })
+  const bestStreak = computed(() => {
+    let best = 0
+    let run = 0
+    for (const r of streakRecords.value) {
+      run = isPresent(r) ? run + 1 : 0
+      best = Math.max(best, run)
+    }
+    return best
+  })
+  const streakDays = computed<MyStreakDay[]>(() => {
+    const latest = records.value.slice(0, STREAK_DAYS).reverse()
+    return latest.map((r) => {
+      let state: MyStreakDayState = 'absent'
+      if (isPresent(r)) {
+        const late = [r.amInStatus, r.pmInStatus].includes('late')
+        state = late ? 'late' : 'ontime'
+      } else if (r.attendanceDate === today) {
+        state = 'pending'
+      }
+      return { date: r.attendanceDate, state }
+    })
+  })
+  const streakDayStyles: Record<MyStreakDayState, { label: string; class: string }> = {
+    ontime: { label: 'On time', class: 'bg-emerald-500 border-emerald-500 dark:bg-emerald-400 dark:border-emerald-400' },
+    late: { label: 'Late', class: 'bg-amber-500 border-amber-500 dark:bg-amber-400 dark:border-amber-400' },
+    absent: { label: 'Absent', class: 'bg-rose-500/20 border-rose-500/50 dark:bg-rose-400/20 dark:border-rose-400/50' },
+    pending: { label: 'Not yet punched', class: 'border-dashed border-muted-foreground/50 bg-transparent' },
+  }
+  const streakDayStyle = (state: MyStreakDayState) => streakDayStyles[state]
+  const streakMessage = computed(() => {
+    if (currentStreak.value === 0) return 'Check in on your next working day to start a streak.'
+    if (currentStreak.value >= bestStreak.value && currentStreak.value > 1) return "That's your best streak yet. Keep it going!"
+    return 'Every working day you check in keeps the streak alive.'
+  })
+  const isNewBest = computed(() => currentStreak.value > 1 && currentStreak.value >= bestStreak.value)
+  const streakTier = computed(() => STREAK_TIERS.find((t) => currentStreak.value >= t.min)?.label ?? 'Resting')
+  const nextMilestone = computed(
+    () => STREAK_MILESTONES.find((m) => m > currentStreak.value) ?? currentStreak.value + 100,
+  )
+  const daysToMilestone = computed(() => nextMilestone.value - currentStreak.value)
+
+  // Count-up and bar fill on load; instant when the user prefers reduced motion.
+  const reducedMotion = usePreferredReducedMotion()
+  const streakSource = computed(() => (hasLoaded.value ? currentStreak.value : 0))
+  const animatedStreak = useTransition(streakSource, {
+    duration: 1200,
+    delay: 250,
+    easing: TransitionPresets.easeOutCubic,
+    disabled: computed(() => reducedMotion.value === 'reduce'),
+  })
+  const displayStreak = computed(() => Math.round(animatedStreak.value))
+  const milestoneProgressStyle = computed(() => {
+    const previous = [...STREAK_MILESTONES].reverse().find((m) => m <= currentStreak.value) ?? 0
+    const span = nextMilestone.value - previous
+    const pct = span > 0 ? ((animatedStreak.value - previous) / span) * 100 : 0
+    return { width: `${Math.min(100, Math.max(0, pct))}%` }
+  })
+  /** Staggers the day squares' pop-in */
+  const streakDayDelayStyle = (index: number) => ({ animationDelay: `${300 + index * 45}ms` })
+
   // ─── This month's accomplishment report ───
   const monthReport = computed(
     () => reports.value.find((r) => r.periodStart <= today && r.periodEnd >= today)
@@ -179,6 +272,18 @@ export function useMyDashboard() {
     todayPunches,
     todayNotice,
     statCards,
+    currentStreak,
+    bestStreak,
+    streakDays,
+    streakMessage,
+    streakDayStyle,
+    streakDayDelayStyle,
+    isNewBest,
+    streakTier,
+    nextMilestone,
+    daysToMilestone,
+    displayStreak,
+    milestoneProgressStyle,
     monthLabel,
     monthReport,
     openReport,

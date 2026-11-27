@@ -22,3 +22,13 @@ export interface MyUpcomingDay {
   kind: 'holiday' | 'special'
   note: string | null
 }
+
+/** How one recent day reads on the streak card */
+export type MyStreakDayState = 'ontime' | 'late' | 'absent' | 'pending'
+
+/** One recent day on the streak card */
+export interface MyStreakDay {
+  /** ISO date, yyyy-mm-dd */
+  date: string
+  state: MyStreakDayState
+}

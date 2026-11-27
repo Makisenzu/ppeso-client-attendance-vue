@@ -240,3 +240,80 @@ html.dark {
     }
   }
 }
+
+/* Beneficiary dashboard streak card: flickering flame, rising embers, glow, staggered day pop-in.
+   Always used behind `motion-safe:` so reduced-motion users get a still card. */
+@theme {
+  --animate-flame-flicker: flame-flicker 1.8s ease-in-out infinite;
+  --animate-ember-rise: ember-rise 2.4s ease-out infinite;
+  --animate-glow-pulse: glow-pulse 2.6s ease-in-out infinite;
+  --animate-streak-pop: streak-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-flame-sleep: flame-sleep 3.2s ease-in-out infinite;
+
+  @keyframes flame-flicker {
+    0%,
+    100% {
+      transform: scale(1) rotate(-2deg);
+    }
+    25% {
+      transform: translateY(-1px) scale(1.07) rotate(2deg);
+    }
+    50% {
+      transform: scale(0.96) rotate(-1deg);
+    }
+    75% {
+      transform: translateY(-1px) scale(1.04) rotate(1.5deg);
+    }
+  }
+
+  @keyframes ember-rise {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.6);
+    }
+    20% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--ember-x, 0px), -30px) scale(0.2);
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%,
+    100% {
+      opacity: 0.45;
+      transform: scale(0.9);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+
+  @keyframes streak-pop {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.3);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+
+
+  @keyframes flame-sleep {
+    0%,
+    100% {
+      opacity: 0.45;
+      transform: scale(0.95);
+    }
+    50% {
+      opacity: 0.75;
+      transform: scale(1);
+    }
+  }
+}
