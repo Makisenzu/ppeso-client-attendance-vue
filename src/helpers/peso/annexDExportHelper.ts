@@ -6,6 +6,7 @@ import {
   computeAge,
 } from '@/helpers/common/dataEntryHelper'
 import type { AnnexDEntry, AnnexDExportHighlight } from '@/types/common/dataEntry'
+import type JSZipArchive from 'jszip'
 import templateUrl from '@/assets/form/ANNEX D BLANK FORM.xlsx?url'
 
 /**
@@ -24,6 +25,11 @@ import templateUrl from '@/assets/form/ANNEX D BLANK FORM.xlsx?url'
  * For every group colour, every cell style of the template gets a filled twin appended to `xl/styles.xml`, and a
  * highlighted cell swaps its `s` to that twin, so its font, border and number format stay the same. A "LEGEND"
  * block (colour swatch, reason, number of beneficiaries) is added two rows below the end of the form.
+ *
+ * Colour sheets: with highlight groups, the first sheet is renamed "All Beneficiaries" and every group gets its own
+ * sheet (named "<Colour> - <reason>"): a full copy of the form (its own copy of the letterhead drawing, same
+ * header, notes and certification) holding only that group's entries, numbered from 1, in its colour, with a
+ * one-line legend.
  */
 
 const SHEET_PATH = 'xl/worksheets/sheet1.xml'
@@ -437,9 +443,125 @@ export function fillAnnexDWorkbookXml(workbookXml: string, entries: AnnexDEntry[
   )
 }
 
+// ─── Colour sheets ──────────────────────────────────────────────────────────
+
+const MAIN_SHEET_NAME = 'All Beneficiaries'
+const CONTENT_TYPES_PATH = '[Content_Types].xml'
+const WORKBOOK_RELS_PATH = 'xl/_rels/workbook.xml.rels'
+const SHEET_RELS_PATH = 'xl/worksheets/_rels/sheet1.xml.rels'
+const DRAWING_PATH = 'xl/drawings/drawing1.xml'
+const DRAWING_RELS_PATH = 'xl/drawings/_rels/drawing1.xml.rels'
+const APP_PATH = 'docProps/app.xml'
+const WORKSHEET_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml'
+const DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.drawing+xml'
+const WORKSHEET_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet'
+const SHEET_NAME_MAX = 31
+
+/** A sheet to add after the first one: its name, filled XML and how many rows were added below row 227. */
+interface AnnexDExtraSheet {
+  name: string
+  xml: string
+  extra: number
+}
+
+/** An Excel sheet name: ≤ 31 characters, none of : \ / ? * [ ], not blank, unique (case-insensitive) in `taken`. */
+export function annexDSheetName(base: string, taken: Set<string>): string {
+  const clean = base.replace(/[:\\/?*[\]]/g, ' ').replace(/\s+/g, ' ').trim().replace(/^'+|'+$/g, '') || 'Sheet'
+  let name = clean.slice(0, SHEET_NAME_MAX).trim()
+  for (let n = 2; taken.has(name.toLowerCase()); n++) {
+    const suffix = ` (${n})`
+    name = clean.slice(0, SHEET_NAME_MAX - suffix.length).trim() + suffix
+  }
+  taken.add(name.toLowerCase())
+  return name
+}
+
+/** `'Sheet name'` as a formula reference (apostrophes doubled), XML-escaped for a definedName body. */
+const sheetRef = (name: string) => escapeXml(`'${name.replace(/'/g, "''")}'`)
+
+/**
+ * Adds `sheets` after the first sheet (renamed "All Beneficiaries"): each one gets its own worksheet part, a copy
+ * of the letterhead drawing, its relationships, a content-type entry, a filter range and a title in app.xml.
+ */
+async function addAnnexDSheets(
+  zip: JSZipArchive,
+  templateWorkbook: string,
+  workbookXml: string,
+  sheets: AnnexDExtraSheet[],
+): Promise<string> {
+  const read = async (path: string) => {
+    const text = await zip.file(path)?.async('string')
+    if (!text) throw new Error('The ANNEX D form file is damaged.')
+    return text
+  }
+  const [contentTypes, workbookRels, sheetRels, drawing, drawingRels] = await Promise.all([
+    read(CONTENT_TYPES_PATH),
+    read(WORKBOOK_RELS_PATH),
+    read(SHEET_RELS_PATH),
+    read(DRAWING_PATH),
+    read(DRAWING_RELS_PATH),
+  ])
+  const app = await zip.file(APP_PATH)?.async('string')
+
+  // The form's filter range (B4:Z248 in the template), moved down by each sheet's added rows
+  const filterRange = /!(\$B\$\d+:\$Z\$\d+)</.exec(templateWorkbook)?.[1] ?? '$B$4:$Z$248'
+  const firstSheetId = Math.max(0, ...[...workbookXml.matchAll(/<sheet [^>]*?sheetId="(\d+)"/g)].map((m) => Number(m[1]))) + 1
+
+  let wb = workbookXml
+    .replace(/(<sheet [^>]*?name=")[^"]*"/, `$1${escapeXml(MAIN_SHEET_NAME)}"`)
+    .replace(/(<definedName [^>]*localSheetId="0"[^>]*>)[^<!]*!/, `$1${sheetRef(MAIN_SHEET_NAME)}!`)
+  let rels = workbookRels
+  let types = contentTypes
+  const sheetTags: string[] = []
+  const filterNames: string[] = []
+
+  sheets.forEach((sheet, i) => {
+    const n = i + 2
+    const relId = `rIdAnnexD${n}`
+    zip.file(`xl/worksheets/sheet${n}.xml`, sheet.xml)
+    zip.file(`xl/worksheets/_rels/sheet${n}.xml.rels`, sheetRels.replace('../drawings/drawing1.xml', `../drawings/drawing${n}.xml`))
+    zip.file(`xl/drawings/drawing${n}.xml`, drawing)
+    zip.file(`xl/drawings/_rels/drawing${n}.xml.rels`, drawingRels)
+    rels = rels.replace('</Relationships>', `<Relationship Id="${relId}" Type="${WORKSHEET_REL}" Target="worksheets/sheet${n}.xml"/></Relationships>`)
+    types = types.replace(
+      '</Types>',
+      `<Override PartName="/xl/worksheets/sheet${n}.xml" ContentType="${WORKSHEET_TYPE}"/>` +
+        `<Override PartName="/xl/drawings/drawing${n}.xml" ContentType="${DRAWING_TYPE}"/></Types>`,
+    )
+    sheetTags.push(`<sheet name="${escapeXml(sheet.name)}" sheetId="${firstSheetId + i}" r:id="${relId}"/>`)
+    const range = sheet.extra > 0 ? shiftRefs(filterRange, LAST_DATA_ROW + 1, sheet.extra) : filterRange
+    filterNames.push(`<definedName name="_xlnm._FilterDatabase" localSheetId="${i + 1}" hidden="1">${sheetRef(sheet.name)}!${range}</definedName>`)
+  })
+
+  wb = wb.replace('</sheets>', `${sheetTags.join('')}</sheets>`)
+  wb = wb.includes('</definedNames>')
+    ? wb.replace('</definedNames>', `${filterNames.join('')}</definedNames>`)
+    : wb.replace('</sheets>', `</sheets><definedNames>${filterNames.join('')}</definedNames>`)
+  zip.file(WORKBOOK_RELS_PATH, rels)
+  zip.file(CONTENT_TYPES_PATH, types)
+
+  // Sheet titles shown in File → Info (Excel reads the sheets from workbook.xml either way)
+  if (app) {
+    const titles = [MAIN_SHEET_NAME, ...sheets.map((sh) => sh.name)]
+    zip.file(
+      APP_PATH,
+      app
+        .replace(/(<HeadingPairs>[\s\S]*?<vt:i4>)\d+(<\/vt:i4>)/, `$1${titles.length}$2`)
+        .replace(
+          /<TitlesOfParts>[\s\S]*?<\/TitlesOfParts>/,
+          `<TitlesOfParts><vt:vector size="${titles.length}" baseType="lpstr">${titles.map((t) => `<vt:lpstr>${escapeXml(t)}</vt:lpstr>`).join('')}</vt:vector></TitlesOfParts>`,
+        ),
+    )
+  }
+  return wb
+}
+
 // ─── Build + download ───────────────────────────────────────────────────────
 
-/** The filled ANNEX D workbook as an .xlsx Blob; each highlight group's rows get its colour, with a legend. */
+/**
+ * The filled ANNEX D workbook as an .xlsx Blob. Each highlight group's rows get its colour, with a legend, and
+ * each group also gets its own sheet listing only its entries (same form).
+ */
 export async function buildAnnexDXlsx(
   entries: AnnexDEntry[],
   today: Date = new Date(),
@@ -458,6 +580,7 @@ export async function buildAnnexDXlsx(
   if (!sheet || !workbook) throw new Error('The ANNEX D form file is damaged.')
 
   let highlight: AnnexDHighlight | undefined
+  const colourSheets: AnnexDExtraSheet[] = []
   const exported = new Set(entries.map((e) => e.id))
   const groups = highlights.filter((g) => [...g.ids].some((id) => exported.has(id)))
   if (groups.length > 0) {
@@ -476,10 +599,28 @@ export async function buildAnnexDXlsx(
       groups,
       legend,
     }
+
+    // One sheet per colour: the same form with only that group's entries (not selected, so tabs aren't grouped)
+    const taken = new Set([MAIN_SHEET_NAME.toLowerCase()])
+    groups.forEach((group, k) => {
+      const members = entries.filter((e) => group.ids.has(e.id))
+      const own: AnnexDHighlight = {
+        styleOfEntry: (id) => (group.ids.has(id) ? maps[k] : keepStyle),
+        groups: [group],
+        legend: { ...legend, swatch: () => legend.swatch(k) },
+      }
+      colourSheets.push({
+        name: annexDSheetName(`${group.label} - ${group.reason}`, taken),
+        xml: fillAnnexDSheet(sheet, members, today, own).replace(/\stabSelected="1"/, ''),
+        extra: Math.max(0, members.length - TEMPLATE_ROWS),
+      })
+    })
   }
 
   zip.file(SHEET_PATH, fillAnnexDSheet(sheet, entries, today, highlight))
-  zip.file(WORKBOOK_PATH, fillAnnexDWorkbookXml(workbook, entries))
+  let workbookXml = fillAnnexDWorkbookXml(workbook, entries)
+  if (colourSheets.length > 0) workbookXml = await addAnnexDSheets(zip, workbook, workbookXml, colourSheets)
+  zip.file(WORKBOOK_PATH, workbookXml)
 
   return zip.generateAsync({
     type: 'blob',

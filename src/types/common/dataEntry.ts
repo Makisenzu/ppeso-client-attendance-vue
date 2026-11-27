@@ -80,6 +80,8 @@ export interface AnnexDHighlightGroup {
 
 /** One legend line of the ANNEX D export: the rows of `ids` are filled with `argb` */
 export interface AnnexDExportHighlight {
+  /** Colour name, e.g. Yellow (names the group's own sheet) */
+  label: string
   /** Excel ARGB, e.g. FFFFFF00 */
   argb: string
   reason: string

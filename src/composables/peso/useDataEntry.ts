@@ -447,6 +447,7 @@ export function useDataEntry() {
         return
       }
       const groups = highlightLegend.value.map((g) => ({
+        label: g.label,
         argb: highlightColorOption(g.color).argb,
         reason: g.reason,
         ids: new Set(highlightGroups.value.get(g.color)?.members.keys() ?? []),
