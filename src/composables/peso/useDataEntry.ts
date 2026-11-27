@@ -5,11 +5,14 @@ import { useToastAlert } from '@/composables/common/useToastAlert'
 import { getPageRange } from '@/helpers/common/paginationHelper'
 import { AGE_FILTER_OPTIONS, BENEFICIARY_TYPE_OPTIONS, formatEntryName } from '@/helpers/common/dataEntryHelper'
 import { downloadAnnexDXlsx } from '@/helpers/peso/annexDExportHelper'
+import { ANNEX_D_HIGHLIGHT_COLORS, HIGHLIGHT_REASON_MAX, highlightColorOption } from '@/helpers/peso/annexDHighlightHelper'
 import type {
   AnnexDAgeFilter,
   AnnexDEntry,
   AnnexDEntryInsert,
   AnnexDFilters,
+  AnnexDHighlightColor,
+  AnnexDHighlightGroup,
   AnnexDSelection,
   BeneficiaryType,
 } from '@/types/common/dataEntry'
@@ -21,7 +24,8 @@ const DELETE_PREVIEW_LIMIT = 50
 /**
  * Data Entry page (admin): ANNEX D — Profile of TUPAD Beneficiaries. Lists `core.annex_d_entries` one page at a
  * time from the server (BACKEND.md §15), adds / edits / deletes entries, and exports every entry as the ANNEX D Excel
- * file with the selected entries highlighted.
+ * file. Selected entries can be marked with a colour + reason (several groups); the export fills each group's rows
+ * with its colour and adds a legend.
  */
 export function useDataEntry() {
   const toast = useToastAlert()
@@ -191,6 +195,151 @@ export function useDataEntry() {
     selectedAllFor.value = null
   }
 
+  // ─── Highlight groups (colour + reason; kept only while the page is open) ───
+  const highlightGroups = ref<Map<AnnexDHighlightColor, AnnexDHighlightGroup>>(new Map())
+  const highlightColorOptions = ANNEX_D_HIGHLIGHT_COLORS
+  const highlightReasonMax = HIGHLIGHT_REASON_MAX
+
+  /** entry id → its group's colour */
+  const highlightOf = computed(() => {
+    const map = new Map<string, AnnexDHighlightColor>()
+    highlightGroups.value.forEach((g) => g.members.forEach((_m, id) => map.set(id, g.color)))
+    return map
+  })
+  /** The colour dot + reason a row shows, if the entry is marked */
+  const entryHighlight = (id: string) => {
+    const color = highlightOf.value.get(id)
+    if (!color) return null
+    const group = highlightGroups.value.get(color)
+    return { swatchClass: highlightColorOption(color).swatchClass, reason: group?.reason ?? '' }
+  }
+  /** The legend chips, in palette order */
+  const highlightLegend = computed(() =>
+    ANNEX_D_HIGHLIGHT_COLORS.filter((c) => highlightGroups.value.has(c.value)).map((c) => {
+      const group = highlightGroups.value.get(c.value)!
+      return { color: c.value, label: c.label, swatchClass: c.swatchClass, reason: group.reason, count: group.members.size }
+    }),
+  )
+  const highlightedCount = computed(() => highlightOf.value.size)
+  const selectedMarkedCount = computed(() => [...selected.value.keys()].filter((id) => highlightOf.value.has(id)).length)
+
+  // Mark dialog: 'mark' assigns the selection to a colour; 'rename' only changes a group's reason
+  const isMarkDialogOpen = ref(false)
+  const markMode = ref<'mark' | 'rename'>('mark')
+  const markColor = ref<AnnexDHighlightColor>('yellow')
+  const markReason = ref('')
+  const markError = ref('')
+  const markTargetCount = computed(() =>
+    markMode.value === 'rename' ? (highlightGroups.value.get(markColor.value)?.members.size ?? 0) : selectedCount.value,
+  )
+
+  const openMarkDialog = () => {
+    if (selected.value.size === 0) return
+    markMode.value = 'mark'
+    const unused = ANNEX_D_HIGHLIGHT_COLORS.find((c) => !highlightGroups.value.has(c.value))
+    markColor.value = unused?.value ?? 'yellow'
+    markReason.value = highlightGroups.value.get(markColor.value)?.reason ?? ''
+    markError.value = ''
+    isMarkDialogOpen.value = true
+  }
+
+  const openRenameDialog = (color: AnnexDHighlightColor) => {
+    const group = highlightGroups.value.get(color)
+    if (!group) return
+    markMode.value = 'rename'
+    markColor.value = color
+    markReason.value = group.reason
+    markError.value = ''
+    isMarkDialogOpen.value = true
+  }
+
+  /** Picking a colour that already has a group shows (and keeps) that group's reason */
+  const pickMarkColor = (color: AnnexDHighlightColor) => {
+    markColor.value = color
+    const existing = highlightGroups.value.get(color)
+    if (existing) markReason.value = existing.reason
+    markError.value = ''
+  }
+
+  const closeMarkDialog = () => {
+    isMarkDialogOpen.value = false
+  }
+
+  const applyMark = () => {
+    const reason = markReason.value.trim().replace(/\s+/g, ' ')
+    if (!reason) {
+      markError.value = 'Enter the reason for this colour.'
+      return
+    }
+    if (reason.length > HIGHLIGHT_REASON_MAX) {
+      markError.value = `Keep the reason under ${HIGHLIGHT_REASON_MAX} characters.`
+      return
+    }
+    const next = new Map(highlightGroups.value)
+    const label = highlightColorOption(markColor.value).label
+    if (markMode.value === 'rename') {
+      const group = next.get(markColor.value)
+      if (group) next.set(markColor.value, { ...group, reason })
+      highlightGroups.value = next
+      isMarkDialogOpen.value = false
+      showFeedback(`${label} reason updated.`)
+      return
+    }
+
+    // An entry belongs to one group: take the selection out of every other group first
+    const ids = [...selected.value.keys()]
+    next.forEach((group, color) => {
+      const members = new Map(group.members)
+      ids.forEach((id) => members.delete(id))
+      if (members.size === 0) next.delete(color)
+      else next.set(color, { ...group, members })
+    })
+    const target = next.get(markColor.value)
+    const members = new Map(target?.members ?? [])
+    selected.value.forEach((entry, id) => members.set(id, entry))
+    next.set(markColor.value, { color: markColor.value, reason, members })
+    highlightGroups.value = next
+
+    const count = ids.length
+    isMarkDialogOpen.value = false
+    clearSelection()
+    showFeedback(`${count} ${count === 1 ? 'entry' : 'entries'} marked ${label.toLowerCase()}: ${reason}`)
+  }
+
+  /** Removes the colour from the selected entries */
+  const unmarkSelected = () => {
+    const ids = new Set(selected.value.keys())
+    removeFromHighlights(ids)
+    showFeedback('Colour removed from the selected entries.')
+  }
+
+  function removeFromHighlights(ids: ReadonlySet<string>) {
+    const next = new Map<AnnexDHighlightColor, AnnexDHighlightGroup>()
+    highlightGroups.value.forEach((group, color) => {
+      const members = new Map([...group.members].filter(([id]) => !ids.has(id)))
+      if (members.size > 0) next.set(color, { ...group, members })
+    })
+    highlightGroups.value = next
+  }
+
+  const removeHighlightGroup = (color: AnnexDHighlightColor) => {
+    const next = new Map(highlightGroups.value)
+    next.delete(color)
+    highlightGroups.value = next
+  }
+
+  /** Puts a group's entries in the selection (e.g. to delete them or move them to another colour) */
+  const selectHighlightGroup = (color: AnnexDHighlightColor) => {
+    const group = highlightGroups.value.get(color)
+    if (!group) return
+    selected.value = new Map(group.members)
+    selectedAllFor.value = null
+  }
+
+  const clearHighlights = () => {
+    highlightGroups.value = new Map()
+  }
+
   // ─── Add / Edit Sheet ───
   const isSheetOpen = ref(false)
   const editingEntry = ref<AnnexDEntry | null>(null)
@@ -265,6 +414,7 @@ export function useDataEntry() {
       const deleted = new Set(deletedIds)
       selected.value = new Map([...selected.value].filter(([id]) => !deleted.has(id)))
       selectedAllFor.value = null
+      removeFromHighlights(deleted)
       isDeleteDialogOpen.value = false
       recordsToDelete.value = []
       const skipped = ids.length - deletedIds.length
@@ -281,11 +431,11 @@ export function useDataEntry() {
     }
   }
 
-  // ─── Export ANNEX D (.xlsx): every entry (search and filters ignored), the selected rows highlighted ───
+  // ─── Export ANNEX D (.xlsx): every entry (search and filters ignored), each highlight group in its colour ───
   const ALL_ENTRIES: AnnexDFilters = { search: '', beneficiaryType: 'ALL', municipality: '', age: 'ALL' }
   const isExporting = ref(false)
   const exportLabel = computed(() =>
-    selectedCount.value > 0 ? `Export (${selectedCount.value} highlighted)` : 'Export to Excel',
+    highlightedCount.value > 0 ? `Export (${highlightedCount.value} highlighted)` : 'Export to Excel',
   )
 
   const exportAnnexD = async () => {
@@ -296,9 +446,14 @@ export function useDataEntry() {
         showFeedback('There are no entries to export.', 'error')
         return
       }
-      const highlightIds = new Set(selected.value.keys())
-      const highlighted = rows.filter((r) => highlightIds.has(r.id)).length
-      await downloadAnnexDXlsx(rows, highlightIds)
+      const groups = highlightLegend.value.map((g) => ({
+        argb: highlightColorOption(g.color).argb,
+        reason: g.reason,
+        ids: new Set(highlightGroups.value.get(g.color)?.members.keys() ?? []),
+      }))
+      const marked = highlightOf.value
+      const highlighted = rows.filter((r) => marked.has(r.id)).length
+      await downloadAnnexDXlsx(rows, groups)
       const count = `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}`
       showFeedback(`ANNEX D exported with ${count}${highlighted > 0 ? ` (${highlighted} highlighted)` : ''}.`)
     } catch (err) {
@@ -350,6 +505,27 @@ export function useDataEntry() {
     toggleSelectPage,
     selectAllFiltered,
     clearSelection,
+    highlightColorOptions,
+    highlightReasonMax,
+    entryHighlight,
+    highlightLegend,
+    highlightedCount,
+    selectedMarkedCount,
+    isMarkDialogOpen,
+    markMode,
+    markColor,
+    markReason,
+    markError,
+    markTargetCount,
+    openMarkDialog,
+    openRenameDialog,
+    pickMarkColor,
+    closeMarkDialog,
+    applyMark,
+    unmarkSelected,
+    removeHighlightGroup,
+    selectHighlightGroup,
+    clearHighlights,
     isSheetOpen,
     editingEntry,
     isSubmitting,

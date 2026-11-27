@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
+  Eraser,
   FileSpreadsheet,
+  Highlighter,
+  ListChecks,
   Loader2,
   Pencil,
   Plus,
@@ -17,6 +21,7 @@ import MobileFilters from '@/components/common/MobileFilters.vue'
 import DataEntrySheet from '@/components/peso/DataEntry/DataEntrySheet.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
@@ -65,6 +70,27 @@ const {
   toggleSelectPage,
   selectAllFiltered,
   clearSelection,
+  highlightColorOptions,
+  highlightReasonMax,
+  entryHighlight,
+  highlightLegend,
+  highlightedCount,
+  selectedMarkedCount,
+  isMarkDialogOpen,
+  markMode,
+  markColor,
+  markReason,
+  markError,
+  markTargetCount,
+  openMarkDialog,
+  openRenameDialog,
+  pickMarkColor,
+  closeMarkDialog,
+  applyMark,
+  unmarkSelected,
+  removeHighlightGroup,
+  selectHighlightGroup,
+  clearHighlights,
   isSheetOpen,
   editingEntry,
   isSubmitting,
@@ -110,7 +136,7 @@ const checkboxClass =
           size="sm"
           class="gap-1.5 text-xs cursor-pointer"
           :disabled="isExporting"
-          :title="selectedCount > 0 ? 'Exports all entries; the selected ones are highlighted' : 'Exports all entries'"
+          :title="highlightedCount > 0 ? 'Exports all entries; marked entries are filled with their colour, with a legend' : 'Exports all entries'"
           @click="exportAnnexD"
         >
           <Loader2 v-if="isExporting" class="h-3.5 w-3.5 animate-spin" />
@@ -217,16 +243,85 @@ const checkboxClass =
               Clear selection
             </button>
           </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            class="h-7 gap-1.5 self-start text-xs cursor-pointer sm:self-auto"
-            :disabled="isDeleting"
-            @click="openBulkDeleteDialog"
-          >
-            <Trash2 class="h-3.5 w-3.5" />
-            <span>Delete selected</span>
-          </Button>
+          <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <Button size="sm" class="h-7 gap-1.5 text-xs cursor-pointer" @click="openMarkDialog">
+              <Highlighter class="h-3.5 w-3.5" />
+              <span>Mark with color</span>
+            </Button>
+            <Button
+              v-if="selectedMarkedCount > 0"
+              variant="outline"
+              size="sm"
+              class="h-7 gap-1.5 text-xs cursor-pointer"
+              @click="unmarkSelected"
+            >
+              <Eraser class="h-3.5 w-3.5" />
+              <span>Remove color</span>
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              class="h-7 gap-1.5 text-xs cursor-pointer"
+              :disabled="isDeleting"
+              @click="openBulkDeleteDialog"
+            >
+              <Trash2 class="h-3.5 w-3.5" />
+              <span>Delete selected</span>
+            </Button>
+          </div>
+        </div>
+
+        <!-- ─── Highlight legend (what the export colours mean) ─── -->
+        <div v-if="highlightLegend.length > 0" class="flex flex-col gap-2 border-t px-4 py-3 text-xs">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-semibold text-foreground">
+              Legend · {{ highlightedCount }} {{ highlightedCount === 1 ? 'entry' : 'entries' }} marked
+            </span>
+            <button type="button" class="text-muted-foreground hover:text-foreground cursor-pointer" @click="clearHighlights">
+              Clear all colors
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <div
+              v-for="group in highlightLegend"
+              :key="group.color"
+              class="flex max-w-full items-center gap-2 rounded-md border bg-muted/20 py-1 pl-2 pr-1"
+            >
+              <span :class="['h-3.5 w-3.5 shrink-0 rounded-sm border border-foreground/20', group.swatchClass]" />
+              <span class="min-w-0 truncate font-medium text-foreground" :title="group.reason">{{ group.reason }}</span>
+              <span class="shrink-0 font-mono text-muted-foreground">{{ group.count }}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-6 w-6 shrink-0 cursor-pointer"
+                :title="`Select the ${group.label.toLowerCase()} entries`"
+                :aria-label="`Select the ${group.label.toLowerCase()} entries`"
+                @click="selectHighlightGroup(group.color)"
+              >
+                <ListChecks class="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-6 w-6 shrink-0 cursor-pointer"
+                title="Edit reason"
+                :aria-label="`Edit the ${group.label.toLowerCase()} reason`"
+                @click="openRenameDialog(group.color)"
+              >
+                <Pencil class="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive cursor-pointer"
+                title="Remove this color"
+                :aria-label="`Remove the ${group.label.toLowerCase()} color`"
+                @click="removeHighlightGroup(group.color)"
+              >
+                <X class="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
         </div>
 
         <!-- Mobile: swipe rows (DESIGN.md §11.2) -->
@@ -256,7 +351,14 @@ const checkboxClass =
                 @change="toggleSelect(entry)"
               />
               <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-foreground">{{ formatEntryName(entry) }}</p>
+                <p class="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <span
+                    v-if="entryHighlight(entry.id)"
+                    :class="['h-2.5 w-2.5 shrink-0 rounded-full border border-foreground/20', entryHighlight(entry.id)?.swatchClass]"
+                    :title="entryHighlight(entry.id)?.reason"
+                  />
+                  <span class="truncate">{{ formatEntryName(entry) }}</span>
+                </p>
                 <p class="truncate text-xs text-muted-foreground">
                   {{ entry.barangay }}, {{ entry.municipality }} · {{ beneficiaryTypeLabel(entry.beneficiary_type) }}
                 </p>
@@ -320,7 +422,14 @@ const checkboxClass =
                   </TableCell>
                   <TableCell class="py-3">
                     <div class="flex min-w-0 flex-col">
-                      <span class="text-sm font-semibold text-foreground">{{ formatEntryName(entry) }}</span>
+                      <span class="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                        <span
+                          v-if="entryHighlight(entry.id)"
+                          :class="['h-2.5 w-2.5 shrink-0 rounded-full border border-foreground/20', entryHighlight(entry.id)?.swatchClass]"
+                          :title="entryHighlight(entry.id)?.reason"
+                        />
+                        {{ formatEntryName(entry) }}
+                      </span>
                       <span class="text-[11px] text-muted-foreground">
                         {{ sexLabel(entry.sex) }}<template v-if="entry.occupation"> · {{ entry.occupation }}</template><template v-if="entry.source === 'public_form'"> · Public form</template>
                       </span>
@@ -445,6 +554,78 @@ const checkboxClass =
       @update:open="onSheetOpenChange"
       @submit="handleSubmit"
     />
+
+    <!-- ─── Mark with color / edit reason ─── -->
+    <Dialog :open="isMarkDialogOpen" @update:open="(val: boolean) => (!val ? closeMarkDialog() : null)">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Highlighter class="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle class="text-base font-semibold text-foreground">
+                {{ markMode === 'rename' ? 'Edit Reason' : 'Mark with Color' }}
+              </DialogTitle>
+              <DialogDescription class="mt-0.5 text-xs">
+                {{ markTargetCount }} {{ markTargetCount === 1 ? 'entry' : 'entries' }} ·
+                {{ markMode === 'rename' ? 'the legend in the Excel file uses this reason.' : 'their rows are filled with this color in the Excel file.' }}
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <form class="space-y-4" @submit.prevent="applyMark">
+          <div v-if="markMode === 'mark'" class="space-y-2">
+            <Label class="text-xs">Color</Label>
+            <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Highlight color">
+              <button
+                v-for="option in highlightColorOptions"
+                :key="option.value"
+                type="button"
+                role="radio"
+                :aria-checked="markColor === option.value"
+                :aria-label="option.label"
+                :title="option.label"
+                :class="[
+                  'flex h-8 w-8 items-center justify-center rounded-md border border-foreground/20 transition-transform cursor-pointer hover:scale-110',
+                  option.swatchClass,
+                  markColor === option.value && 'ring-2 ring-ring ring-offset-2 ring-offset-background',
+                ]"
+                @click="pickMarkColor(option.value)"
+              >
+                <Check v-if="markColor === option.value" class="h-4 w-4 text-black/70" />
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <Label for="mark-reason" class="text-xs">Reason</Label>
+            <Input
+              id="mark-reason"
+              v-model="markReason"
+              :maxlength="highlightReasonMax"
+              placeholder="e.g. Approved for the December payout"
+              class="h-9 text-base md:text-xs"
+              :aria-invalid="!!markError"
+              autocomplete="off"
+            />
+            <p v-if="markError" class="text-xs text-destructive">{{ markError }}</p>
+            <p v-else class="text-[11px] text-muted-foreground">Shown next to the color in the legend under the form.</p>
+          </div>
+
+          <DialogFooter class="gap-2">
+            <Button type="button" variant="outline" size="sm" class="text-xs cursor-pointer" @click="closeMarkDialog">
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" class="gap-1.5 text-xs cursor-pointer">
+              <Check class="h-3.5 w-3.5" />
+              <span>{{ markMode === 'rename' ? 'Save' : 'Apply color' }}</span>
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
 
     <!-- ─── Delete Confirmation (single & bulk) ─── -->
     <Dialog :open="isDeleteDialogOpen" @update:open="(val: boolean) => (!val ? closeDeleteDialog() : null)">

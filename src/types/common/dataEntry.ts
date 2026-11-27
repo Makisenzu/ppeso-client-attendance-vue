@@ -67,3 +67,21 @@ export interface AnnexDLocation {
 
 /** A selected entry: enough to name it in the delete confirmation. */
 export type AnnexDSelection = Pick<AnnexDEntry, 'id' | 'lastname' | 'firstname' | 'middlename' | 'extension_name'>
+
+/** A highlight color for marking entries in the ANNEX D export */
+export type AnnexDHighlightColor = 'yellow' | 'green' | 'blue' | 'orange' | 'pink' | 'purple' | 'red' | 'gray'
+
+/** A group of entries marked with one color for one reason (kept only while the Data Entry page is open) */
+export interface AnnexDHighlightGroup {
+  color: AnnexDHighlightColor
+  reason: string
+  members: Map<string, AnnexDSelection>
+}
+
+/** One legend line of the ANNEX D export: the rows of `ids` are filled with `argb` */
+export interface AnnexDExportHighlight {
+  /** Excel ARGB, e.g. FFFFFF00 */
+  argb: string
+  reason: string
+  ids: ReadonlySet<string>
+}

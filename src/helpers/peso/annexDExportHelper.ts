@@ -5,7 +5,7 @@ import {
   civilStatusCode,
   computeAge,
 } from '@/helpers/common/dataEntryHelper'
-import type { AnnexDEntry } from '@/types/common/dataEntry'
+import type { AnnexDEntry, AnnexDExportHighlight } from '@/types/common/dataEntry'
 import templateUrl from '@/assets/form/ANNEX D BLANK FORM.xlsx?url'
 
 /**
@@ -20,16 +20,15 @@ import templateUrl from '@/assets/form/ANNEX D BLANK FORM.xlsx?url'
  * Province / Municipality / Barangay lines. More than 205 entries → rows are added after row 227 and everything
  * below moves down.
  *
- * Highlighting: entries whose id is in `highlightIds` get a yellow fill on their row (columns B–Z). Every cell
- * style of the template gets a filled twin appended to `xl/styles.xml`, and a highlighted cell swaps its `s` to
- * that twin, so its font, border and number format stay the same.
+ * Highlighting: each highlight group (a colour + a reason) fills its entries' rows (columns B–Z) with its colour.
+ * For every group colour, every cell style of the template gets a filled twin appended to `xl/styles.xml`, and a
+ * highlighted cell swaps its `s` to that twin, so its font, border and number format stay the same. A "LEGEND"
+ * block (colour swatch, reason, number of beneficiaries) is added two rows below the end of the form.
  */
 
 const SHEET_PATH = 'xl/worksheets/sheet1.xml'
 const WORKBOOK_PATH = 'xl/workbook.xml'
 const STYLES_PATH = 'xl/styles.xml'
-/** Excel ARGB of the highlight fill (a spreadsheet colour, not a UI token). */
-const HIGHLIGHT_ARGB = 'FFFFFF00'
 const FIRST_DATA_ROW = 23
 const LAST_DATA_ROW = 227
 const TEMPLATE_ROWS = LAST_DATA_ROW - FIRST_DATA_ROW + 1
@@ -41,10 +40,21 @@ type CellValue = string | number | null
 type StyleMap = (style: string) => string
 const keepStyle: StyleMap = (style) => style
 
-/** The rows to highlight: entry ids + the style index of each style's filled twin. */
+/** The styles the legend block uses (indexes into `cellXfs`). */
+export interface AnnexDLegendStyles {
+  title: string
+  header: string
+  text: string
+  count: string
+  /** Swatch style of group k */
+  swatch: (k: number) => string
+}
+
+/** The rows to highlight: entry id → style map of its group's colour, plus the legend to write. */
 export interface AnnexDHighlight {
-  ids: ReadonlySet<string>
-  styleOf: StyleMap
+  styleOfEntry: (id: string) => StyleMap
+  groups: AnnexDExportHighlight[]
+  legend: AnnexDLegendStyles
 }
 
 const XML_TEXT_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }
@@ -138,28 +148,73 @@ export function sortAnnexDEntries(entries: AnnexDEntry[]): AnnexDEntry[] {
 
 // ─── Sheet XML editing ───────────────────────────────────────────────────────
 
+const LEGEND_FONT = '<sz val="27"/><color theme="1"/><name val="Calibri"/><family val="2"/><scheme val="minor"/>'
+/** Thin border on all four sides (the template's data-cell border) */
+const LEGEND_BORDER_ID = 5
+
 /**
- * Adds a solid highlight fill and, for every cell style, a twin that uses it (twin of style i = count + i).
- * Pure: returns the new styles XML and the style map.
+ * Adds one solid fill per colour in `argbs` and, for each, a twin of every cell style that uses it (twin of style
+ * i for colour k = xfCount × (k + 1) + i), plus the legend block's styles. Pure: returns the new styles XML.
  */
-export function addAnnexDHighlightStyles(stylesXml: string): { xml: string; styleOf: StyleMap } {
+export function addAnnexDHighlightStyles(
+  stylesXml: string,
+  argbs: string[],
+): { xml: string; twinOf: (k: number) => StyleMap; legend: AnnexDLegendStyles } {
   const fillsCount = Number(/<fills count="(\d+)"/.exec(stylesXml)?.[1] ?? NaN)
+  const fontsCount = Number(/<fonts count="(\d+)"/.exec(stylesXml)?.[1] ?? NaN)
   const xfsBlock = /<cellXfs count="(\d+)">([\s\S]*?)<\/cellXfs>/.exec(stylesXml)
-  if (!Number.isFinite(fillsCount) || !xfsBlock) throw new Error('The ANNEX D form file is damaged.')
+  if (!Number.isFinite(fillsCount) || !Number.isFinite(fontsCount) || !xfsBlock) {
+    throw new Error('The ANNEX D form file is damaged.')
+  }
   const xfCount = Number(xfsBlock[1])
-  const twins = (xfsBlock[2].match(/<xf\b[^>]*?(?:\/>|>[\s\S]*?<\/xf>)/g) ?? []).map((xf) =>
+  const baseXfs = xfsBlock[2].match(/<xf\b[^>]*?(?:\/>|>[\s\S]*?<\/xf>)/g) ?? []
+  const withFill = (xf: string, fillId: number) =>
     xf
-      .replace(/\sfillId="\d+"/, ` fillId="${fillsCount}"`)
+      .replace(/\sfillId="\d+"/, ` fillId="${fillId}"`)
       .replace(/\sapplyFill="\d"/, '')
-      .replace(/^<xf\b/, '<xf applyFill="1"'),
-  )
-  const fill = `<fill><patternFill patternType="solid"><fgColor rgb="${HIGHLIGHT_ARGB}"/><bgColor indexed="64"/></patternFill></fill>`
+      .replace(/^<xf\b/, '<xf applyFill="1"')
+  const twins = argbs.flatMap((_argb, k) => baseXfs.map((xf) => withFill(xf, fillsCount + k)))
+
+  const fills = argbs
+    .map((argb) => `<fill><patternFill patternType="solid"><fgColor rgb="${argb}"/><bgColor indexed="64"/></patternFill></fill>`)
+    .join('')
+  const fonts = `<font><b/>${LEGEND_FONT}</font><font>${LEGEND_FONT}</font>`
+  const boldFont = fontsCount
+  const plainFont = fontsCount + 1
+
+  const legendBase = xfCount + twins.length
+  const legendXfs = [
+    `<xf numFmtId="0" fontId="${boldFont}" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>`,
+    `<xf numFmtId="0" fontId="${boldFont}" fillId="0" borderId="${LEGEND_BORDER_ID}" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>`,
+    `<xf numFmtId="0" fontId="${plainFont}" fillId="0" borderId="${LEGEND_BORDER_ID}" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>`,
+    `<xf numFmtId="0" fontId="${plainFont}" fillId="0" borderId="${LEGEND_BORDER_ID}" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>`,
+    ...argbs.map(
+      (_argb, k) =>
+        `<xf numFmtId="0" fontId="0" fillId="${fillsCount + k}" borderId="${LEGEND_BORDER_ID}" xfId="0" applyFill="1" applyBorder="1"/>`,
+    ),
+  ]
+
   const xml = stylesXml
-    .replace(/<fills count="\d+">([\s\S]*?)<\/fills>/, (_m, body: string) => `<fills count="${fillsCount + 1}">${body}${fill}</fills>`)
-    .replace(/<cellXfs count="\d+">([\s\S]*?)<\/cellXfs>/, (_m, body: string) =>
-      `<cellXfs count="${xfCount + twins.length}">${body}${twins.join('')}</cellXfs>`,
+    .replace(/<fonts count="\d+"([^>]*)>([\s\S]*?)<\/fonts>/, (_m, attrs: string, body: string) =>
+      `<fonts count="${fontsCount + 2}"${attrs}>${body}${fonts}</fonts>`,
     )
-  return { xml, styleOf: (style) => String(xfCount + Number(style)) }
+    .replace(/<fills count="\d+">([\s\S]*?)<\/fills>/, (_m, body: string) =>
+      `<fills count="${fillsCount + argbs.length}">${body}${fills}</fills>`,
+    )
+    .replace(/<cellXfs count="\d+">([\s\S]*?)<\/cellXfs>/, (_m, body: string) =>
+      `<cellXfs count="${legendBase + legendXfs.length}">${body}${twins.join('')}${legendXfs.join('')}</cellXfs>`,
+    )
+  return {
+    xml,
+    twinOf: (k) => (style) => String(xfCount * (k + 1) + Number(style)),
+    legend: {
+      title: String(legendBase),
+      header: String(legendBase + 1),
+      text: String(legendBase + 2),
+      count: String(legendBase + 3),
+      swatch: (k) => String(legendBase + 4 + k),
+    },
+  }
 }
 
 /** `<c r="REF" …/>` or `<c r="REF" …>…</c>` → the same cell with `value`, keeping its style (mapped by `styleOf`). */
@@ -258,6 +313,12 @@ export function fillAnnexDSheet(
 
   let before = sheetXml.slice(0, start)
   let after = sheetXml.slice(end)
+
+  // Legend two rows below the end of the form (after any added rows)
+  const lastRow = Math.max(0, ...rows.map(rowNumber)) + extra
+  const legend = highlight && highlight.groups.length > 0 ? buildLegendRows(lastRow + 2, entries, highlight) : null
+  if (legend) out.push(...legend.rows)
+
   if (extra > 0) {
     const shiftAttr = (xml: string, tag: string) =>
       xml.replace(new RegExp(`(<${tag}\\b[^>]*?\\b(?:ref|sqref)=")([^"]+)"`, 'g'), (_m, head: string, ref: string) =>
@@ -267,6 +328,13 @@ export function fillAnnexDSheet(
     for (const tag of ['mergeCell', 'hyperlink', 'autoFilter', 'conditionalFormatting', 'dataValidation']) {
       after = shiftAttr(after, tag)
     }
+  }
+  // After the shift above: the legend's rows are already at their final numbers
+  if (legend) {
+    before = before.replace(/(<dimension ref="[A-Z]+\d+:[A-Z]+)\d+"/, `$1${legend.lastRow}"`)
+    after = after.replace(/<mergeCells count="(\d+)">([\s\S]*?)<\/mergeCells>/, (_m, count: string, body: string) =>
+      `<mergeCells count="${Number(count) + legend.merges.length}">${body}${legend.merges.map((ref) => `<mergeCell ref="${ref}"/>`).join('')}</mergeCells>`,
+    )
   }
   // Open at the top of the form (the blank form was saved scrolled to row 217)
   before = before.replace(/\stopLeftCell="[^"]*"/, ' topLeftCell="A1"').replace(/<selection [^>]*\/>/, '<selection activeCell="A1" sqref="A1"/>')
@@ -282,10 +350,82 @@ function fillDataRow(
   highlight?: AnnexDHighlight,
 ): string {
   const values = entry ? buildAnnexDRow(entry, rowNum - FIRST_DATA_ROW + 1, today) : {}
-  const styleOf = entry && highlight?.ids.has(entry.id) ? highlight.styleOf : keepStyle
+  const styleOf = entry && highlight ? highlight.styleOfEntry(entry.id) : keepStyle
   let xml = rowXml
   for (const col of DATA_COLUMNS) xml = setCell(xml, `${col}${rowNum}`, values[col] ?? null, styleOf)
   return xml
+}
+
+/** Legend columns: B = swatch, C–H (merged) = reason, I = number of beneficiaries. */
+const LEGEND_REASON_COLS = ['C', 'D', 'E', 'F', 'G', 'H']
+const LEGEND_COUNT_COL = 'I'
+/** About how many characters of the reason fit on one line of the merged C–H cell */
+const LEGEND_CHARS_PER_LINE = 90
+const LEGEND_LINE_HEIGHT = 40
+
+function legendCell(ref: string, style: string, value: CellValue = null): string {
+  if (value === null || value === '') return `<c r="${ref}" s="${style}"/>`
+  if (typeof value === 'number') return `<c r="${ref}" s="${style}"><v>${value}</v></c>`
+  return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`
+}
+
+function legendRow(n: number, height: number, cells: string[]): string {
+  return `<row r="${n}" ht="${height}" customHeight="1">${cells.join('')}</row>`
+}
+
+/** The "LEGEND" block from row `startRow`: title, column headers, one line per group, and the total. */
+function buildLegendRows(
+  startRow: number,
+  entries: AnnexDEntry[],
+  highlight: AnnexDHighlight,
+): { rows: string[]; merges: string[]; lastRow: number } {
+  const { legend, groups } = highlight
+  const exported = new Set(entries.map((e) => e.id))
+  const rows: string[] = []
+  const merges: string[] = []
+  const reasonCells = (row: number, style: string, value: string | null) =>
+    LEGEND_REASON_COLS.map((col, i) => legendCell(`${col}${row}`, style, i === 0 ? value : null))
+  let n = startRow
+
+  rows.push(legendRow(n, LEGEND_LINE_HEIGHT, [legendCell(`B${n}`, legend.title, 'LEGEND:')]))
+  n++
+
+  rows.push(
+    legendRow(n, LEGEND_LINE_HEIGHT, [
+      legendCell(`B${n}`, legend.header, 'Color'),
+      ...reasonCells(n, legend.header, 'Reason'),
+      legendCell(`${LEGEND_COUNT_COL}${n}`, legend.header, 'No. of Beneficiaries'),
+    ]),
+  )
+  merges.push(`C${n}:H${n}`)
+  n++
+
+  let total = 0
+  groups.forEach((group, k) => {
+    const count = [...group.ids].filter((id) => exported.has(id)).length
+    total += count
+    const lines = Math.max(1, Math.ceil(group.reason.length / LEGEND_CHARS_PER_LINE))
+    rows.push(
+      legendRow(n, LEGEND_LINE_HEIGHT * lines, [
+        legendCell(`B${n}`, legend.swatch(k)),
+        ...reasonCells(n, legend.text, group.reason),
+        legendCell(`${LEGEND_COUNT_COL}${n}`, legend.count, count),
+      ]),
+    )
+    merges.push(`C${n}:H${n}`)
+    n++
+  })
+
+  rows.push(
+    legendRow(n, LEGEND_LINE_HEIGHT, [
+      legendCell(`B${n}`, legend.header),
+      ...reasonCells(n, legend.header, 'Total highlighted'),
+      legendCell(`${LEGEND_COUNT_COL}${n}`, legend.header, total),
+    ]),
+  )
+  merges.push(`C${n}:H${n}`)
+
+  return { rows, merges, lastRow: n }
 }
 
 /** Keeps the workbook's filter range in step with the rows added below the table. */
@@ -299,11 +439,11 @@ export function fillAnnexDWorkbookXml(workbookXml: string, entries: AnnexDEntry[
 
 // ─── Build + download ───────────────────────────────────────────────────────
 
-/** The filled ANNEX D workbook as an .xlsx Blob; rows of `highlightIds` are filled yellow. */
+/** The filled ANNEX D workbook as an .xlsx Blob; each highlight group's rows get its colour, with a legend. */
 export async function buildAnnexDXlsx(
   entries: AnnexDEntry[],
   today: Date = new Date(),
-  highlightIds: ReadonlySet<string> = new Set(),
+  highlights: AnnexDExportHighlight[] = [],
 ): Promise<Blob> {
   const [{ default: JSZip }, template] = await Promise.all([
     import('jszip'),
@@ -318,12 +458,24 @@ export async function buildAnnexDXlsx(
   if (!sheet || !workbook) throw new Error('The ANNEX D form file is damaged.')
 
   let highlight: AnnexDHighlight | undefined
-  if (entries.some((e) => highlightIds.has(e.id))) {
+  const exported = new Set(entries.map((e) => e.id))
+  const groups = highlights.filter((g) => [...g.ids].some((id) => exported.has(id)))
+  if (groups.length > 0) {
     const styles = await zip.file(STYLES_PATH)?.async('string')
     if (!styles) throw new Error('The ANNEX D form file is damaged.')
-    const { xml, styleOf } = addAnnexDHighlightStyles(styles)
+    const { xml, twinOf, legend } = addAnnexDHighlightStyles(styles, groups.map((g) => g.argb))
     zip.file(STYLES_PATH, xml)
-    highlight = { ids: highlightIds, styleOf }
+    const groupOf = new Map<string, number>()
+    groups.forEach((g, k) => g.ids.forEach((id) => groupOf.set(id, k)))
+    const maps = groups.map((_g, k) => twinOf(k))
+    highlight = {
+      styleOfEntry: (id) => {
+        const k = groupOf.get(id)
+        return k === undefined ? keepStyle : maps[k]
+      },
+      groups,
+      legend,
+    }
   }
 
   zip.file(SHEET_PATH, fillAnnexDSheet(sheet, entries, today, highlight))
@@ -342,13 +494,13 @@ export function annexDFileName(today: Date = new Date()): string {
   return `ANNEX-D-TUPAD-Beneficiaries-${iso}.xlsx`
 }
 
-/** Fills the ANNEX D form with `entries` (rows of `highlightIds` highlighted) and downloads it. */
+/** Fills the ANNEX D form with `entries` (each highlight group's rows coloured, with a legend) and downloads it. */
 export async function downloadAnnexDXlsx(
   entries: AnnexDEntry[],
-  highlightIds: ReadonlySet<string> = new Set(),
+  highlights: AnnexDExportHighlight[] = [],
 ): Promise<void> {
   const today = new Date()
-  const blob = await buildAnnexDXlsx(entries, today, highlightIds)
+  const blob = await buildAnnexDXlsx(entries, today, highlights)
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
